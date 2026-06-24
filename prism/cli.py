@@ -81,6 +81,7 @@ def start(platform: Optional[str], token: Optional[str], app_id: Optional[str],
     """启动 Gateway 服务"""
     from prism.gateway import gateway as gw
     
+    # 若未指定平台，显示已配置平台
     if not platform:
         platforms = gw.list_platforms()
         if platforms:
@@ -109,6 +110,7 @@ def start(platform: Optional[str], token: Optional[str], app_id: Optional[str],
         'encrypt_key': encrypt_key or '',
         'verification_token': verification_token or '',
     }
+    cfg['gateway']['platforms'] = list(set((cfg['gateway'].get('platforms') or []) + [platform]))
     
     with open(config_path, 'w', encoding='utf-8') as f:
         yaml.dump(cfg, f, allow_unicode=True, default_flow_style=False)
@@ -116,23 +118,65 @@ def start(platform: Optional[str], token: Optional[str], app_id: Optional[str],
     click.echo(f"Gateway 配置已保存到 {config_path}")
     click.echo(f"平台: {platform}")
     
-    # 显示启动说明
+    # 真实启动适配器
+    started = False
     if platform == 'feishu':
-        click.echo("\n飞书 Gateway 启动说明：")
-        click.echo("1. 在飞书开放平台创建应用")
-        click.echo("2. 开启机器人能力")
-        click.echo("3. 配置事件订阅 URL")
-        click.echo("4. 使用 prism gateway start --platform feishu 启动")
+        try:
+            from prism.gateway.feishu import FeishuAdapter, FeishuConfig
+            adapter = FeishuAdapter(FeishuConfig(
+                app_id=app_id or '',
+                app_secret=app_secret or '',
+                encrypt_key=encrypt_key,
+                verification_token=verification_token,
+            ))
+            gw.register('feishu', adapter)
+            gw.start(lambda m: click.echo(f"[feishu] {m.text}"))
+            started = True
+            click.echo("feishu 已启动")
+        except Exception as e:
+            click.echo(f"feishu 启动失败: {e}")
     elif platform == 'telegram':
-        click.echo("\nTelegram Gateway 启动说明：")
-        click.echo("1. 与 @BotFather 对话创建 Bot")
-        click.echo("2. 获取 Bot Token")
-        click.echo("3. 使用 prism gateway start --platform telegram --token <TOKEN> 启动")
+        try:
+            from prism.gateway.telegram import TelegramAdapter, TelegramConfig
+            adapter = TelegramAdapter(TelegramConfig(token=token or ''))
+            gw.register('telegram', adapter)
+            gw.start(lambda m: click.echo(f"[telegram] {m.text}"))
+            started = True
+            click.echo("telegram 已启动")
+        except Exception as e:
+            click.echo(f"telegram 启动失败: {e}")
     elif platform == 'wechat':
-        click.echo("\n微信 Gateway 启动说明（待接入真实协议）：")
-        click.echo("1. 准备企业微信/公众号/微信客服应用")
-        click.echo("2. 获取 app_id / app_secret / token")
-        click.echo("3. 使用 prism gateway start --platform wechat --app-id <ID> --app-secret <SECRET> 启动")
+        try:
+            from prism.gateway.wechat import WechatAdapter, WechatConfig
+            adapter = WechatAdapter(WechatConfig(
+                app_id=app_id or '',
+                app_secret=app_secret or '',
+                token=token,
+            ))
+            gw.register('wechat', adapter)
+            gw.start(lambda m: click.echo(f"[wechat] {m.text}"))
+            started = True
+            click.echo("wechat 已启动")
+        except Exception as e:
+            click.echo(f"wechat 启动失败: {e}")
+    
+    if not started:
+        if platform == 'feishu':
+            click.echo("\n飞书 Gateway 启动说明：")
+            click.echo("1. 在飞书开放平台创建应用")
+            click.echo("2. 开启机器人能力")
+            click.echo("3. 配置事件订阅 URL")
+            click.echo("4. 使用 prism gateway start --platform feishu 启动")
+        elif platform == 'telegram':
+            click.echo("\nTelegram Gateway 启动说明：")
+            click.echo("1. 与 @BotFather 对话创建 Bot")
+            click.echo("2. 获取 Bot Token")
+            click.echo("3. 使用 prism gateway start --platform telegram --token <TOKEN> 启动")
+        elif platform == 'wechat':
+            click.echo("\n微信 Gateway 启动说明（待接入真实协议）：")
+            click.echo("1. 准备企业微信/公众号/微信客服应用")
+            click.echo("2. 获取 app_id / app_secret / token")
+            click.echo("3. 使用 prism gateway start --platform wechat --app-id <ID> --app-secret <SECRET> 启动")
 
 
 @gateway.command()
