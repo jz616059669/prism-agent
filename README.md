@@ -1,11 +1,32 @@
 # PRISM Agent
 
-**统一 AI Agent CLI — 整合 Hermes + Codex + OpenClaw 优势**
+**统一 AI Agent CLI + 桌面客户端 — 整合 Hermes + Codex + OpenClaw 能力**
 
-```bash
-pip install -e .
-prism --help
+## 一键安装
+
+**Windows：**
+```powershell
+git clone https://github.com/jz616059669/prism-agent.git
+cd prism-agent
+.\scripts\install.ps1
 ```
+
+**macOS / Linux：**
+```bash
+git clone https://github.com/jz616059669/prism-agent.git
+cd prism-agent
+bash scripts/install.sh
+```
+
+安装完成后：
+```bash
+prism --help           # CLI
+prism-desktop          # 桌面客户端
+```
+
+## 手动安装
+
+见 [INSTALL.md](INSTALL.md)
 
 ## 当前能力
 
