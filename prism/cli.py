@@ -13,27 +13,57 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from typing import Optional
 
 import click
+import logging
 from rich.console import Console
 from rich.panel import Panel
 from rich.markdown import Markdown
 from rich.syntax import Syntax
 from rich.prompt import Prompt
 
-from prism.agent import create_agent
 from prism.config import config as prism_config
+from prism.config import ConfigError
+from prism.agent import create_agent
 
 console = Console()
 
+# 统一日志配置
+LOG_DIR = Path.home() / ".prism" / "logs"
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+LOG_FILE = LOG_DIR / "prism.log"
+
+logger = logging.getLogger("prism")
+logger.setLevel(logging.DEBUG)
+formatter = logging.Formatter(
+    "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
+# 文件日志
+fh = logging.FileHandler(LOG_FILE, encoding="utf-8")
+fh.setLevel(logging.DEBUG)
+fh.setFormatter(formatter)
+logger.addHandler(fh)
+
+# 控制台日志只显示 WARNING+
+ch = logging.StreamHandler()
+ch.setLevel(logging.WARNING)
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+
 
 @click.group()
-@click.version_option(version="0.1.0", prog_name="PRISM")
+@click.version_option(version="0.2.1", prog_name="PRISM")
 def cli():
     """
     PRISM Agent - 统一 AI Agent CLI
     
     整合 Hermes/Codex/OpenClaw 优势的新一代 AI Agent
     """
-    pass
+    try:
+        prism_config.validate()
+    except ConfigError as e:
+        console.print(f"[red]配置错误：{e}[/red]")
+        raise click.ClickException(str(e))
 
 
 @cli.group()

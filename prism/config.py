@@ -9,6 +9,11 @@ from pathlib import Path
 from typing import Optional
 
 
+class ConfigError(Exception):
+    """配置校验失败"""
+    pass
+
+
 class Config:
     """统一配置管理"""
     
@@ -19,7 +24,7 @@ class Config:
         self._config = {}
         self._load()
     
-    def _load(self):
+    def _load(self) -> None:
         """加载配置文件"""
         if self.config_file.exists():
             with open(self.config_file, 'r', encoding='utf-8') as f:
@@ -28,7 +33,7 @@ class Config:
             self._config = self._defaults()
             self._save()
     
-    def _save(self):
+    def _save(self) -> None:
         """保存配置文件"""
         self.config_dir.mkdir(parents=True, exist_ok=True)
         with open(self.config_file, 'w', encoding='utf-8') as f:
@@ -56,7 +61,7 @@ class Config:
             },
             'terminal': {
                 'timeout': 180,
-                'backend': 'local',  # local | docker | ssh
+                'backend': 'local',
             },
             'gateway': {
                 'enabled': False,
@@ -75,7 +80,7 @@ class Config:
             },
             'memory': {
                 'enabled': True,
-                'provider': 'local',  # local | redis | postgres
+                'provider': 'local',
                 'max_tokens': 10000,
             },
             'mcp': {
@@ -83,6 +88,24 @@ class Config:
                 'auto_discover': True,
             },
         }
+    
+    def validate(self) -> None:
+        """校验必填配置"""
+        model = self._config.get('model', {})
+        missing = []
+        if not model.get('default'):
+            missing.append('model.default')
+        if not model.get('provider'):
+            missing.append('model.provider')
+        if not model.get('base_url'):
+            missing.append('model.base_url')
+        if not model.get('api_key'):
+            missing.append('model.api_key')
+        if missing:
+            raise ConfigError(
+                '配置缺失，请先设置：' + ', '.join(missing) +
+                '。可用命令：prism config set <key> <value>，或编辑 ' + str(self.config_file)
+            )
     
     def get(self, key: str, default=None):
         """获取配置项，支持点号分隔的路径"""
@@ -95,7 +118,7 @@ class Config:
                 return default
         return value if value is not None else default
     
-    def set(self, key: str, value):
+    def set(self, key: str, value) -> None:
         """设置配置项，支持点号分隔的路径"""
         keys = key.split('.')
         config = self._config

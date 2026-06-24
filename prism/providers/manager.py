@@ -126,6 +126,12 @@ class ProviderPool:
     
     def chat(self, messages: List[Dict], **kwargs) -> Dict[str, Any]:
         """发送请求，自动降级"""
+        if not self.providers:
+            return {
+                'success': False,
+                'error': '未配置可用模型提供商。请先在 ~/.prism/config.yaml 填写 model.api_key，或使用 prism config set model.api_key <你的密钥>。',
+            }
+        
         for provider in self.providers:
             if not provider.is_available():
                 continue
@@ -136,7 +142,7 @@ class ProviderPool:
         
         return {
             'success': False,
-            'error': 'All providers unavailable',
+            'error': '所有提供商均不可用，请检查网络与 API Key。',
         }
     
     def add_provider(self, provider: Provider):
