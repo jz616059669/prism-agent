@@ -36,11 +36,200 @@ def cli():
     pass
 
 
+@cli.group()
+def gateway():
+    """Gateway 控制命令"""
+    pass
+
+
+@gateway.command()
+@click.option('--platform', '-p', help='平台名称')
+@click.option('--token', '-t', help='Bot Token')
+@click.option('--app-id', help='飞书 App ID')
+@click.option('--app-secret', help='飞书 App Secret')
+@click.option('--encrypt-key', help='飞书 Encrypt Key')
+@click.option('--verification-token', help='飞书 Verification Token')
+def start(platform: Optional[str], token: Optional[str], app_id: Optional[str], 
+          app_secret: Optional[str], encrypt_key: Optional[str], verification_token: Optional[str]):
+    """启动 Gateway 服务"""
+    from prism.gateway import gateway as gw
+    
+    if not platform:
+        platforms = gw.list_platforms()
+        if platforms:
+            click.echo(f"已配置平台: {', '.join(platforms)}")
+        else:
+            click.echo("未配置任何平台，请用 --platform 指定")
+        return
+    
+    # 保存配置到 config
+    config_path = Path.home() / ".prism" / "config.yaml"
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    import yaml
+    if config_path.exists():
+        with open(config_path, 'r', encoding='utf-8') as f:
+            cfg = yaml.safe_load(f) or {}
+    else:
+        cfg = {}
+    
+    if 'gateway' not in cfg:
+        cfg['gateway'] = {}
+    cfg['gateway'][platform] = {
+        'token': token or '',
+        'app_id': app_id or '',
+        'app_secret': app_secret or '',
+        'encrypt_key': encrypt_key or '',
+        'verification_token': verification_token or '',
+    }
+    
+    with open(config_path, 'w', encoding='utf-8') as f:
+        yaml.dump(cfg, f, allow_unicode=True, default_flow_style=False)
+    
+    click.echo(f"Gateway 配置已保存到 {config_path}")
+    click.echo(f"平台: {platform}")
+    
+    # 显示启动说明
+    if platform == 'feishu':
+        click.echo("\n飞书 Gateway 启动说明：")
+        click.echo("1. 在飞书开放平台创建应用")
+        click.echo("2. 开启机器人能力")
+        click.echo("3. 配置事件订阅 URL")
+        click.echo("4. 使用 prism gateway start --platform feishu 启动")
+    elif platform == 'telegram':
+        click.echo("\nTelegram Gateway 启动说明：")
+        click.echo("1. 与 @BotFather 对话创建 Bot")
+        click.echo("2. 获取 Bot Token")
+        click.echo("3. 使用 prism gateway start --platform telegram --token <TOKEN> 启动")
+
+
+@gateway.command()
+@click.argument('platform')
+def stop(platform: str):
+    """停止 Gateway 服务"""
+    click.echo(f"停止 {platform} Gateway...")
+    from prism.gateway import gateway as gw
+    click.echo("Gateway 已停止")
+
+
+@gateway.command()
+def status():
+    """查看 Gateway 状态"""
+    from prism.gateway import gateway as gw
+    platforms = gw.list_platforms()
+    if platforms:
+        click.echo(f"运行中平台: {', '.join(platforms)}")
+    else:
+        click.echo("未运行任何 Gateway")
+
+
+@cli.group()
+def skill():
+    """Skills 管理命令"""
+    pass
+
+
+@skill.command()
+def list():
+    """列出所有已安装的 Skills"""
+    from prism.skills import skills
+    skill_list = skills.list_skills()
+    
+    console = Console()
+    console.print("\n[bold cyan]已安装 Skills：[/bold cyan]")
+    for s in skill_list:
+        status = "[green]✓[/green]" if s.get('enabled', True) else "[red]✗[/red]"
+        console.print(f"  {status} [green]{s['name']}[/green]: {s['description']}")
+    console.print()
+
+
+@skill.command()
+@click.argument('name')
+def install(name: str):
+    """安装一个 Skill"""
+    from prism.skills import skills
+    result = skills.install_skill(name)
+    if result.get('success'):
+        console.print(f"[green]✓[/green] 已安装 skill: {name}")
+    else:
+        console.print(f"[red]✗[/red] 安装失败: {result.get('error', '未知错误')}")
+
+
+@skill.command()
+@click.argument('name')
+def remove(name: str):
+    """移除一个 Skill"""
+    from prism.skills import skills
+    result = skills.uninstall_skill(name)
+    if result.get('success'):
+        console.print(f"[green]✓[/green] 已移除 skill: {name}")
+    else:
+        console.print(f"[red]✗[/red] 移除失败: {result.get('error', '未知错误')}")
+
+
+@cli.group()
+def browser():
+    """浏览器控制命令"""
+    pass
+
+
+@browser.command()
+@click.argument('url')
+@click.option('--headless/--no-headless', default=True, help='无头模式')
+def open(url: str, headless: bool):
+    """打开网页"""
+    from prism.tools.browser import browser as browser_api
+    result = browser_api.navigate(url, headless=headless)
+    if result.get('success'):
+        console.print(f"[green]✓[/green] 已打开: {url}")
+        console.print(f"标题: {result.get('title', 'N/A')}")
+        console.print(f"状态码: {result.get('status', 'N/A')}")
+    else:
+        console.print(f"[red]✗[/red] 打开失败: {result.get('error')}")
+
+
+@browser.command()
+def close():
+    """关闭浏览器"""
+    from prism.tools.browser import browser as browser_api
+    result = browser_api.disconnect()
+    if result.get('success'):
+        console.print(f"[green]✓[/green] {result.get('message')}")
+    else:
+        console.print(f"[red]✗[/red] {result.get('error')}")
+
+
+@cli.group()
+def config():
+    """配置管理命令"""
+    pass
+
+
+@config.command()
+@click.argument('key')
+@click.argument('value')
+def set(key: str, value: str):
+    """设置配置项"""
+    config.set(key, value)
+    console.print(f"[green]✓[/green] 已设置 {key} = {value}")
+
+
+@config.command()
+@click.argument('key', required=False)
+def get(key: Optional[str]):
+    """查看配置项"""
+    if key:
+        value = config.get(key)
+        console.print(f"{key} = {value}")
+    else:
+        all_config = config.all()
+        console.print_json(data=all_config)
+
+
 @cli.command()
 @click.option('--model', '-m', help='模型名称')
 @click.option('--provider', '-p', help='提供商')
 def chat(model: Optional[str], provider: Optional[str]):
-    """启动交互式聊天"""
     
     # 显示欢迎信息
     console.print(Panel.fit(

@@ -65,28 +65,39 @@ class BrowserController:
             }
         
         try:
-            self.playwright = await async_playwright().start()
+            if self.playwright is None or not self.connected:
+                self.playwright = await async_playwright().start()
+                
+                # 如果浏览器已存在但未连接，先关闭
+                if self.browser and not self.connected:
+                    try:
+                        await self.browser.close()
+                    except Exception:
+                        pass
             
             # 启动浏览器
-            self.browser = await self.playwright.chromium.launch(
-                headless=headless,
-                args=['--no-sandbox', '--disable-setuid-sandbox']
-            )
+            if self.browser is None or self.browser.is_connected() is False:
+                self.browser = await self.playwright.chromium.launch(
+                    headless=headless,
+                    args=['--no-sandbox', '--disable-setuid-sandbox']
+                )
             
             # 创建上下文
-            self.context = await self.browser.new_context(
-                viewport={'width': 1280, 'height': 720},
-                user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            )
+            if self.context is None:
+                self.context = await self.browser.new_context(
+                    viewport={'width': 1280, 'height': 720},
+                    user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                )
             
             # 创建页面
-            self.page = await self.context.new_page()
-            
-            # 监听控制台日志
-            self.page.on("console", lambda msg: self._handle_console(msg))
-            
-            # 监听页面错误
-            self.page.on("pageerror", lambda err: self._handle_error(err))
+            if self.page is None or self.page.is_closed():
+                self.page = await self.context.new_page()
+                
+                # 监听控制台日志
+                self.page.on("console", lambda msg: self._handle_console(msg))
+                
+                # 监听页面错误
+                self.page.on("pageerror", lambda err: self._handle_error(err))
             
             self.connected = True
             
@@ -250,14 +261,37 @@ class BrowserController:
     async def disconnect(self) -> Dict[str, Any]:
         """断开连接"""
         try:
+            if self.page:
+                try:
+                    await self.page.close()
+                except Exception:
+                    pass
+                self.page = None
+            
             if self.context:
-                await self.context.close()
+                try:
+                    await self.context.close()
+                except Exception:
+                    pass
+                self.context = None
+            
             if self.browser:
-                await self.browser.close()
+                try:
+                    await self.browser.close()
+                except Exception:
+                    pass
+                self.browser = None
+            
             if self.playwright:
-                await self.playwright.stop()
+                try:
+                    await self.playwright.stop()
+                except Exception:
+                    pass
+                self.playwright = None
             
             self.connected = False
+            self.state = BrowserState()
+            
             return {'success': True, 'message': 'Browser disconnected'}
         except Exception as e:
             return {'success': False, 'error': str(e)}
@@ -280,51 +314,74 @@ browser_controller = BrowserController()
 
 
 # 同步接口封装（供非async代码调用）
+_loop = None
+_loop_lock = None
+
+def _get_loop():
+    """获取或创建持久事件循环"""
+    global _loop, _loop_lock
+    if _loop is None or _loop.is_closed():
+        import threading
+        _loop = asyncio.new_event_loop()
+        _loop_lock = threading.Lock()
+        threading.Thread(target=_loop.run_forever, daemon=True).start()
+    return _loop
+
 def run_async(coro):
-    """运行异步函数"""
-    try:
-        loop = asyncio.get_running_loop()
-        # 如果有运行中的循环，创建新任务
-        import concurrent.futures
-        with concurrent.futures.ThreadPoolExecutor() as pool:
-            future = pool.submit(asyncio.run, coro)
-            return future.result(timeout=120)
-    except RuntimeError:
-        # 没有运行中的循环
-        return asyncio.run(coro)
+    """在持久事件循环中运行异步函数，线程安全"""
+    loop = _get_loop()
+    future = asyncio.run_coroutine_threadsafe(coro, loop)
+    return future.result(timeout=120)
 
 
 # 同步API
 class SyncBrowserAPI:
     """同步浏览器API（供工具系统调用）"""
     
-    def navigate(self, url: str, headless: bool = True) -> Dict[str, Any]:
-        return run_async(self._navigate(url, headless))
-    
-    async def _navigate(self, url: str, headless: bool) -> Dict[str, Any]:
+    def _ensure_connected(self, headless: bool = True) -> bool:
         if not browser_controller.connected:
-            await browser_controller.connect(headless=headless)
-        return await browser_controller.navigate(url)
+            result = run_async(browser_controller.connect(headless=headless))
+            return result.get("success", False)
+        return True
+    
+    def navigate(self, url: str, headless: bool = True) -> Dict[str, Any]:
+        if not self._ensure_connected(headless):
+            return {"success": False, "error": "Failed to connect browser"}
+        return run_async(browser_controller.navigate(url))
     
     def snapshot(self, full: bool = False) -> Dict[str, Any]:
+        if not browser_controller.connected:
+            return {"success": False, "error": "Browser not connected"}
         return run_async(browser_controller.snapshot(full=full))
     
     def click(self, selector: str) -> Dict[str, Any]:
+        if not browser_controller.connected:
+            return {"success": False, "error": "Browser not connected"}
         return run_async(browser_controller.click(selector))
     
     def type(self, selector: str, text: str) -> Dict[str, Any]:
+        if not browser_controller.connected:
+            return {"success": False, "error": "Browser not connected"}
         return run_async(browser_controller.type_text(selector, text))
     
     def screenshot(self, path: Optional[str] = None) -> Dict[str, Any]:
+        if not browser_controller.connected:
+            return {"success": False, "error": "Browser not connected"}
         return run_async(browser_controller.screenshot(path))
     
     def evaluate(self, script: str) -> Dict[str, Any]:
+        if not browser_controller.connected:
+            return {"success": False, "error": "Browser not connected"}
         return run_async(browser_controller.evaluate(script))
     
     def scroll(self, direction: str = "down") -> Dict[str, Any]:
+        if not browser_controller.connected:
+            return {"success": False, "error": "Browser not connected"}
         return run_async(browser_controller.scroll(direction))
     
     def disconnect(self) -> Dict[str, Any]:
+        if not browser_controller.connected:
+            return {"success": True, "message": "Browser already disconnected"}
         return run_async(browser_controller.disconnect())
 
 
