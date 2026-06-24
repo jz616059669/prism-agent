@@ -567,20 +567,30 @@ class PrismDesktop:
                 name = skill.get("name", "unknown")
                 desc = skill.get("description", "")
                 enabled = skill.get("enabled", True)
+                triggers = skill.get("triggers", []) or []
                 status = "启用" if enabled else "禁用"
                 toggle = ft.TextButton("启用" if not enabled else "禁用", data=name)
                 toggle.on_click = lambda e, s=name: self._toggle_skill(s)
-                row = ft.Row(
-                    [
-                        ft.Text(name, size=12, expand=True),
-                        ft.Text(status, size=11, color=ft.colors.ON_SURFACE_VARIANT),
-                        toggle,
-                    ]
+                run_btn = ft.TextButton("运行", data=name)
+                run_btn.on_click = lambda e, s=name: self._run_skill(s)
+                trigger_text = ", ".join(triggers) if triggers else ""
+                self.skill_list.controls.append(
+                    ft.Row(
+                        [
+                            ft.Text(name, size=12, expand=True),
+                            ft.Text(status, size=11, color=ft.colors.ON_SURFACE_VARIANT),
+                            toggle,
+                            run_btn,
+                        ]
+                    )
                 )
-                self.skill_list.controls.append(row)
                 if desc:
                     self.skill_list.controls.append(
                         ft.Text(desc, size=11, color=ft.colors.ON_SURFACE_VARIANT)
+                    )
+                if trigger_text:
+                    self.skill_list.controls.append(
+                        ft.Text(f"触发词：{trigger_text}", size=10, color=ft.colors.ON_SURFACE_VARIANT)
                     )
         self.skill_list.update()
         self._append_mcp(f"已刷新 Skills：{len(items)} 个")
@@ -599,6 +609,15 @@ class PrismDesktop:
         except Exception as e:
             self._append_mcp(f"[{name}] 切换失败：{e}")
         self._refresh_skills()
+
+    def _run_skill(self, name: str):
+        self._append_terminal(f"skill run {name}")
+        try:
+            from prism.skills import skills as skill_registry
+            result = skill_registry.execute(name)
+            self._append_mcp(f"[{name}] {result}")
+        except Exception as e:
+            self._append_mcp(f"[{name}] 运行失败：{e}")
 
     def _install_skill_from_ui(self):
         name = (self.skill_install_field.value or "").strip()
