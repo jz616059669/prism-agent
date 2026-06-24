@@ -32,6 +32,16 @@ def test_skill_search_chinese():
     assert any(s.name == 'file_operations' for s in matches)
 
 
+def test_skill_search_english():
+    matches = skills.match("search web")
+    assert any(s.name == 'web_search' for s in matches)
+
+
+def test_skill_search_partial():
+    matches = skills.match("帮我写个小说章节")
+    assert any(s.name == 'novel_writing' for s in matches)
+
+
 def test_skill_install_fails_without_hub():
     result = skills.install_skill("nonexistent_skill")
     assert result['success'] is False

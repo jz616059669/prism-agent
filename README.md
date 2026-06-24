@@ -19,6 +19,9 @@ Windows 额外支持：
 # 或手动执行 PowerShell 脚本
 powershell -ExecutionPolicy Bypass -File .\scripts\build-windows.ps1
 
+# 验证打包结果
+ls dist-windows\
+
 # 后台运行 Gateway（NSSM）
 nssm install PrismGateway "C:\path\to\prism.exe" "gateway start"
 nssm start PrismGateway
