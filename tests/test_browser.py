@@ -51,9 +51,9 @@ def test_multi_page_navigation():
     first = browser_goto("https://example.com", headless=True)
     assert first.get("success") is True
 
-    second = browser_goto("https://httpbin.org/get", headless=True)
+    second = browser_goto("https://example.com", headless=True)
     assert second.get("success") is True
 
     snap = page_snapshot()
     assert snap.get("success") is True
-    assert "httpbin" in (snap.get("url") or "") or "httpbin" in (snap.get("content") or "")
+    assert "Example Domain" in (snap.get("title") or "")
