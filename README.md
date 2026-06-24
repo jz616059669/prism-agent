@@ -22,6 +22,15 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build-windows.ps1
 # 验证打包结果
 ls dist-windows\
 
+# 查看产物大小
+du -sh dist-windows\*
+```
+
+> 如打包失败，请检查：
+> 1. `flet` 是否已安装：`pip install flet`
+> 2. 是否在项目根目录执行
+> 3. 网络是否可访问（下载 Flet 依赖需要）
+
 # 后台运行 Gateway（NSSM）
 nssm install PrismGateway "C:\path\to\prism.exe" "gateway start"
 nssm start PrismGateway
