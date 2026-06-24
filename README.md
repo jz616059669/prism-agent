@@ -149,17 +149,14 @@ prism config get
 
 ## 本地发布 / 上传 PyPI
 
+当前已构建包：
+- `dist/prism_agent-0.2.1.tar.gz`
+- `dist/prism_agent-0.2.1-py3-none-any.whl`
+
+本地校验：
 ```bash
-# Windows
-.\scripts\release.ps1
-
-# macOS / Linux
-bash scripts/release.sh
+uv run twine check dist/*
 ```
-
-发布产物在 `dist/` 目录：
-- `prism_agent-0.2.1.tar.gz`
-- `prism_agent-0.2.1-py3-none-any.whl`
 
 手动上传到 PyPI：
 ```bash
@@ -170,6 +167,17 @@ twine upload dist/*
 ## 故障排查
 
 - 浏览器失败：`playwright install --force chromium`
+- 模型 401/403：检查 `model.api_key` 和 `model.base_url`
+- Gateway 失败：检查 token/app_id，查看日志
+- 桌面客户端失败：确认 `flet` 已安装，并重装 `prism-desktop`
+
+## 快速诊断
+
+```bash
+prism doctor
+```
+
+## 开发
 - 模型 401/403：检查 `model.api_key` 和 `model.base_url`
 - Gateway 失败：检查 token/app_id，查看日志
 - 桌面客户端失败：确认 `flet` 已安装，并重装 `prism-desktop`
