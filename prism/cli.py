@@ -189,8 +189,9 @@ def start(platform: Optional[str], token: Optional[str], app_id: Optional[str],
         try:
             from prism.gateway.wechat import WechatAdapter, WechatConfig
             adapter = WechatAdapter(WechatConfig(
-                app_id=app_id or '',
-                app_secret=app_secret or '',
+                corp_id=app_id or '',
+                agent_id=app_secret or '',
+                secret=token or '',
                 token=token,
             ))
             gw.register('wechat', adapter)
@@ -213,10 +214,10 @@ def start(platform: Optional[str], token: Optional[str], app_id: Optional[str],
             click.echo("2. 获取 Bot Token")
             click.echo("3. 使用 prism gateway start --platform telegram --token <TOKEN> 启动")
         elif platform == 'wechat':
-            click.echo("\n微信 Gateway 启动说明（待接入真实协议）：")
-            click.echo("1. 准备企业微信/公众号/微信客服应用")
-            click.echo("2. 获取 app_id / app_secret / token")
-            click.echo("3. 使用 prism gateway start --platform wechat --app-id <ID> --app-secret <SECRET> 启动")
+            click.echo("\n企业微信 Gateway 启动说明：")
+            click.echo("1. 创建企业微信应用")
+            click.echo("2. 获取 corp_id / agent_id / secret")
+            click.echo("3. 使用 prism gateway start --platform wechat --app-id <CORP_ID> --app-secret <AGENT_ID> --token <SECRET> 启动")
 
 
 @gateway.command()
