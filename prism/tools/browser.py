@@ -121,55 +121,37 @@ class BrowserController:
             return {'success': False, 'error': 'Browser not connected'}
         
         try:
-            # 使用 JavaScript 提取页面内容
-            if full:
-                content = await self.page.evaluate("""
-                    () => {
-                        // 提取主要文本内容
-                        const walk = (node) => {
-                            let text = '';
-                            if (node.nodeType === Node.TEXT_NODE) {
-                                text += node.textContent + '\\n';
-                            } else if (node.nodeType === Node.ELEMENT_NODE) {
-                                const tag = node.tagName.toLowerCase();
-                                if (!['script', 'style', 'noscript'].includes(tag)) {
-                                    for (const child of node.children) {
-                                        text += walk(child);
-                                    }
-                                }
-                            }
-                            return text;
-                        };
-                        return walk(document.body).trim().substring(0, 8000);
-                    }
-                """)
-            else:
-                content = await self.page.evaluate("""
-                    () => {
-                        const walk = (node) => {
-                            let text = '';
-                            if (node.nodeType === Node.TEXT_NODE) {
-                                text += node.textContent + ' ';
-                            } else if (node.nodeType === Node.ELEMENT_NODE) {
-                                const tag = node.tagName.toLowerCase();
-                                if (!['script', 'style', 'noscript'].includes(tag)) {
-                                    const attrs = Array.from(node.attributes).map(a => a.name).join(',');
-                                    text += `<${tag}> `;
-                                    for (const child of node.children) {
-                                        text += walk(child);
-                                    }
-                                }
-                            }
-                            return text;
-                        };
-                        return walk(document.body).trim().substring(0, 4000);
-                    }
-                """)
+            # 等待页面加载完成
+            await self.page.wait_for_load_state('domcontentloaded', timeout=5000)
+            await asyncio.sleep(0.5)  # 额外等待渲染
+            
+            # 获取页面文本内容
+            body_text = await self.page.evaluate("() => document.body.textContent || ''")
+            title = await self.page.title()
+            url = self.page.url
+            
+            # 如果 textContent 为空，尝试 innerText
+            if not body_text.strip():
+                body_text = await self.page.evaluate("() => document.body.innerText || ''")
+            
+            # 如果仍然为空，尝试获取 outerHTML 作为兜底
+            if not body_text.strip():
+                outer_html = await self.page.evaluate("() => document.body.outerHTML || ''")
+                if outer_html.strip():
+                    body_text = "[页面文本为空，已返回 HTML 片段]\n" + outer_html[:4000]
+                else:
+                    body_text = "[页面文本为空，请检查页面是否正常渲染]"
+            
+            # 截断过长内容
+            content = body_text.strip()
+            if len(content) > 8000:
+                content = content[:8000] + "\n... (content truncated)"
             
             return {
                 'success': True,
                 'content': content,
-                'url': self.state.url,
+                'url': url,
+                'title': title,
             }
             
         except Exception as e:

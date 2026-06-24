@@ -1,0 +1,41 @@
+# PRISM Agent 示例配置
+
+# 模型提供商
+providers:
+  stepfun:
+    base_url: "https://api.stepfun.com/step_plan/v1"
+    api_key: "YOUR_STEPFUN_API_KEY"
+    model: "step-3.7-flash"
+  
+  openai:
+    base_url: "https://api.openai.com/v1"
+    api_key: "YOUR_OPENAI_API_KEY"
+    model: "gpt-4o"
+
+# 默认模型
+model:
+  default: "step-3.7-flash"
+  provider: "custom:stepfun"
+  fallback: ["agnes-2.0-flash", "gpt-4o"]
+
+# 飞书配置
+gateway:
+  feishu:
+    app_id: "YOUR_FEISHU_APP_ID"
+    app_secret: "YOUR_FEISHU_APP_SECRET"
+    encrypt_key: "YOUR_ENCRYPT_KEY"
+  
+  telegram:
+    bot_token: "YOUR_TELEGRAM_BOT_TOKEN"
+  
+  discord:
+    bot_token: "YOUR_DISCORD_BOT_TOKEN"
+
+# MCP 服务器
+mcp:
+  servers:
+    filesystem:
+      transport: "stdio"
+      command: "npx"
+      args: ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/allowed/dir"]
+      enabled: true
