@@ -34,6 +34,7 @@ class PrismDesktop:
         self.browser_connected = False
         self._terminal_lines = ["PRISM Desktop 已启动"]
         self._mcp_logs = []
+        self._skill_list_cache = []
         self._build_ui()
     
     def _build_ui(self):
@@ -100,6 +101,11 @@ class PrismDesktop:
         self.mcp_refresh_btn.on_click = lambda e: self._refresh_mcp()
         self.mcp_server_list = ft.Column(spacing=4, tight=True)
         
+        # Skills
+        self.skill_refresh_btn = ft.ElevatedButton("刷新 Skills", width=260)
+        self.skill_refresh_btn.on_click = lambda e: self._refresh_skills()
+        self.skill_list = ft.Column(spacing=4, tight=True)
+        
         return ft.Container(
             content=ft.Column(
                 [
@@ -119,11 +125,11 @@ class PrismDesktop:
                     browser_snapshot_btn,
                     browser_close_btn,
                     ft.Container(height=16),
-                    ft.Text("MCP 控制", size=12, weight=ft.FontWeight.BOLD),
-                    self.mcp_refresh_btn,
+                    ft.Text("Skills", size=12, weight=ft.FontWeight.BOLD),
+                    self.skill_refresh_btn,
                     ft.Container(height=6),
-                    ft.Text("已配置服务器", size=11, color=ft.colors.ON_SURFACE_VARIANT),
-                    self.mcp_server_list,
+                    ft.Text("可用 Skills", size=11, color=ft.colors.ON_SURFACE_VARIANT),
+                    self.skill_list,
                     ft.Container(height=16),
                     ft.Text("状态", size=12, weight=ft.FontWeight.BOLD),
                     self.status_text,
@@ -352,6 +358,58 @@ class PrismDesktop:
     def _show_mcp_log(self, name: str):
         self._append_mcp(f"[{name}] 日志入口后续接入真实 MCP 客户端")
         self._append_terminal(f"mcp log {name}")
+
+    def _refresh_skills(self):
+        self._append_terminal("skills refresh ...")
+        self.skill_list.controls.clear()
+        try:
+            from prism.skills import skills as skill_registry
+            items = skill_registry.list_skills()
+        except Exception as e:
+            items = []
+            self._append_terminal(f"skills load error: {e}")
+        self._skill_list_cache = items
+        if not items:
+            self.skill_list.controls.append(
+                ft.Text("暂无可用 Skills", size=12, color=ft.colors.ON_SURFACE_VARIANT)
+            )
+        else:
+            for skill in items:
+                name = skill.get("name", "unknown")
+                desc = skill.get("description", "")
+                enabled = skill.get("enabled", True)
+                status = "启用" if enabled else "禁用"
+                toggle = ft.TextButton("启用" if not enabled else "禁用", data=name)
+                toggle.on_click = lambda e, s=name: self._toggle_skill(s)
+                row = ft.Row(
+                    [
+                        ft.Text(name, size=12, expand=True),
+                        ft.Text(status, size=11, color=ft.colors.ON_SURFACE_VARIANT),
+                        toggle,
+                    ]
+                )
+                self.skill_list.controls.append(row)
+                if desc:
+                    self.skill_list.controls.append(
+                        ft.Text(desc, size=11, color=ft.colors.ON_SURFACE_VARIANT)
+                    )
+        self.skill_list.update()
+        self._append_mcp(f"已刷新 Skills：{len(items)} 个")
+
+    def _toggle_skill(self, name: str):
+        self._append_terminal(f"skill toggle {name}")
+        try:
+            from prism.skills import skills as skill_registry
+            skill = skill_registry.get(name)
+            if skill:
+                skill.enabled = not skill.enabled
+                state = "启用" if skill.enabled else "禁用"
+                self._append_mcp(f"[{name}] 已{state}")
+            else:
+                self._append_mcp(f"[{name}] 未找到")
+        except Exception as e:
+            self._append_mcp(f"[{name}] 切换失败：{e}")
+        self._refresh_skills()
 
 
 def main():

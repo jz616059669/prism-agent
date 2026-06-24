@@ -128,6 +128,11 @@ def start(platform: Optional[str], token: Optional[str], app_id: Optional[str],
         click.echo("1. 与 @BotFather 对话创建 Bot")
         click.echo("2. 获取 Bot Token")
         click.echo("3. 使用 prism gateway start --platform telegram --token <TOKEN> 启动")
+    elif platform == 'wechat':
+        click.echo("\n微信 Gateway 启动说明（待接入真实协议）：")
+        click.echo("1. 准备企业微信/公众号/微信客服应用")
+        click.echo("2. 获取 app_id / app_secret / token")
+        click.echo("3. 使用 prism gateway start --platform wechat --app-id <ID> --app-secret <SECRET> 启动")
 
 
 @gateway.command()
@@ -409,12 +414,16 @@ def doctor():
     except Exception as e:
         checks.append(("浏览器", False, str(e)))
 
-    # 4. 日志目录
-    log_path = Path.home() / ".prism" / "logs" / "prism.log"
-    if log_path.exists():
-        checks.append(("日志", True, str(log_path)))
-    else:
-        checks.append(("日志", False, f"{log_path} 不存在"))
+    # 5. Gateway 平台
+    try:
+        from prism.gateway import gateway as gw
+        platforms = gw.list_platforms()
+        if platforms:
+            checks.append(("Gateway", True, f"平台: {', '.join(platforms)}"))
+        else:
+            checks.append(("Gateway", False, "未运行任何 Gateway"))
+    except Exception as e:
+        checks.append(("Gateway", False, str(e)))
 
     # 输出
     console.print("\n[bold cyan]PRISM Doctor[/bold cyan]\n")
