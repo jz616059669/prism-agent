@@ -87,6 +87,40 @@ class PrismDesktop:
             self.page.on_window_event = lambda e: (
                 self._save_settings() if getattr(e, "data", None) != "close" else None
             )
+            try:
+                import threading
+                import pystray
+                from PIL import Image, ImageDraw
+
+                def _create_tray_image():
+                    img = Image.new("RGB", (64, 64), (0, 0, 0))
+                    d = ImageDraw.Draw(img)
+                    d.text((16, 16), "P", fill=(255, 255, 255))
+                    return img
+
+                def _on_tray_click(icon, item):
+                    try:
+                        self.page.window_show()
+                    except Exception:
+                        pass
+
+                def _on_exit(icon, item):
+                    icon.stop()
+                    try:
+                        self.page.window_close()
+                    except Exception:
+                        pass
+
+                menu = pystray.Menu(
+                    pystray.MenuItem("打开主窗口", _on_tray_click),
+                    pystray.MenuItem("退出", _on_exit),
+                )
+                icon = pystray.Icon("PRISM", _create_tray_image(), "PRISM Agent", menu)
+                t = threading.Thread(target=icon.run, daemon=True)
+                t.start()
+                self._tray_icon = icon
+            except Exception:
+                self._tray_icon = None
         except Exception:
             pass
 
