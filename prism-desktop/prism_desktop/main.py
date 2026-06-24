@@ -177,6 +177,16 @@ class PrismDesktop:
         )
     
     def _build_right_panel(self) -> ft.Column:
+        self.terminal_input = ft.TextField(
+            hint_text="输入终端命令...",
+            expand=True,
+            min_lines=1,
+            max_lines=3,
+            shift_enter=True,
+        )
+        terminal_run_btn = ft.IconButton(icon=ft.icons.PLAY_ARROW_ROUNDED, tooltip="执行命令")
+        terminal_run_btn.on_click = lambda e: self._run_terminal_command()
+        self.terminal_input.on_submit = lambda e: self._run_terminal_command()
         self.terminal_list = ft.ListView(expand=True, spacing=4, auto_scroll=True)
         self.mcp_list = ft.ListView(expand=True, spacing=4, auto_scroll=True)
         
@@ -188,6 +198,7 @@ class PrismDesktop:
         return ft.Column(
             [
                 ft.Text("终端", size=14, weight=ft.FontWeight.BOLD),
+                ft.Row([self.terminal_input, terminal_run_btn], spacing=8),
                 ft.Row([clear_terminal_btn], alignment=ft.MainAxisAlignment.END),
                 ft.Container(self.terminal_list, expand=True, border=ft.border.all(1, ft.colors.OUTLINE_VARIANT), border_radius=12, padding=12, bgcolor=ft.colors.SURFACE),
                 ft.Divider(height=12),
@@ -334,6 +345,24 @@ class PrismDesktop:
             self._append("浏览器", f"关闭失败：{result.get('error')}")
             self._append_terminal(f"browser close error: {result.get('error')}")
 
+    def _run_terminal_command(self):
+        command = self.terminal_input.value.strip()
+        if not command:
+            return
+        self._append_terminal(f">>> {command}")
+        self.terminal_input.value = ""
+        self.terminal_input.update()
+        self._set_status("执行命令中...", ft.colors.AMBER_400)
+        try:
+            from prism.tools.registry import registry
+            result = registry.execute('terminal', command=command, timeout=180)
+            output = result.get('output') or result.get('error') or '(无输出)'
+            self._append_terminal(output)
+            self._append_mcp(f"[terminal] {command[:80]}")
+        except Exception as e:
+            self._append_terminal(f"终端执行失败：{e}")
+        self._set_status("就绪")
+
     def _refresh_mcp(self):
         self._append_terminal("mcp refresh ...")
         self.mcp_server_list.controls.clear()
@@ -349,17 +378,27 @@ class PrismDesktop:
             for idx, server in enumerate(raw):
                 name = server.get("name") or server.get("id") or f"server_{idx+1}"
                 status = "未启动"
+                start_btn = ft.TextButton("启动", data=name)
+                start_btn.on_click = lambda e, s=name, b=start_btn: self._toggle_mcp_server(s, b)
+                log_btn = ft.TextButton("日志", data=name)
+                log_btn.on_click = lambda e, s=name: self._show_mcp_log(s)
                 row = ft.Row(
                     [
                         ft.Text(name, size=12, expand=True),
                         ft.Text(status, size=11, color=ft.colors.ON_SURFACE_VARIANT),
-                        ft.TextButton("日志", data=name),
+                        start_btn,
+                        log_btn,
                     ]
                 )
-                row.controls[2].on_click = lambda e, s=name: self._show_mcp_log(s)
                 self.mcp_server_list.controls.append(row)
         self.mcp_server_list.update()
         self._append_mcp(f"已刷新 MCP 服务器：{len(raw)} 个")
+
+    def _toggle_mcp_server(self, name: str, button: ft.TextButton):
+        self._append_terminal(f"mcp toggle {name}")
+        self._append_mcp(f"[{name}] 切换状态（后续接入真实 MCP 客户端）")
+        button.text = "已启动" if button.text == "启动" else "启动"
+        button.update()
 
     def _show_mcp_log(self, name: str):
         self._append_mcp(f"[{name}] 日志入口后续接入真实 MCP 客户端")

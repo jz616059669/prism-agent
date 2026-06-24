@@ -1,0 +1,42 @@
+"""
+PRISM Agent - Skills 系统测试
+覆盖：内置 skills、安装/卸载、搜索
+"""
+
+import os
+import sys
+from pathlib import Path
+
+import pytest
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from prism.skills import skills
+
+
+def test_builtin_skills_loaded():
+    skill_list = skills.list_skills()
+    names = {s['name'] for s in skill_list}
+    assert 'file_operations' in names
+    assert 'terminal_execution' in names
+    assert 'web_search' in names
+    assert 'code_execution' in names
+    assert 'novel_writing' in names
+    assert 'novel_optimization' in names
+
+
+def test_skill_search_chinese():
+    matches = skills.match("读取文件")
+    assert any(s.name == 'file_operations' for s in matches)
+
+
+def test_skill_install_fails_without_hub():
+    result = skills.install_skill("nonexistent_skill")
+    assert result['success'] is False
+
+
+def test_skill_uninstall_not_installed():
+    result = skills.uninstall_skill("nonexistent_skill")
+    assert result['success'] is True

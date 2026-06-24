@@ -15,9 +15,17 @@ fi
 # 检查 uv
 if ! command -v uv &> /dev/null; then
     echo "[安装] 正在安装 uv..."
-    curl -LsSf https://astral.sh/uv/install.sh | sh
+    if ! curl -LsSf https://astral.sh/uv/install.sh | sh; then
+        echo "[错误] uv 安装失败，请手动安装：https://docs.astral.sh/uv/"
+        exit 1
+    fi
     source ~/.bashrc 2>/dev/null || true
+    if ! command -v uv &> /dev/null; then
+        echo "[错误] uv 安装后仍未生效，请重启终端后重试"
+        exit 1
+    fi
 fi
+echo "[通过] uv 已安装"
 
 echo "[1/4] 安装 PRISM CLI..."
 pip install -e .
