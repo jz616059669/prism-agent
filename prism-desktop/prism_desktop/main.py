@@ -158,6 +158,9 @@ class PrismDesktop:
         # Skills
         self.skill_refresh_btn = ft.ElevatedButton("刷新 Skills", width=260)
         self.skill_refresh_btn.on_click = lambda e: self._refresh_skills()
+        self.skill_install_field = ft.TextField(hint_text="安装 Skill 名称或本地路径", width=260)
+        self.skill_install_btn = ft.ElevatedButton("安装 Skill", width=260)
+        self.skill_install_btn.on_click = lambda e: self._install_skill_from_ui()
         self.skill_list = ft.Column(spacing=4, tight=True)
         
         return ft.Container(
@@ -187,6 +190,8 @@ class PrismDesktop:
                     ft.Container(height=16),
                     ft.Text("Skills", size=12, weight=ft.FontWeight.BOLD),
                     self.skill_refresh_btn,
+                    self.skill_install_field,
+                    self.skill_install_btn,
                     ft.Container(height=6),
                     ft.Text("可用 Skills", size=11, color=ft.colors.ON_SURFACE_VARIANT),
                     self.skill_list,
@@ -508,6 +513,28 @@ class PrismDesktop:
                 self._append_mcp(f"[{name}] 未找到")
         except Exception as e:
             self._append_mcp(f"[{name}] 切换失败：{e}")
+        self._refresh_skills()
+
+    def _install_skill_from_ui(self):
+        name = (self.skill_install_field.value or "").strip()
+        if not name:
+            self._set_status("请输入 Skill 名称或本地路径", ft.colors.RED_400)
+            return
+        self._append_terminal(f"skill install {name}")
+        try:
+            from prism.skills import skills as skill_registry
+            result = skill_registry.install_skill(name)
+            if result.get("success"):
+                self._append_mcp(f"[install] {result.get('message')}")
+                self._set_status("Skill 安装成功")
+            else:
+                self._append_mcp(f"[install] 失败：{result.get('error')}")
+                self._set_status("Skill 安装失败", ft.colors.RED_400)
+        except Exception as e:
+            self._append_mcp(f"[install] 异常：{e}")
+            self._set_status("Skill 安装异常", ft.colors.RED_400)
+        self.skill_install_field.value = ""
+        self.skill_install_field.update()
         self._refresh_skills()
 
 
