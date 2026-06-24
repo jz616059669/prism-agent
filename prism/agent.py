@@ -130,6 +130,23 @@ class Agent:
             result=result,
         ))
         
+        # 浏览器事件回传给消息流
+        if tool_name in {"browser_navigate", "browser_snapshot", "browser_disconnect"}:
+            try:
+                content = ""
+                if result.get("success"):
+                    if tool_name == "browser_navigate":
+                        content = f"[browser] opened: {result.get('url')} | title={result.get('title')}"
+                    elif tool_name == "browser_snapshot":
+                        content = f"[browser] snapshot: {result.get('title')} | len={len(result.get('content') or '')}"
+                    else:
+                        content = "[browser] closed"
+                else:
+                    content = f"[browser] error: {result.get('error')}"
+                self.messages.append(Message(role="tool", content=content))
+            except Exception:
+                pass
+        
         return result
     
     def list_tools(self) -> List[Dict[str, str]]:
