@@ -55,3 +55,35 @@ def test_discord_start_polling_thread():
     assert adapter.handler is handler
     adapter.stop()
     assert adapter.running is False
+
+
+def test_telegram_polling_handles_update():
+    from prism.gateway.telegram import TelegramAdapter, TelegramConfig
+    import prism.gateway.telegram as telegram_mod
+
+    class FakeResp:
+        def __init__(self, data):
+            self._data = data
+        def json(self):
+            return self._data
+        def raise_for_status(self):
+            pass
+
+    update = {
+        "update_id": 1,
+        "message": {
+            "message_id": 10,
+            "chat": {"id": 99, "type": "private"},
+            "from": {"id": 77, "is_bot": False, "first_name": "User"},
+            "text": "hello telegram",
+        },
+    }
+    telegram_mod.requests.get = lambda url, **kwargs: FakeResp({"ok": True, "result": [update]})
+
+    adapter = TelegramAdapter(TelegramConfig(bot_token="t"))
+    received = {}
+    adapter.handler = lambda msg: received.update({'msg': msg})
+    adapter._poll_once()
+    assert received['msg'].text == "hello telegram"
+    assert received['msg'].chat_id == "99"
+    assert received['msg'].platform == "telegram"
