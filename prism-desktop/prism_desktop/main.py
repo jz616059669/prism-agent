@@ -79,6 +79,14 @@ class PrismDesktop:
     def _bind_context_menu(self) -> None:
         self.page.on_resized = lambda e: self._save_settings()
         self.page.on_window_event = lambda e: self._save_settings()
+
+    def _toggle_theme(self):
+        current = self.page.theme_mode
+        next_mode = ft.ThemeMode.LIGHT if current == ft.ThemeMode.DARK else ft.ThemeMode.DARK
+        self.page.theme_mode = next_mode
+        self.page.update()
+        self._append_terminal(f"theme -> {next_mode}")
+        self._save_settings()
     
     def _build_ui(self):
         self.page.add(
@@ -121,6 +129,9 @@ class PrismDesktop:
             width=260,
         )
         self.status_text = ft.Text("就绪", size=12, color=ft.colors.GREEN_400)
+        
+        self.theme_btn = ft.ElevatedButton("切换主题", width=260)
+        self.theme_btn.on_click = lambda e: self._toggle_theme()
         
         save_btn = ft.ElevatedButton("保存配置", width=260)
         save_btn.on_click = lambda e: self._save_config()
