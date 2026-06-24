@@ -447,6 +447,29 @@ A: 当前支持所有兼容 OpenAI 格式的 API，包括：
 
 A: 功能相同，桌面客户端提供图形界面，适合不熟悉命令行的用户。CLI 适合自动化和脚本使用。
 
+**Q: 会话保存在哪里？**
+
+A: 会话保存在本地：
+
+- Windows：`%USERPROFILE%\.prism\sessions\`
+- macOS/Linux：`~/.prism/sessions/`
+
+```bash
+# 查看已保存会话
+prism session list
+
+# 保存当前会话
+prism session save 会话名称
+
+# 加载会话
+prism session load 会话名称
+
+# 删除会话
+prism session delete 会话名称
+```
+
+桌面端侧边栏也提供会话保存/加载按钮。
+
 **Q: 如何备份配置？**
 
 A: 直接备份 `~/.prism/` 目录即可：
