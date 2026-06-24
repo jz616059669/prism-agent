@@ -192,6 +192,12 @@ class PrismDesktop:
         self.skill_install_btn.on_click = lambda e: self._install_skill_from_ui()
         self.skill_list = ft.Column(spacing=4, tight=True)
         
+        # 会话
+        self.session_name_field = ft.TextField(hint_text="会话名称", width=200)
+        self.session_save_btn = ft.ElevatedButton("保存会话", width=120)
+        self.session_save_btn.on_click = lambda e: self._save_session()
+        self.session_list = ft.Column(spacing=4, tight=True)
+        
         return ft.Container(
             content=ft.Column(
                 [
@@ -224,6 +230,12 @@ class PrismDesktop:
                     ft.Container(height=6),
                     ft.Text("可用 Skills", size=11, color=ft.colors.ON_SURFACE_VARIANT),
                     self.skill_list,
+                    ft.Container(height=16),
+                    ft.Text("会话", size=12, weight=ft.FontWeight.BOLD),
+                    ft.Row([self.session_name_field, self.session_save_btn], spacing=8),
+                    ft.Container(height=6),
+                    ft.Text("已保存会话", size=11, color=ft.colors.ON_SURFACE_VARIANT),
+                    self.session_list,
                     ft.Container(height=16),
                     ft.Text("状态", size=12, weight=ft.FontWeight.BOLD),
                     self.status_text,
@@ -565,6 +577,46 @@ class PrismDesktop:
         self.skill_install_field.value = ""
         self.skill_install_field.update()
         self._refresh_skills()
+
+    def _save_session(self):
+        name = (self.session_name_field.value or "").strip()
+        if not name:
+            self._set_status("请输入会话名称", ft.colors.RED_400)
+            return
+        try:
+            path = self.agent.save_session(name)
+            self._append_terminal(f"session saved: {path}")
+            self._set_status("会话已保存")
+        except Exception as e:
+            self._append_terminal(f"session save failed: {e}")
+            self._set_status("会话保存失败", ft.colors.RED_400)
+        self.session_name_field.value = ""
+        self.session_name_field.update()
+        self._refresh_sessions()
+
+    def _load_session(self, name: str):
+        try:
+            ok = self.agent.load_session(name)
+            if ok:
+                self._append_terminal(f"session loaded: {name}")
+                self._set_status("会话已加载")
+            else:
+                self._append_terminal(f"session load failed: {name}")
+                self._set_status("会话加载失败", ft.colors.RED_400)
+        except Exception as e:
+            self._append_terminal(f"session load error: {e}")
+            self._set_status("会话加载异常", ft.colors.RED_400)
+
+    def _refresh_sessions(self):
+        self.session_list.controls.clear()
+        try:
+            for name in self.agent.list_sessions():
+                btn = ft.ElevatedButton(name, width=260)
+                btn.on_click = lambda e, n=name: self._load_session(n)
+                self.session_list.controls.append(btn)
+        except Exception:
+            pass
+        self.session_list.update()
 
 
 def main():
