@@ -100,6 +100,9 @@ class Agent:
             return f"Error: {result.get('error', 'Unknown error')}"
         
         assistant_content = result.get('content', '')
+        if not assistant_content and result.get('tool_calls'):
+            assistant_content = "[tool call] " + ", ".join(t.get('name', '') for t in result['tool_calls'])
+        
         logger.info("chat success model=%s", result.get('model'))
         
         # 添加助手回复

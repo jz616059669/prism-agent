@@ -19,16 +19,22 @@ except Exception as exc:
 def open_page(url: str, headless: bool = True) -> Dict[str, Any]:
     if not _HAS_BROWSER:
         return {"success": False, "error": "browser module unavailable"}
-    return browser_api.navigate(url, headless=headless)
+    result = browser_api.navigate(url, headless=headless)
+    logger.info("browser open url=%s headless=%s success=%s", url, headless, result.get("success"))
+    return result
 
 
 def page_snapshot() -> Dict[str, Any]:
     if not _HAS_BROWSER:
         return {"success": False, "error": "browser module unavailable"}
-    return browser_api.snapshot(full=False)
+    result = browser_api.snapshot(full=False)
+    logger.info("browser snapshot success=%s title=%s", result.get("success"), result.get("title"))
+    return result
 
 
 def close_browser() -> Dict[str, Any]:
     if not _HAS_BROWSER:
         return {"success": True, "message": "browser unavailable, skipped"}
-    return browser_api.disconnect()
+    result = browser_api.disconnect()
+    logger.info("browser close success=%s", result.get("success"))
+    return result
