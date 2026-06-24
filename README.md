@@ -11,11 +11,29 @@ cd prism-agent
 .\scripts\install.ps1
 ```
 
-**macOS / Linux：**
+**macOS：**
 ```bash
 git clone https://github.com/jz616059669/prism-agent.git
 cd prism-agent
 bash scripts/install.sh
+```
+
+**Linux（Ubuntu/Debian/Fedora/Arch）：**
+```bash
+git clone https://github.com/jz616059669/prism-agent.git
+cd prism-agent
+bash scripts/install.sh
+```
+
+Linux 额外支持：
+```bash
+# 打包桌面客户端
+bash scripts/build-linux.sh
+
+# 安装 systemd 服务（后台运行 Gateway）
+sudo cp scripts/prism-gateway.service /etc/systemd/system/
+sudo systemctl enable prism-gateway
+sudo systemctl start prism-gateway
 ```
 
 安装完成后：
@@ -62,6 +80,9 @@ prism ask "用 Python 写一个快速排序"
 
 # 交互聊天
 prism chat
+
+# 启动桌面客户端
+prism-desktop
 ```
 
 ## Gateway
@@ -70,9 +91,15 @@ prism chat
 # 查看状态
 prism gateway status
 
-# 配置平台
+# 前台运行
 prism gateway start --platform telegram --token <TOKEN>
 prism gateway start --platform feishu --app-id <ID> --app-secret <SECRET>
+
+# Linux 后台运行（systemd）
+sudo cp scripts/prism-gateway.service /etc/systemd/system/
+sudo systemctl enable prism-gateway
+sudo systemctl start prism-gateway
+sudo systemctl status prism-gateway
 ```
 
 ## 配置
