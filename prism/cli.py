@@ -64,6 +64,46 @@ def cli():
 
 
 @cli.group()
+def acp():
+    """ACP 协议通信命令"""
+    pass
+
+
+@acp.command()
+@click.option('--command', '-c', required=True, help='ACP agent 命令，如 codex --acp --stdio')
+@click.option('--arg', multiple=True, help='额外参数')
+def start(command: str, arg: tuple):
+    """启动 ACP 客户端"""
+    from prism.acp.client import ACPClient
+    client = ACPClient(command, list(arg))
+    result = client.start()
+    if result.get('success'):
+        console.print("[green]✓[/green] ACP client 已启动")
+    else:
+        console.print(f"[red]✗[/red] 启动失败: {result.get('error')}")
+
+
+@acp.command()
+@click.argument('payload')
+def send(payload: str):
+    """向 ACP agent 发送 JSON-RPC payload"""
+    from prism.acp.client import ACPClient
+    import json
+    client = ACPClient("echo")
+    client.start()
+    try:
+        data = json.loads(payload)
+    except Exception as e:
+        console.print(f"[red]✗[/red] JSON 解析失败: {e}")
+        return
+    result = client.send(data)
+    if result.get('success'):
+        console.print_json(data=result.get('result'))
+    else:
+        console.print(f"[red]✗[/red] 发送失败: {result.get('error')}")
+
+
+@cli.group()
 def gateway():
     """Gateway 控制命令"""
     pass
