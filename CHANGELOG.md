@@ -31,6 +31,7 @@
 - Video tutorial and Feishu tutorial remain local-only and are not uploaded to GitHub
 - Repo remains public; local tutorials kept in working tree only
 - Test suite is green on core paths
+- PyPI release: `prism-agent==0.2.1` available at https://pypi.org/project/prism-agent/0.2.1/
 
 ## 0.2.0 - 2026-06-24
 
