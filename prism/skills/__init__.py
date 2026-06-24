@@ -218,15 +218,34 @@ class SkillRegistry:
         """根据文本匹配相关 skills"""
         text_lower = text.lower()
         matched = []
+        matched_names = set()
+        
+        def _try_add(skill: Skill):
+            if skill.enabled and skill.name not in matched_names:
+                matched.append(skill)
+                matched_names.add(skill.name)
         
         for skill in self.skills.values():
             if not skill.enabled:
                 continue
             
             for trigger in skill.triggers:
-                if trigger.lower() in text_lower:
-                    matched.append(skill)
+                if not trigger:
+                    continue
+                trigger_lower = trigger.lower()
+                if trigger_lower in text_lower:
+                    _try_add(skill)
                     break
+                if trigger in text:
+                    _try_add(skill)
+                    break
+        
+        if not matched:
+            for skill in self.skills.values():
+                if not skill.enabled:
+                    continue
+                if skill.name in text or skill.name.lower() in text_lower:
+                    _try_add(skill)
         
         return matched
 
