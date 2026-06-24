@@ -48,3 +48,24 @@ def test_cli_skill_list(runner):
 def test_cli_gateway_status(runner):
     result = runner.invoke(cli, ["gateway", "status"])
     assert result.exit_code == 0
+
+
+def test_cli_tools(runner):
+    result = runner.invoke(cli, ["tools"])
+    assert result.exit_code == 0
+    # 未配置模型时，tools 可能返回配置提示，至少应给出可读输出
+    assert result.output and len(result.output.strip()) > 0
+
+
+def test_cli_ask(runner):
+    result = runner.invoke(cli, ["ask", "hello"])
+    assert result.exit_code == 0
+    # 未配置模型时，ask 会返回配置错误提示
+    assert "配置" in result.output or "hello" in result.output or "PRISM" in result.output
+
+
+def test_cli_chat(runner):
+    result = runner.invoke(cli, ["chat"], input="hello\n")
+    assert result.exit_code == 0
+    # 未配置模型时，chat 会返回配置错误提示
+    assert "配置" in result.output or "hello" in result.output or "PRISM" in result.output
