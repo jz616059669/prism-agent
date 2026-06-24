@@ -223,7 +223,7 @@ def _register_code_tools(registry):
         name = "code_execution"
         description = "执行 Python 代码，支持超时和输出捕获"
         
-        def execute(self, code: str, timeout: int = 30) -> Dict[str, Any]:
+        def execute(self, code: str, timeout: int = 30, **kwargs) -> Dict[str, Any]:
             return _code_executor.execute(code, timeout=timeout)
     
     registry.register(CodeExecuteTool())

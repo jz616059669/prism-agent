@@ -38,16 +38,14 @@ class CodeExecutor:
             'file(',
         ]
     
-    def execute(self, code: str, language: str = "python") -> Dict[str, Any]:
+    def execute(self, code: str, language: str = "python", timeout: int = 30) -> Dict[str, Any]:
         """
         执行代码
         
         Args:
             code: 代码内容
             language: 编程语言（目前只支持 python）
-        
-        Returns:
-            执行结果字典
+            timeout: 超时秒数
         """
         if language != "python":
             return {

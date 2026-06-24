@@ -23,3 +23,7 @@ prism_agent.egg-info/dependency_links.txt
 prism_agent.egg-info/entry_points.txt
 prism_agent.egg-info/requires.txt
 prism_agent.egg-info/top_level.txt
+tests/test_browser.py
+tests/test_browser_minimal.py
+tests/test_code_executor.py
+tests/test_mcp_client.py
