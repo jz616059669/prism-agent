@@ -11,6 +11,16 @@ cd prism-agent
 .\scripts\install.ps1
 ```
 
+Windows 额外支持：
+```powershell
+# 打包桌面客户端
+.\scripts\build-windows.ps1
+
+# 后台运行 Gateway（NSSM）
+nssm install PrismGateway "C:\path\to\prism.exe" "gateway start"
+nssm start PrismGateway
+```
+
 **macOS：**
 ```bash
 git clone https://github.com/jz616059669/prism-agent.git
@@ -51,6 +61,14 @@ sudo systemctl start prism-gateway
 ```bash
 prism --help           # CLI
 prism-desktop          # 桌面客户端
+```
+
+## PyPI 安装
+
+```bash
+pip install prism-agent
+prism --help
+prism-desktop
 ```
 
 ## 手动安装

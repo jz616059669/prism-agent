@@ -99,6 +99,10 @@ class Config:
             missing.append('model.provider')
         if not model.get('base_url'):
             missing.append('model.base_url')
+        elif not isinstance(model.get('base_url'), str) or not model.get('base_url').startswith('http'):
+            raise ConfigError(
+                '配置错误：model.base_url 不合法，应以 http/https 开头，当前值：' + str(model.get('base_url'))
+            )
         if not model.get('api_key'):
             missing.append('model.api_key')
         if missing:

@@ -5,12 +5,15 @@ PRISM Agent - 核心Agent循环
 
 import json
 import os
+import logging
 from typing import List, Dict, Any, Optional, Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 
 from prism.providers.manager import provider_pool
 from prism.tools.registry import registry
+
+logger = logging.getLogger("prism.agent")
 
 
 @dataclass
@@ -93,9 +96,11 @@ class Agent:
         result = provider_pool.chat(api_messages)
         
         if not result.get('success'):
+            logger.warning("chat failed: %s", result.get('error'))
             return f"Error: {result.get('error', 'Unknown error')}"
         
         assistant_content = result.get('content', '')
+        logger.info("chat success model=%s", result.get('model'))
         
         # 添加助手回复
         self.messages.append(Message(role="assistant", content=assistant_content))
@@ -110,7 +115,9 @@ class Agent:
         if not self.tools_enabled:
             return {'success': False, 'error': 'Tools disabled'}
         
+        logger.info("execute tool=%s args=%s", tool_name, kwargs)
         result = registry.execute(tool_name, **kwargs)
+        logger.info("execute tool=%s result=%s", tool_name, result.get('success'))
         
         # 记录工具调用
         self.tool_calls.append(ToolCall(

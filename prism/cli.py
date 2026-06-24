@@ -38,8 +38,9 @@ formatter = logging.Formatter(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
-# 文件日志
-fh = logging.FileHandler(LOG_FILE, encoding="utf-8")
+# 文件日志，带轮转
+from logging.handlers import RotatingFileHandler
+fh = RotatingFileHandler(LOG_FILE, encoding="utf-8", maxBytes=5 * 1024 * 1024, backupCount=5)
 fh.setLevel(logging.DEBUG)
 fh.setFormatter(formatter)
 logger.addHandler(fh)
@@ -59,11 +60,7 @@ def cli():
     
     整合 Hermes/Codex/OpenClaw 优势的新一代 AI Agent
     """
-    try:
-        prism_config.validate()
-    except ConfigError as e:
-        console.print(f"[red]配置错误：{e}[/red]")
-        raise click.ClickException(str(e))
+    # 配置校验延后到实际需要时执行，避免影响 help / version 等命令
 
 
 @cli.group()
@@ -252,7 +249,7 @@ def get(key: Optional[str]):
         value = prism_config.get(key)
         console.print(f"{key} = {value}")
     else:
-        all_config = prism_config.all()
+        all_config = prism_config.show()
         console.print_json(data=all_config)
 
 
@@ -261,7 +258,12 @@ def get(key: Optional[str]):
 @click.option('--provider', '-p', help='提供商')
 def chat(model: Optional[str], provider: Optional[str]):
     
-    # 显示欢迎信息
+    # 启动前校验配置
+    try:
+        prism_config.validate()
+    except ConfigError as e:
+        console.print(f"[red]配置错误：{e}[/red]")
+        return
     console.print(Panel.fit(
         "[bold cyan]PRISM Agent[/bold cyan] [dim]v0.1.0[/dim]\n"
         "整合 Hermes + Codex + OpenClaw 能力\n"
@@ -328,6 +330,11 @@ def chat(model: Optional[str], provider: Optional[str]):
 @click.option('--model', '-m', help='模型名称')
 def ask(message: str, model: Optional[str]):
     """单次提问"""
+    try:
+        prism_config.validate()
+    except ConfigError as e:
+        console.print(f"[red]配置错误：{e}[/red]")
+        return
     agent = create_agent()
     response = agent.chat(message)
     console.print(Markdown(response))
@@ -336,6 +343,11 @@ def ask(message: str, model: Optional[str]):
 @cli.command()
 def tools():
     """列出所有可用工具"""
+    try:
+        prism_config.validate()
+    except ConfigError as e:
+        console.print(f"[red]配置错误：{e}[/red]")
+        return
     agent = create_agent()
     show_tools(agent)
 
@@ -343,13 +355,23 @@ def tools():
 @cli.command()
 def model():
     """显示当前模型配置"""
+    try:
+        prism_config.validate()
+    except ConfigError as e:
+        console.print(f"[red]配置错误：{e}[/red]")
+        return
     show_model()
 
 
 @cli.command()
 def version():
     """显示版本信息"""
-    console.print("PRISM Agent v0.1.0")
+    try:
+        prism_config.validate()
+    except ConfigError as e:
+        console.print(f"[red]配置错误：{e}[/red]")
+        return
+    console.print("PRISM Agent v0.2.1")
     console.print("整合 Hermes + Codex + OpenClaw 能力")
 
 
