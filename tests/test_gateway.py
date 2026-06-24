@@ -83,3 +83,67 @@ def test_feishu_adapter_send():
     adapter.token_expires_at = 9999999999
     ok = adapter.send("chat", "hello")
     assert ok is True
+
+
+def test_feishu_parse_event():
+    from prism.gateway.feishu import FeishuAdapter, FeishuConfig
+
+    adapter = FeishuAdapter(FeishuConfig(app_id="a", app_secret="s"))
+    body = {
+        "header": {"event_type": "im.message.receive_v1"},
+        "event": {
+            "message": {
+                "chat_id": "oc123",
+                "message_type": "text",
+                "content": '{"text":"hello"}',
+            },
+            "sender": {"sender_id": {"open_id": "u123"}},
+        },
+    }
+    msg = adapter.parse_event(body)
+    assert msg is not None
+    assert msg.platform == "feishu"
+    assert msg.chat_id == "oc123"
+    assert msg.text == "hello"
+
+
+def test_feishu_webhook_verify():
+    from prism.gateway.feishu import FeishuAdapter, FeishuConfig
+
+    adapter = FeishuAdapter(FeishuConfig(app_id="a", app_secret="s", encrypt_key="k"))
+    ok = adapter.verify_webhook(b"{}", "ts", "n", "bad")
+    assert ok is False
+
+
+def test_telegram_handle_update():
+    from prism.gateway.telegram import TelegramAdapter, TelegramConfig
+
+    adapter = TelegramAdapter(TelegramConfig(bot_token="t"))
+    called = {}
+
+    def handler(msg):
+        called["msg"] = msg
+
+    adapter.handler = handler
+    update = {
+        "update_id": 1,
+        "message": {
+            "chat": {"id": 1},
+            "from": {"id": 2},
+            "text": "hi",
+        },
+    }
+    adapter._handle_update(update)
+    assert called["msg"].text == "hi"
+    assert called["msg"].chat_id == "1"
+
+
+def test_discord_get_current_user():
+    from prism.gateway.discord import DiscordAdapter, DiscordConfig
+    import prism.gateway.discord as discord_mod
+
+    discord_mod.requests.get = lambda url, **kwargs: FakeResp({"id": "1", "username": "bot"})
+    adapter = DiscordAdapter(DiscordConfig(bot_token="t"))
+    result = adapter.get_current_user()
+    assert result.get("success") is True
+    assert result.get("user", {}).get("username") == "bot"

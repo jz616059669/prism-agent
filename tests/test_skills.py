@@ -43,8 +43,23 @@ def test_skill_search_partial():
 
 
 def test_skill_install_fails_without_hub():
-    result = skills.install_skill("nonexistent_skill")
-    assert result['success'] is False
+    try:
+        import prism.gateway.feishu as feishu_mod
+    except Exception:
+        feishu_mod = None
+    import prism.config as config_mod
+    old = getattr(config_mod.config, '_config', {})
+    try:
+        config_mod.config._config = dict(old)
+        config_mod.config._config.pop('skills', None)
+        if feishu_mod is not None:
+            feishu_mod.prism_config = config_mod.config
+        result = skills.install_skill("nonexistent_skill")
+        assert result['success'] is False
+    finally:
+        config_mod.config._config = old
+        if feishu_mod is not None:
+            feishu_mod.prism_config = config_mod.config
 
 
 def test_skill_uninstall_not_installed():
