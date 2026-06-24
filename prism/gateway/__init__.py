@@ -1,46 +1,13 @@
 """
-PRISM Agent - Gateway 抽象层
-支持多平台：飞书 / Telegram / Discord / 微信
+PRISM Agent - 统一 Gateway
+整合 Hermes 的多平台支持 + OpenClaw 的消息处理
 """
 
-from abc import ABC, abstractmethod
 from typing import Optional, Callable, Dict, Any
-from dataclasses import dataclass
-from datetime import datetime
 
+from prism.gateway import PlatformAdapter, Message
 
-@dataclass
-class Message:
-    """统一消息格式"""
-    platform: str  # feishu | telegram | discord
-    chat_id: str
-    user_id: str
-    text: str
-    raw: Optional[Dict[str, Any]] = None
-    timestamp: datetime = None
-    
-    def __post_init__(self):
-        if self.timestamp is None:
-            self.timestamp = datetime.now()
-
-
-class PlatformAdapter(ABC):
-    """平台适配器基类"""
-    
-    @abstractmethod
-    def send(self, chat_id: str, text: str) -> bool:
-        """发送消息"""
-        pass
-    
-    @abstractmethod
-    def start_polling(self, handler: Callable[[Message], None]):
-        """开始接收消息"""
-        pass
-    
-    @abstractmethod
-    def stop(self):
-        """停止接收"""
-        pass
+__all__ = ['Gateway', 'gateway']
 
 
 class Gateway:
@@ -56,32 +23,69 @@ class Gateway:
     def register(self, name: str, adapter: PlatformAdapter):
         """注册平台适配器"""
         self.adapters[name] = adapter
+        print(f"[Gateway] 已注册平台: {name}")
     
     def start(self, handler: Callable[[Message], None]):
-        """启动所有平台"""
+        """
+        启动所有平台
+        
+        Args:
+            handler: 统一消息处理器，接收 Message 对象
+        """
         self.running = True
         for name, adapter in self.adapters.items():
             try:
                 adapter.start_polling(handler)
+                print(f"[Gateway] {name} 启动成功")
             except Exception as e:
                 print(f"[Gateway] {name} 启动失败: {e}")
     
     def stop(self):
         """停止所有平台"""
         self.running = False
-        for adapter in self.adapters.values():
+        for name, adapter in self.adapters.items():
             try:
                 adapter.stop()
-            except Exception:
-                pass
+                print(f"[Gateway] {name} 已停止")
+            except Exception as e:
+                print(f"[Gateway] {name} 停止失败: {e}")
     
     def send(self, platform: str, chat_id: str, text: str) -> bool:
-        """通过指定平台发送消息"""
+        """
+        通过指定平台发送消息
+        
+        Args:
+            platform: 平台名称（feishu / telegram / discord）
+            chat_id: 会话 ID
+            text: 消息文本
+        
+        Returns:
+            是否发送成功
+        """
         adapter = self.adapters.get(platform)
         if not adapter:
+            print(f"[Gateway] 未找到平台: {platform}")
             return False
+        
         return adapter.send(chat_id, text)
+    
+    def list_platforms(self) -> list:
+        """列出已注册的平台"""
+        return list(self.adapters.keys())
+
+
+# 延迟初始化，避免循环导入
+def _init_gateway():
+    """初始化 Gateway 并注册默认平台"""
+    g = Gateway()
+    
+    # 注意：这里不自动注册，需要用户手动配置
+    # 示例：
+    # from prism.gateway.feishu import create_feishu_adapter
+    # g.register("feishu", create_feishu_adapter(app_id, app_secret))
+    
+    return g
 
 
 # 全局 Gateway 实例
-gateway = Gateway()
+gateway = _init_gateway()
