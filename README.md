@@ -297,10 +297,34 @@ twine upload dist/*
 
 ## 故障排查
 
-- 浏览器失败：`playwright install --force chromium`
-- 模型 401/403：检查 `model.api_key` 和 `model.base_url`
-- Gateway 失败：检查 token/app_id，查看日志
-- 桌面客户端失败：确认 `flet` 已安装，并重装 `prism-desktop`
+### 安装问题
+- `uv` 安装失败：访问 https://docs.astral.sh/uv/ 手动安装
+- Python 版本过低：需要 Python 3.11+
+- `pip install` 慢：换国内镜像源
+
+### 模型问题
+- 401/403：检查 `model.api_key` 和 `model.base_url`
+- 响应慢：检查网络，或切换备用模型
+- 无可用提供商：运行 `prism config set model.provider <provider>`
+
+### 浏览器问题
+```bash
+# 重新安装 Chromium
+playwright install --force chromium
+
+# 验证浏览器
+prism browser open https://example.com
+```
+
+### 桌面端问题
+- 启动失败：确认 `flet` 已安装，并重装 `prism-desktop`
+- 窗口空白：尝试切换主题（侧边栏“切换主题”）
+- 配置丢失：检查 `~/.prism/desktop_settings.json`
+
+### Gateway 问题
+- 启动失败：检查 token/app_id，查看日志
+- 消息收不到：确认事件订阅 URL 可公网访问
+- 飞书：检查 Encrypt Key 和 Verification Token
 
 ## 快速诊断
 
