@@ -36,15 +36,40 @@ du -sh dist-windows\*
 > 3. 网络是否可访问（下载 Flet 依赖需要）
 
 # 后台运行 Gateway（NSSM）
-nssm install PrismGateway "C:\path\to\prism.exe" "gateway start"
+nssm install PrismGateway "C:\path\to\prism.exe" "gateway start --platform <platform>"
 nssm start PrismGateway
+
+# 查看状态
+nssm status PrismGateway
 ```
 
-**macOS：**
+## Gateway 连接测试
+
+### 飞书
 ```bash
-git clone https://github.com/jz616059669/prism-agent.git
-cd prism-agent
-bash scripts/install.sh
+prism gateway start --platform feishu --app-id <APP_ID> --app-secret <APP_SECRET> --encrypt-key <ENCRYPT_KEY> --verification-token <VERIFICATION_TOKEN>
+```
+
+### Telegram
+```bash
+prism gateway start --platform telegram --token <BOT_TOKEN>
+```
+
+### Discord
+```bash
+prism gateway start --platform discord --token <BOT_TOKEN>
+```
+
+### 微信（待接入真实协议）
+```bash
+prism gateway start --platform wechat --app-id <APP_ID> --app-secret <APP_SECRET> --token <TOKEN>
+```
+
+## 常见问题
+
+**Q: 会话保存在哪里？**
+
+A: 会话保存在本地：
 ```
 
 macOS 额外支持：
@@ -74,6 +99,7 @@ bash scripts/build-linux.sh
 sudo cp scripts/prism-gateway.service /etc/systemd/system/
 sudo systemctl enable prism-gateway
 sudo systemctl start prism-gateway
+sudo systemctl status prism-gateway
 ```
 
 安装完成后：
