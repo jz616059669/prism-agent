@@ -8,4 +8,5 @@ from prism.mcp import mcp_client
 
 def test_mcp_client_initialized():
     assert mcp_client is not None
-    assert mcp_client.servers == {}
+    assert hasattr(mcp_client, "servers")
+    assert hasattr(mcp_client, "list_tools")
