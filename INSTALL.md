@@ -83,6 +83,14 @@ bash scripts/install.sh
 3. 初始化配置文件 `~/.prism/config.yaml`
 4. 安装桌面客户端 `prism-desktop`
 
+### 2.3 PyPI 安装
+
+```bash
+pip install prism-agent
+prism --help
+prism-desktop
+```
+
 ---
 
 ## 3. 手动安装
