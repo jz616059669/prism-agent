@@ -95,6 +95,11 @@ class PrismDesktop:
         browser_close_btn = ft.ElevatedButton("关闭浏览器", width=260)
         browser_close_btn.on_click = lambda e: self._browser_close()
         
+        # MCP
+        self.mcp_refresh_btn = ft.ElevatedButton("刷新 MCP 服务器", width=260)
+        self.mcp_refresh_btn.on_click = lambda e: self._refresh_mcp()
+        self.mcp_server_list = ft.Column(spacing=4, tight=True)
+        
         return ft.Container(
             content=ft.Column(
                 [
@@ -114,11 +119,18 @@ class PrismDesktop:
                     browser_snapshot_btn,
                     browser_close_btn,
                     ft.Container(height=16),
+                    ft.Text("MCP 控制", size=12, weight=ft.FontWeight.BOLD),
+                    self.mcp_refresh_btn,
+                    ft.Container(height=6),
+                    ft.Text("已配置服务器", size=11, color=ft.colors.ON_SURFACE_VARIANT),
+                    self.mcp_server_list,
+                    ft.Container(height=16),
                     ft.Text("状态", size=12, weight=ft.FontWeight.BOLD),
                     self.status_text,
                 ],
                 tight=True,
                 spacing=6,
+                scroll=ft.ScrollMode.AUTO,
             ),
             width=280,
             padding=16,
@@ -309,6 +321,37 @@ class PrismDesktop:
             self._set_status(f"关闭失败：{result.get('error')}", ft.colors.RED_400)
             self._append("浏览器", f"关闭失败：{result.get('error')}")
             self._append_terminal(f"browser close error: {result.get('error')}")
+
+    def _refresh_mcp(self):
+        self._append_terminal("mcp refresh ...")
+        self.mcp_server_list.controls.clear()
+        try:
+            raw = prism_config.get("mcp.servers") or []
+        except Exception:
+            raw = []
+        if not raw:
+            self.mcp_server_list.controls.append(
+                ft.Text("未配置 MCP 服务器", size=12, color=ft.colors.ON_SURFACE_VARIANT)
+            )
+        else:
+            for idx, server in enumerate(raw):
+                name = server.get("name") or server.get("id") or f"server_{idx+1}"
+                status = "未启动"
+                row = ft.Row(
+                    [
+                        ft.Text(name, size=12, expand=True),
+                        ft.Text(status, size=11, color=ft.colors.ON_SURFACE_VARIANT),
+                        ft.TextButton("日志", data=name),
+                    ]
+                )
+                row.controls[2].on_click = lambda e, s=name: self._show_mcp_log(s)
+                self.mcp_server_list.controls.append(row)
+        self.mcp_server_list.update()
+        self._append_mcp(f"已刷新 MCP 服务器：{len(raw)} 个")
+
+    def _show_mcp_log(self, name: str):
+        self._append_mcp(f"[{name}] 日志入口后续接入真实 MCP 客户端")
+        self._append_terminal(f"mcp log {name}")
 
 
 def main():
