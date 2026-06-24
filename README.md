@@ -76,6 +76,55 @@ prism-desktop
 
 > 注意：PyPI 正式包待上传，当前可先通过 `git clone` 或 `pip install .` 使用。
 
+## 外部用户使用说明
+
+### 1. 环境准备
+- Python 3.11+
+- Git
+- 网络访问（GitHub、模型 API）
+
+### 2. 安装
+```bash
+# 方式1：PyPI
+pip install prism-agent
+
+# 方式2：源码
+git clone https://github.com/jz616059669/prism-agent.git
+cd prism-agent
+pip install -e .
+```
+
+### 3. 配置模型
+```bash
+# 方式1：CLI
+prism config set model.provider stepfun
+prism config set model.base_url https://api.stepfun.com/step_plan/v1
+prism config set model.api_key YOUR_KEY
+
+# 方式2：编辑配置文件
+notepad %USERPROFILE%\.prism\config.yaml   # Windows
+open ~/.prism/config.yaml                  # macOS/Linux
+```
+
+### 4. 安装桌面端（可选）
+```bash
+pip install prism-agent[desktop]
+# 或
+pip install flet
+```
+
+### 5. 验证
+```bash
+prism doctor
+prism ask "你好"
+prism-desktop
+```
+
+### 6. 常见问题
+- 浏览器失败：`playwright install --force chromium`
+- 模型 401/403：检查 `model.api_key` 和 `model.base_url`
+- 桌面端失败：确认 `flet` 已安装，并重装 `prism-desktop`
+
 ## 手动安装
 
 见 [INSTALL.md](INSTALL.md)
