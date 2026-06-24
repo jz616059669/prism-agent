@@ -77,7 +77,7 @@ prism --help
 prism-desktop
 ```
 
-> 注意：PyPI 正式包待上传，当前可先通过 `git clone` 或 `pip install .` 使用。
+> PyPI 已发布：`https://pypi.org/project/prism-agent/0.2.1/`
 
 ## 外部用户使用说明
 
