@@ -18,6 +18,17 @@ cd prism-agent
 bash scripts/install.sh
 ```
 
+macOS 额外支持：
+```bash
+# 打包桌面客户端
+bash scripts/build-macos.sh
+
+# 安装 launchd 服务（后台运行 Gateway）
+cp scripts/com.prism.gateway.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/com.prism.gateway.plist
+launchctl list | grep prism
+```
+
 **Linux（Ubuntu/Debian/Fedora/Arch）：**
 ```bash
 git clone https://github.com/jz616059669/prism-agent.git
@@ -100,6 +111,11 @@ sudo cp scripts/prism-gateway.service /etc/systemd/system/
 sudo systemctl enable prism-gateway
 sudo systemctl start prism-gateway
 sudo systemctl status prism-gateway
+
+# macOS 后台运行（launchd）
+cp scripts/com.prism.gateway.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/com.prism.gateway.plist
+launchctl list | grep prism
 ```
 
 ## 配置
