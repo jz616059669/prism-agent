@@ -5,9 +5,12 @@ dist/
 build/
 .venv/
 .env
-*.pyc
 .DS_Store
 
 # 本地保留教程，不上传 GitHub
 INSTALL_FEISHU.md
 VIDEO_TUTORIAL.md
+
+# 运行时产物
+prism_screenshot_*.png
+*.log
