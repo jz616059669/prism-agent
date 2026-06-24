@@ -257,6 +257,16 @@ class SkillRegistry:
         skill_dir = self.skills_dir
         skill_dir.mkdir(parents=True, exist_ok=True)
         
+        # 本地路径安装
+        local_candidate = Path(name)
+        if local_candidate.exists():
+            target = skill_dir / f"{local_candidate.stem}.py"
+            if target.exists():
+                return {'success': False, 'error': f'{target.name} 已存在'}
+            target.write_text(local_candidate.read_text(encoding='utf-8'), encoding='utf-8')
+            self._load_external_skills()
+            return {'success': True, 'message': f'已从本地安装 {target.name}'}
+        
         target = skill_dir / f"{name}.py"
         if target.exists():
             return {'success': False, 'error': f'{name} 已存在'}
