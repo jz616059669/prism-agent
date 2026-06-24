@@ -87,6 +87,26 @@ class PrismDesktop:
         self.page.update()
         self._append_terminal(f"theme -> {next_mode}")
         self._save_settings()
+
+    def _open_config_dir(self, e):
+        config_dir = Path.home() / ".prism"
+        config_dir.mkdir(parents=True, exist_ok=True)
+        os.startfile(str(config_dir))
+        self._append_terminal(f"open config dir: {config_dir}")
+
+    def _open_terminal_here(self, e):
+        os.system('start cmd')
+        self._append_terminal("open terminal")
+
+    def _about(self, e):
+        self.page.dialog = ft.AlertDialog(
+            title=ft.Text("PRISM Agent"),
+            content=ft.Text("版本：0.2.1\n统一 AI Agent CLI + 桌面客户端"),
+            actions=[ft.TextButton("关闭", on_click=lambda e: self.page.close_dialog())],
+        )
+        self.page.dialog.open = True
+        self.page.update()
+        self._append_terminal("about dialog opened")
     
     def _build_ui(self):
         self.page.add(
@@ -132,6 +152,15 @@ class PrismDesktop:
         
         self.theme_btn = ft.ElevatedButton("切换主题", width=260)
         self.theme_btn.on_click = lambda e: self._toggle_theme()
+        
+        self.open_config_btn = ft.ElevatedButton("打开配置目录", width=260)
+        self.open_config_btn.on_click = lambda e: self._open_config_dir(e)
+        
+        self.open_terminal_btn = ft.ElevatedButton("打开终端", width=260)
+        self.open_terminal_btn.on_click = lambda e: self._open_terminal_here(e)
+        
+        self.about_btn = ft.ElevatedButton("关于", width=260)
+        self.about_btn.on_click = lambda e: self._about(e)
         
         save_btn = ft.ElevatedButton("保存配置", width=260)
         save_btn.on_click = lambda e: self._save_config()
