@@ -144,6 +144,26 @@ prism config get model.default
 prism config get
 ```
 
+## 本地发布 / 上传 PyPI
+
+```bash
+# Windows
+.\scripts\release.ps1
+
+# macOS / Linux
+bash scripts/release.sh
+```
+
+发布产物在 `dist/` 目录：
+- `prism_agent-0.2.1.tar.gz`
+- `prism_agent-0.2.1-py3-none-any.whl`
+
+手动上传到 PyPI：
+```bash
+pip install twine
+twine upload dist/*
+```
+
 ## 开发
 
 ```bash
