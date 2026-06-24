@@ -176,6 +176,30 @@ class SkillRegistry:
             except Exception as e:
                 print(f"[Skills] 加载 {skill_file} 失败: {e}")
     
+    def search_hub(self, query: str) -> List[Dict[str, Any]]:
+        """搜索远程 Hub Skills"""
+        hub_url = prism_config.get('skills.hub')
+        if not hub_url:
+            return []
+        try:
+            import requests
+            url = f"{hub_url.rstrip('/')}/skills"
+            params = {'q': query}
+            resp = requests.get(url, params=params, timeout=20)
+            if resp.status_code == 200:
+                data = resp.json()
+                if isinstance(data, list):
+                    return data
+                if isinstance(data, dict):
+                    return data.get('skills', [])
+            return []
+        except Exception:
+            return []
+    
+    def browse_hub(self) -> List[Dict[str, Any]]:
+        """浏览远程 Hub Skills"""
+        return self.search_hub('')
+    
     def register(self, skill: Skill):
         """注册 skill"""
         self.skills[skill.name] = skill

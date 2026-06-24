@@ -319,18 +319,45 @@ def list():
 @skill.command()
 @click.argument('query')
 def search(query: str):
-    """按关键词搜索 Skills"""
+    """搜索 Skills（优先远程 Hub，回退本地匹配）"""
     from prism.skills import skills
-    matches = skills.match(query)
-    
     console = Console()
     console.print(f"\n[bold cyan]搜索 Skills：[/bold cyan] {query}\n")
-    if not matches:
-        console.print("[yellow]未找到匹配的 Skills[/yellow]\n")
+    matched = []
+    try:
+        matched = skills.search_hub(query)
+    except Exception:
+        matched = []
+    if matched:
+        console.print("[yellow]远程 Hub 结果：[/yellow]\n")
+        for item in matched:
+            name = item.get('name', 'unknown')
+            desc = item.get('description', '')
+            console.print(f"  [green]{name}[/green]: {desc}")
+        console.print()
         return
-    for s in matches:
-        status = "[green]✓[/green]" if s.enabled else "[red]✗[/red]"
-        console.print(f"  {status} [green]{s.name}[/green]: {s.description}")
+    local_matches = skills.match(query)
+    if local_matches:
+        for s in local_matches:
+            console.print(f"  [green]✓[/green] [green]{s.name}[/green]: {s.description}")
+    else:
+        console.print("[yellow]未找到匹配的 Skills[/yellow]\n")
+
+
+@skill.command()
+def browse():
+    """浏览远程 Hub Skills"""
+    from prism.skills import skills
+    items = skills.browse_hub()
+    console = Console()
+    console.print("\n[bold cyan]远程 Hub Skills：[/bold cyan]\n")
+    if not items:
+        console.print("[yellow]暂无可浏览的远程 Skills[/yellow]\n")
+        return
+    for item in items:
+        name = item.get('name', 'unknown')
+        desc = item.get('description', '')
+        console.print(f"  [green]{name}[/green]: {desc}")
     console.print()
 
 
