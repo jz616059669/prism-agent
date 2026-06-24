@@ -176,6 +176,24 @@ def list():
 
 
 @skill.command()
+@click.argument('query')
+def search(query: str):
+    """按关键词搜索 Skills"""
+    from prism.skills import skills
+    matches = skills.match(query)
+    
+    console = Console()
+    console.print(f"\n[bold cyan]搜索 Skills：[/bold cyan] {query}\n")
+    if not matches:
+        console.print("[yellow]未找到匹配的 Skills[/yellow]\n")
+        return
+    for s in matches:
+        status = "[green]✓[/green]" if s.enabled else "[red]✗[/red]"
+        console.print(f"  {status} [green]{s.name}[/green]: {s.description}")
+    console.print()
+
+
+@skill.command()
 @click.argument('name')
 def install(name: str):
     """安装一个 Skill"""
