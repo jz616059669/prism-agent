@@ -24,6 +24,10 @@ ls dist-windows\
 
 # 查看产物大小
 du -sh dist-windows\*
+
+# 验证主程序可运行
+.\dist-windows\prism-desktop.exe --help
+.\dist-windows\prism.exe --help
 ```
 
 > 如打包失败，请检查：
