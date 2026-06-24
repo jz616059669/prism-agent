@@ -2,72 +2,79 @@
 
 **统一 AI Agent CLI — 整合 Hermes + Codex + OpenClaw 优势**
 
-```
+```bash
 pip install -e .
-prism chat
+prism --help
 ```
 
-## 核心能力
+## 当前能力
 
-| 能力 | 说明 |
-|---|---|
-| 统一模型接口 | 一个命令切换任意模型，自动降级 |
-| 多Key轮转 | 凭证池自动轮转，不怕单Key失效 |
-| 文件操作 | 读写、补丁、搜索 |
-| 终端执行 | Shell命令、后台任务、超时控制 |
-| 浏览器控制 | CDP/Playwright（后续扩展） |
-| 代码执行 | Python沙箱（后续扩展） |
-| MCP服务器 | 原生支持stdio/HTTP（后续扩展） |
-| 跨平台Gateway | Telegram/Discord/飞书（后续扩展） |
+| 能力 | 状态 | 说明 |
+|---|---|---|
+| 统一模型接口 | ✅ | 一个命令切换任意模型，自动降级 |
+| 多 Key 轮转 | ✅ | 凭证池自动轮转，不怕单 Key 失效 |
+| 文件/终端工具 | ✅ | 读写、补丁、shell、后台任务 |
+| 浏览器控制 | ✅ | Playwright 驱动，支持导航、快照、点击、输入、截图 |
+| 代码执行沙箱 | ✅ | Python 代码执行，支持超时和输出捕获 |
+| MCP 客户端 | ✅ | stdio / HTTP 双模式 |
+| Skills 系统 | ✅ | 6 个内置 skill，支持安装/移除 |
+| Gateway | ✅ | 飞书 / Telegram / Discord 适配器 |
+| CLI 子命令 | ✅ | gateway / skill / browser / config / chat / ask / tools |
 
 ## 快速开始
 
 ```bash
-# 安装
-cd C:\Users\zd\prism
-pip install -e .
+# 查看版本
+prism version
 
-# 配置 API Key
-prism config set model.api_key sk-xxx
+# 列出工具
+prism tools
 
-# 启动聊天
+# 列出 skills
+prism skill list
+
+# 打开网页
+prism browser open https://example.com
+
+# 单次提问
+prism ask "用 Python 写一个快速排序"
+
+# 交互聊天
 prism chat
 ```
 
-## 项目结构
+## Gateway
 
-```
-prism/
-├── prism/
-│   ├── __init__.py
-│   ├── cli.py          # CLI入口
-│   ├── config.py       # 统一配置
-│   ├── agent.py        # Agent核心
-│   ├── providers/      # 模型提供商
-│   │   ├── __init__.py
-│   │   └── manager.py
-│   ├── tools/          # 工具系统
-│   │   ├── __init__.py
-│   │   └── registry.py
-│   ├── gateway/        # 跨平台Gateway
-│   │   └── __init__.py
-│   └── skills/         # Skills系统
-│       └── __init__.py
-├── pyproject.toml
-└── README.md
+```bash
+# 查看状态
+prism gateway status
+
+# 配置平台
+prism gateway start --platform telegram --token <TOKEN>
+prism gateway start --platform feishu --app-id <ID> --app-secret <SECRET>
 ```
 
-## 对比
+## 配置
 
-| 特性 | Hermes | Codex CLI | OpenClaw | PRISM |
-|---|---|---|---|---|
-| 模型无关 | ✅ | ❌ | ❌ | ✅ |
-| 自动降级 | ✅ | ❌ | ❌ | ✅ |
-| Skills系统 | ✅ | ❌ | ❌ | ✅ |
-| 浏览器控制 | ✅ | ❌ | ✅ | 计划 |
-| 跨平台Gateway | ✅ | ❌ | ❌ | 计划 |
-| 单一CLI | ✅ | ✅ | ❌ | ✅ |
+```bash
+prism config set model.default step-3.7-flash
+prism config get model.default
+prism config get
+```
 
-## License
+## 开发
 
-MIT
+```bash
+git clone https://github.com/jz616059669/prism-agent.git
+cd prism-agent
+pip install -e .
+pytest
+```
+
+## 路线图
+
+- 飞书 / Telegram / Discord 真实连接验证
+- MCP 服务器连接测试
+- Skills 市场 / 一键安装
+- 浏览器测试套件完善
+- ACP 协议支持
