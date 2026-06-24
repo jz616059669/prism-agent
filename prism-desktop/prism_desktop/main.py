@@ -43,6 +43,7 @@ class PrismDesktop:
         self._build_ui()
         self._apply_settings()
         self._bind_context_menu()
+        self._bind_tray()
 
     def _load_settings(self) -> dict:
         if self._settings_path.exists():
@@ -79,6 +80,15 @@ class PrismDesktop:
     def _bind_context_menu(self) -> None:
         self.page.on_resized = lambda e: self._save_settings()
         self.page.on_window_event = lambda e: self._save_settings()
+
+    def _bind_tray(self) -> None:
+        try:
+            self.page.window.prevent_close = True
+            self.page.on_window_event = lambda e: (
+                self._save_settings() if getattr(e, "data", None) != "close" else None
+            )
+        except Exception:
+            pass
 
     def _toggle_theme(self):
         current = self.page.theme_mode
