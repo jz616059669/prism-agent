@@ -4,6 +4,7 @@ PRISM Agent - 统一 Gateway
 """
 
 from prism.gateway.base import Message, PlatformAdapter
+from typing import Callable
 
 
 __all__ = ['Gateway', 'gateway', 'Message', 'PlatformAdapter']
