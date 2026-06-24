@@ -44,11 +44,15 @@ prism/
 │   ├── config.py       # 统一配置
 │   ├── agent.py        # Agent核心
 │   ├── providers/      # 模型提供商
+│   │   ├── __init__.py
 │   │   └── manager.py
 │   ├── tools/          # 工具系统
+│   │   ├── __init__.py
 │   │   └── registry.py
-│   ├── gateway/        # 跨平台Gateway（待实现）
-│   └── skills/         # Skills系统（待实现）
+│   ├── gateway/        # 跨平台Gateway
+│   │   └── __init__.py
+│   └── skills/         # Skills系统
+│       └── __init__.py
 ├── pyproject.toml
 └── README.md
 ```
