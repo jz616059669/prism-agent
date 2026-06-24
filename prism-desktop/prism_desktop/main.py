@@ -600,6 +600,12 @@ class PrismDesktop:
             if ok:
                 self._append_terminal(f"session loaded: {name}")
                 self._set_status("会话已加载")
+                self.chat_list.controls.clear()
+                for m in self.agent.messages:
+                    if m.role == "system":
+                        continue
+                    self.chat_list.controls.append(ft.Text(f"{m.role}: {m.content}"))
+                self.chat_list.update()
             else:
                 self._append_terminal(f"session load failed: {name}")
                 self._set_status("会话加载失败", ft.colors.RED_400)
