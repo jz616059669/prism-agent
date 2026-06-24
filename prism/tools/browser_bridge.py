@@ -38,3 +38,19 @@ def close_browser() -> Dict[str, Any]:
     result = browser_api.disconnect()
     logger.info("browser close success=%s", result.get("success"))
     return result
+
+
+def page_screenshot(path: Optional[str] = None) -> Dict[str, Any]:
+    if not _HAS_BROWSER:
+        return {"success": False, "error": "browser module unavailable"}
+    result = browser_api.screenshot(path=path)
+    logger.info("browser screenshot success=%s path=%s", result.get("success"), result.get("path"))
+    return result
+
+
+def browser_goto(url: str, headless: bool = True) -> Dict[str, Any]:
+    if not _HAS_BROWSER:
+        return {"success": False, "error": "browser module unavailable"}
+    result = browser_api.navigate(url, headless=headless)
+    logger.info("browser goto url=%s success=%s", url, result.get("success"))
+    return result

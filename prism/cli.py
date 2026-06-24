@@ -527,6 +527,21 @@ def doctor():
     except Exception as e:
         checks.append(("Gateway", False, str(e)))
 
+    # 6. Skills
+    try:
+        from prism.skills import skills as skill_registry
+        skill_list = skill_registry.list_skills()
+        checks.append(("Skills", True, f"已安装 {len(skill_list)} 个"))
+    except Exception as e:
+        checks.append(("Skills", False, str(e)))
+
+    # 7. MCP
+    try:
+        mcp_servers = prism_config.get("mcp.servers") or []
+        checks.append(("MCP", True, f"已配置 {len(mcp_servers)} 个服务器"))
+    except Exception as e:
+        checks.append(("MCP", False, str(e)))
+
     # 输出
     console.print("\n[bold cyan]PRISM Doctor[/bold cyan]\n")
     for name, ok, detail in checks:
