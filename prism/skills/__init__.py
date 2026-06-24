@@ -11,6 +11,8 @@ from typing import Dict, List, Optional, Callable, Any
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from prism.config import config as prism_config
+
 
 @dataclass
 class Skill:
@@ -227,6 +229,45 @@ class SkillRegistry:
                     break
         
         return matched
+
+    def install_skill(self, name: str) -> Dict[str, Any]:
+        """安装 Skill"""
+        if name in self.skills:
+            return {'success': True, 'message': f'{name} 已安装'}
+        
+        skill_dir = self.skills_dir
+        skill_dir.mkdir(parents=True, exist_ok=True)
+        
+        target = skill_dir / f"{name}.py"
+        if target.exists():
+            return {'success': False, 'error': f'{name} 已存在'}
+        
+        hub_url = prism_config.get('skills.hub')
+        if hub_url:
+            try:
+                import requests
+                url = f"{hub_url.rstrip('/')}/skills/{name}.py"
+                resp = requests.get(url, timeout=20)
+                if resp.status_code == 200 and resp.text.strip():
+                    target.write_text(resp.text, encoding='utf-8')
+                    self._load_external_skills()
+                    return {'success': True, 'message': f'已从 hub 安装 {name}'}
+            except Exception as e:
+                return {'success': False, 'error': f'hub 安装失败: {e}'}
+        
+        return {'success': False, 'error': f'未找到 skill: {name}'}
+
+    def uninstall_skill(self, name: str) -> Dict[str, Any]:
+        """移除 Skill"""
+        if name not in self.skills:
+            return {'success': True, 'message': f'{name} 未安装'}
+        
+        target = self.skills_dir / f"{name}.py"
+        if target.exists():
+            target.unlink()
+        
+        self.skills.pop(name, None)
+        return {'success': True, 'message': f'已移除 {name}'}
 
 
 # 全局 Skills 注册表
