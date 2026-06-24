@@ -8,22 +8,29 @@
 - `prism doctor` health check command
 - Real model call tests (`tests/test_real_model.py`)
 - Windows desktop packaging script (`scripts/build-windows.ps1`)
+- Windows launcher (`scripts/build-windows.cmd`)
 - Local release scripts (`scripts/release.ps1`, `scripts/release.sh`)
 - PyPI release docs in README
+- End-to-end verification script (`scripts/verify_e2e.py`)
+- Integration tests (`tests/test_integration.py`)
 - Unified logging to `~/.prism/logs/prism.log` with rotation
+- `.gitignore` guard for local-only tutorials
 
 ### Changed
 - Config validation now runs before model-dependent commands
 - Provider pool returns clear Chinese error when no API key configured
 - CLI version updated to `0.2.1`
+- README/INSTALL updated with Windows desktop packaging and troubleshooting
 
 ### Fixed
 - `prism config get` without key now uses `show()` correctly
 - Gateway import cycle resolved
+- Desktop import path handling for verification scripts
 
 ### Notes
 - Video tutorial and Feishu tutorial remain local-only and are not uploaded to GitHub
 - Repo remains public; local tutorials kept in working tree only
+- Test suite is green on core paths
 
 ## 0.2.0 - 2026-06-24
 
