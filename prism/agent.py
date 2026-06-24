@@ -158,6 +158,59 @@ class Agent:
         self.messages = [self.messages[0]]  # 保留系统消息
         self.tool_calls = []
 
+    def save_session(self, name: str) -> str:
+        """保存当前会话到本地"""
+        session_dir = Path.home() / ".prism" / "sessions"
+        session_dir.mkdir(parents=True, exist_ok=True)
+        path = session_dir / f"{name}.json"
+        payload = {
+            "system_prompt": self.system_prompt,
+            "messages": [
+                {
+                    "role": m.role,
+                    "content": m.content,
+                    "timestamp": m.timestamp.isoformat() if hasattr(m.timestamp, "isoformat") else str(m.timestamp),
+                }
+                for m in self.messages
+            ],
+        }
+        path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        return str(path)
+
+    def load_session(self, name: str) -> bool:
+        """从本地加载会话"""
+        path = Path.home() / ".prism" / "sessions" / f"{name}.json"
+        if not path.exists():
+            return False
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            self.system_prompt = payload.get("system_prompt", self.system_prompt)
+            self.messages = []
+            for m in payload.get("messages", []):
+                self.messages.append(Message(
+                    role=m.get("role", "user"),
+                    content=m.get("content", ""),
+                ))
+            return True
+        except Exception:
+            return False
+
+    @staticmethod
+    def list_sessions() -> List[str]:
+        """列出已保存的会话"""
+        session_dir = Path.home() / ".prism" / "sessions"
+        if not session_dir.exists():
+            return []
+        return [p.stem for p in session_dir.glob("*.json")]
+
+    def delete_session(self, name: str) -> bool:
+        """删除已保存的会话"""
+        path = Path.home() / ".prism" / "sessions" / f"{name}.json"
+        if path.exists():
+            path.unlink()
+            return True
+        return False
+
 
 def create_agent(system_prompt: Optional[str] = None) -> Agent:
     """创建 Agent 实例"""
