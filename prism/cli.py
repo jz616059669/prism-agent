@@ -375,6 +375,55 @@ def version():
     console.print("整合 Hermes + Codex + OpenClaw 能力")
 
 
+@cli.command()
+def doctor():
+    """运行健康检查：配置、模型、浏览器、日志"""
+    from pathlib import Path
+    checks = []
+
+    # 1. 配置校验
+    try:
+        prism_config.validate()
+        checks.append(("配置", True, "model.default={}, provider={}".format(
+            prism_config.get("model.default"), prism_config.get("model.provider")
+        )))
+    except ConfigError as e:
+        checks.append(("配置", False, str(e)))
+
+    # 2. 提供商可用性
+    providers = []
+    try:
+        providers = provider_pool.list_providers()
+    except Exception as e:
+        pass
+    if providers:
+        checks.append(("提供商", True, ", ".join(providers)))
+    else:
+        checks.append(("提供商", False, "未配置可用提供商"))
+
+    # 3. 浏览器
+    try:
+        from prism.tools.browser import browser as browser_api
+        browser_ok = bool(browser_api)
+        checks.append(("浏览器", browser_ok, "已加载" if browser_ok else "模块不可用"))
+    except Exception as e:
+        checks.append(("浏览器", False, str(e)))
+
+    # 4. 日志目录
+    log_path = Path.home() / ".prism" / "logs" / "prism.log"
+    if log_path.exists():
+        checks.append(("日志", True, str(log_path)))
+    else:
+        checks.append(("日志", False, f"{log_path} 不存在"))
+
+    # 输出
+    console.print("\n[bold cyan]PRISM Doctor[/bold cyan]\n")
+    for name, ok, detail in checks:
+        status = "[green]✓[/green]" if ok else "[red]✗[/red]"
+        console.print(f"  {status} {name}: {detail}")
+    console.print()
+
+
 def show_help():
     """显示帮助信息"""
     help_text = """
