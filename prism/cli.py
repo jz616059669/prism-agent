@@ -473,11 +473,6 @@ def model():
 @cli.command()
 def version():
     """显示版本信息"""
-    try:
-        prism_config.validate()
-    except ConfigError as e:
-        console.print(f"[red]配置错误：{e}[/red]")
-        return
     console.print("PRISM Agent v0.2.1")
     console.print("整合 Hermes + Codex + OpenClaw 能力")
 
