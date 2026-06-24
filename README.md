@@ -199,8 +199,18 @@ pytest
 
 ## 路线图
 
-- 飞书 / Telegram / Discord 真实连接验证
+- 飞书 / Telegram / Discord / 微信 真实连接验证
 - MCP 服务器连接测试
 - Skills 市场 / 一键安装
 - 浏览器测试套件完善
 - ACP 协议支持
+
+## 本地教程
+
+本地保留的教程不上传 GitHub：
+- `INSTALL_FEISHU.md`
+- `VIDEO_TUTORIAL.md`
+
+## 贡献
+
+PRISM 仍在快速迭代。欢迎提 issue / PR。
