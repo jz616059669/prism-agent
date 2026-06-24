@@ -7,3 +7,7 @@ build/
 .env
 *.pyc
 .DS_Store
+
+# 本地保留教程，不上传 GitHub
+INSTALL_FEISHU.md
+VIDEO_TUTORIAL.md
