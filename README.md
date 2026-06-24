@@ -126,6 +126,7 @@ prism gateway status
 # 前台运行
 prism gateway start --platform telegram --token <TOKEN>
 prism gateway start --platform feishu --app-id <ID> --app-secret <SECRET>
+prism gateway start --platform wechat --app-id <ID> --app-secret <SECRET>
 
 # Linux 后台运行（systemd）
 sudo cp scripts/prism-gateway.service /etc/systemd/system/
@@ -167,17 +168,6 @@ twine upload dist/*
 ## 故障排查
 
 - 浏览器失败：`playwright install --force chromium`
-- 模型 401/403：检查 `model.api_key` 和 `model.base_url`
-- Gateway 失败：检查 token/app_id，查看日志
-- 桌面客户端失败：确认 `flet` 已安装，并重装 `prism-desktop`
-
-## 快速诊断
-
-```bash
-prism doctor
-```
-
-## 开发
 - 模型 401/403：检查 `model.api_key` 和 `model.base_url`
 - Gateway 失败：检查 token/app_id，查看日志
 - 桌面客户端失败：确认 `flet` 已安装，并重装 `prism-desktop`

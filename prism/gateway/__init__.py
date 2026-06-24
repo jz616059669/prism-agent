@@ -70,8 +70,17 @@ class Gateway:
         return adapter.send(chat_id, text)
     
     def list_platforms(self) -> list:
-        """列出已注册的平台"""
-        return list(self.adapters.keys())
+        """列出已注册的平台，并补充配置中存在的平台"""
+        registered = list(self.adapters.keys())
+        try:
+            from prism.config import config as prism_config
+            cfg_platforms = prism_config.get("gateway.platforms") or []
+            for platform in cfg_platforms:
+                if platform and platform not in registered:
+                    registered.append(platform)
+        except Exception:
+            pass
+        return registered
 
 
 # 延迟初始化，避免循环导入
