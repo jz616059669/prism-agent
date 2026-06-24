@@ -91,7 +91,7 @@ class ProviderPool:
         default_model = config.get('model.default', 'gpt-4o')
         provider_name = config.get('model.provider', 'openai')
         base_url = config.get('model.base_url', 'https://api.openai.com/v1')
-        api_key = config.get('model.api_key', '')
+        api_key = config.get('model.api_key', '') or os.getenv(f'{provider_name.upper()}_API_KEY', '') or config.get(f'providers.{provider_name}.api_key', '')
         
         if api_key:
             self.providers.append(OpenAIProvider(

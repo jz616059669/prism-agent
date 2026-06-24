@@ -20,7 +20,7 @@ from rich.syntax import Syntax
 from rich.prompt import Prompt
 
 from prism.agent import create_agent
-from prism.config import config
+from prism.config import config as prism_config
 
 console = Console()
 
@@ -210,7 +210,7 @@ def config():
 @click.argument('value')
 def set(key: str, value: str):
     """设置配置项"""
-    config.set(key, value)
+    prism_config.set(key, value)
     console.print(f"[green]✓[/green] 已设置 {key} = {value}")
 
 
@@ -219,10 +219,10 @@ def set(key: str, value: str):
 def get(key: Optional[str]):
     """查看配置项"""
     if key:
-        value = config.get(key)
+        value = prism_config.get(key)
         console.print(f"{key} = {value}")
     else:
-        all_config = config.all()
+        all_config = prism_config.all()
         console.print_json(data=all_config)
 
 
