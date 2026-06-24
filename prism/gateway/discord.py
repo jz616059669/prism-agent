@@ -68,18 +68,61 @@ class DiscordAdapter(PlatformAdapter):
     def start_polling(self, handler: Callable[[Message], None]):
         """
         启动 Gateway 连接
-        
-        注意：Discord 推荐使用 WebSocket Gateway，这里做占位
-        生产环境推荐使用 discord.py 或 py-cord
+
+        实际使用请安装 websockets：
+        pip install websockets
         """
         self.handler = handler
         self.running = True
-        
-        print("[Discord] Gateway 连接待接入 discord.py / py-cord")
-        print("[Discord] 当前为占位实现")
-        
-        # 演示模式
-        print("[Discord] 建议使用 discord.py 库实现完整 Gateway")
+
+        try:
+            import websockets
+            import asyncio
+            import json as _json
+
+            async def _connect():
+                url = "wss://gateway.discord.gg/?v=10&encoding=json"
+                async with websockets.connect(url) as ws:
+                    hello = _json.loads(await ws.recv())
+                    heartbeat = hello.get("d", {}).get("heartbeat_interval", 45000)
+                    await ws.send(_json.dumps({
+                        "op": 2,
+                        "d": {
+                            "token": self.config.bot_token,
+                            "intents": 3328,
+                            "properties": {"os": "linux", "browser": "prism", "device": "prism"},
+                        }
+                    }))
+                    last = 0
+                    while self.running:
+                        try:
+                            msg = await asyncio.wait_for(ws.recv(), timeout=heartbeat / 1000)
+                            data = _json.loads(msg)
+                            if data.get("op") == 11:
+                                await ws.send(_json.dumps({"op": 1, "d": last}))
+                                continue
+                            if data.get("t") == "MESSAGE_CREATE":
+                                m = data.get("d", {})
+                                if handler:
+                                    handler(Message(
+                                        platform="discord",
+                                        chat_id=str(m.get("channel_id", "")),
+                                        user_id=str(m.get("author", {}).get("id", "")),
+                                        text=m.get("content", ""),
+                                        raw=data,
+                                    ))
+                        except asyncio.TimeoutError:
+                            await ws.send(_json.dumps({"op": 1, "d": last}))
+
+            def _run():
+                asyncio.run(_connect())
+
+            t = threading.Thread(target=_run, daemon=True)
+            t.start()
+            print("[Discord] Gateway WebSocket 已启动")
+        except Exception as e:
+            print(f"[Discord] 启动失败: {e}")
+            print("[Discord] 请安装 websockets：pip install websockets")
     
     def stop(self):
         """停止"""

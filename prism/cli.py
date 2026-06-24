@@ -116,8 +116,12 @@ def gateway():
 @click.option('--app-secret', help='飞书 App Secret')
 @click.option('--encrypt-key', help='飞书 Encrypt Key')
 @click.option('--verification-token', help='飞书 Verification Token')
+@click.option('--webhook', is_flag=True, help='启用本地 Webhook 接收（仅飞书）')
+@click.option('--host', default='127.0.0.1', help='Webhook 监听地址')
+@click.option('--port', default=9000, type=int, help='Webhook 监听端口')
 def start(platform: Optional[str], token: Optional[str], app_id: Optional[str], 
-          app_secret: Optional[str], encrypt_key: Optional[str], verification_token: Optional[str]):
+          app_secret: Optional[str], encrypt_key: Optional[str], verification_token: Optional[str],
+          webhook: bool, host: str, port: int):
     """启动 Gateway 服务"""
     from prism.gateway import gateway as gw
     
@@ -170,9 +174,14 @@ def start(platform: Optional[str], token: Optional[str], app_id: Optional[str],
                 verification_token=verification_token,
             ))
             gw.register('feishu', adapter)
-            gw.start(lambda m: click.echo(f"[feishu] {m.text}"))
-            started = True
-            click.echo("feishu 已启动")
+            if webhook:
+                adapter.start_webhook(lambda m: click.echo(f"[feishu] {m.text}"), host=host, port=port)
+                started = True
+                click.echo("feishu webhook 已启动")
+            else:
+                gw.start(lambda m: click.echo(f"[feishu] {m.text}"))
+                started = True
+                click.echo("feishu 已启动")
         except Exception as e:
             click.echo(f"feishu 启动失败: {e}")
     elif platform == 'telegram':

@@ -115,20 +115,77 @@ class FeishuAdapter(PlatformAdapter):
     def start_polling(self, handler: Callable[[Message], None]):
         """
         启动长轮询接收消息
-        
+
         注意：飞书推荐使用 Webhook，长轮询仅作演示
         生产环境请部署 Webhook 服务
         """
         self.handler = handler
         self.running = True
-        
+
         print("[Feishu] 开始轮询消息（演示模式）...")
         print("[Feishu] 生产环境请部署 Webhook 服务")
-        
+
         # 演示模式：模拟接收
         # 实际应该连接飞书 Webhook 或长轮询
         # 这里先打印提示
         print("[Feishu] 轮询服务待接入 Webhook endpoint")
+
+    def start_webhook(self, handler: Callable[[Message], None], host: str = "127.0.0.1", port: int = 9000):
+        """
+        启动本地 Webhook 服务接收飞书事件
+        """
+        self.handler = handler
+        self.running = True
+
+        import json as _json
+        import threading
+        from http.server import HTTPServer, BaseHTTPRequestHandler
+
+        class FeishuWebhookHandler(BaseHTTPRequestHandler):
+            adapter = self
+
+            def do_POST(self):
+                try:
+                    length = int(self.headers.get('content-length', '0'))
+                    body = self.rfile.read(length)
+                    data = _json.loads(body.decode('utf-8'))
+                    timestamp = self.headers.get('X-Lark-Request-Timestamp', '')
+                    nonce = self.headers.get('X-Lark-Request-Nonce', '')
+                    signature = self.headers.get('X-Lark-Signature', '')
+
+                    verified = True
+                    if self.adapter.config.encrypt_key:
+                        verified = self.adapter.verify_webhook(body, timestamp, nonce, signature)
+
+                    if not verified:
+                        self.send_response(403)
+                        self.end_headers()
+                        self.wfile.write(b'forbidden')
+                        return
+
+                    msg = self.adapter.parse_event(data)
+                    if msg and self.adapter.handler:
+                        self.adapter.handler(msg)
+
+                    self.send_response(200)
+                    self.end_headers()
+                    self.wfile.write(b'ok')
+                except Exception as e:
+                    print(f"[Feishu] webhook error: {e}")
+                    try:
+                        self.send_response(500)
+                        self.end_headers()
+                        self.wfile.write(b'error')
+                    except Exception:
+                        pass
+
+            def log_message(self, format, *args):
+                print(f"[Feishu] {args[0]}")
+
+        server = HTTPServer((host, port), FeishuWebhookHandler)
+        t = threading.Thread(target=server.serve_forever, daemon=True)
+        t.start()
+        print(f"[Feishu] webhook 服务已启动：http://{host}:{port}/webhook/feishu")
     
     def stop(self):
         """停止接收"""
