@@ -128,6 +128,30 @@ prism-desktop
 - 模型 401/403：检查 `model.api_key` 和 `model.base_url`
 - 桌面端失败：确认 `flet` 已安装，并重装 `prism-desktop`
 
+## 会话持久化
+
+PRISM 支持将对话会话保存到本地：
+
+```bash
+# 查看已保存会话
+prism session list
+
+# 保存当前会话
+prism session save 会话名称
+
+# 加载会话
+prism session load 会话名称
+
+# 删除会话
+prism session delete 会话名称
+```
+
+会话文件存储在：
+- Windows：`%USERPROFILE%\.prism\sessions\`
+- macOS/Linux：`~/.prism/sessions/`
+
+桌面端侧边栏也提供会话保存/加载按钮。
+
 ## 手动安装
 
 见 [INSTALL.md](INSTALL.md)
