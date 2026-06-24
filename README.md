@@ -153,6 +153,40 @@ prism config get model.default
 prism config get
 ```
 
+### 外部用户首次配置
+
+1. **获取 API Key**
+   - StepFun：https://platform.stepfun.com
+   - OpenAI：https://platform.openai.com
+   - 其他兼容 OpenAI 的提供商
+
+2. **配置模型**
+```bash
+# 方式1：CLI
+prism config set model.provider stepfun
+prism config set model.base_url https://api.stepfun.com/step_plan/v1
+prism config set model.api_key YOUR_KEY
+
+# 方式2：编辑配置文件
+notepad %USERPROFILE%\.prism\config.yaml   # Windows
+open ~/.prism/config.yaml                  # macOS/Linux
+```
+
+3. **安装桌面端（可选）**
+```bash
+# pip 安装时自带桌面依赖
+pip install prism-agent[desktop]
+
+# 或单独安装
+pip install flet
+```
+
+4. **验证**
+```bash
+prism doctor
+prism ask "你好"
+```
+
 ## 本地发布 / 上传 PyPI
 
 ### 本地构建
