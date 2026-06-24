@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.2.1 - 2026-06-24
+
+### Added
+- Desktop client real backend connection (`prism-desktop/prism_desktop/main.py`)
+- Browser control in desktop UI: open page, read snapshot, close browser
+- `prism doctor` health check command
+- Real model call tests (`tests/test_real_model.py`)
+- Windows desktop packaging script (`scripts/build-windows.ps1`)
+- Local release scripts (`scripts/release.ps1`, `scripts/release.sh`)
+- PyPI release docs in README
+- Unified logging to `~/.prism/logs/prism.log` with rotation
+
+### Changed
+- Config validation now runs before model-dependent commands
+- Provider pool returns clear Chinese error when no API key configured
+- CLI version updated to `0.2.1`
+
+### Fixed
+- `prism config get` without key now uses `show()` correctly
+- Gateway import cycle resolved
+
+### Notes
+- Video tutorial and Feishu tutorial remain local-only and are not uploaded to GitHub
+- Repo remains public; local tutorials kept in working tree only
+
 ## 0.2.0 - 2026-06-24
 
 ### Added
@@ -20,7 +45,7 @@
 - `prism browser open/close` CLI commands
 - `prism gateway` CLI commands
 - `prism skill` CLI commands
-- `prism tools` CLI commands
+- `prism tools` CLI command
 - `prism version` CLI command
 - Smoke tests: `tests/test_full_smoke.py`
 - MCP config loader tests: `tests/test_mcp_config_loader.py`

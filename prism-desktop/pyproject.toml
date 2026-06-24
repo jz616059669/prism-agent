@@ -11,6 +11,9 @@ dependencies = [
 dev = [
     "flet[all]>=0.24.0",
 ]
+desktop = [
+    "flet>=0.24.0",
+]
 
 [project.scripts]
 prism-desktop = "prism_desktop.main:main"

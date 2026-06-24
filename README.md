@@ -14,7 +14,7 @@ cd prism-agent
 Windows 额外支持：
 ```powershell
 # 打包桌面客户端
-.\scripts\build-windows.ps1
+.\scripts\build-windows.cmd
 
 # 后台运行 Gateway（NSSM）
 nssm install PrismGateway "C:\path\to\prism.exe" "gateway start"
@@ -95,6 +95,9 @@ prism-desktop
 # 查看版本
 prism version
 
+# 健康检查
+prism doctor
+
 # 列出工具
 prism tools
 
@@ -162,6 +165,19 @@ bash scripts/release.sh
 ```bash
 pip install twine
 twine upload dist/*
+```
+
+## 故障排查
+
+- 浏览器失败：`playwright install --force chromium`
+- 模型 401/403：检查 `model.api_key` 和 `model.base_url`
+- Gateway 失败：检查 token/app_id，查看日志
+- 桌面客户端失败：确认 `flet` 已安装，并重装 `prism-desktop`
+
+## 快速诊断
+
+```bash
+prism doctor
 ```
 
 ## 开发
