@@ -71,6 +71,8 @@ prism --help
 prism-desktop
 ```
 
+> 注意：PyPI 正式包待上传，当前可先通过 `git clone` 或 `pip install .` 使用。
+
 ## 手动安装
 
 见 [INSTALL.md](INSTALL.md)
