@@ -194,6 +194,9 @@ prism tools
 # 列出 skills
 prism skill list
 
+# 搜索 skills
+prism skill search 文件
+
 # 打开网页
 prism browser open https://example.com
 
@@ -202,6 +205,11 @@ prism ask "用 Python 写一个快速排序"
 
 # 交互聊天
 prism chat
+
+# 保存/加载会话
+prism session save 我的会话
+prism session list
+prism session load 我的会话
 
 # 启动桌面客户端
 prism-desktop
