@@ -604,6 +604,17 @@ class PrismDesktop:
         self.session_name_field.update()
         self._refresh_sessions()
 
+    def _refresh_sessions(self):
+        self.session_list.controls.clear()
+        try:
+            for name in self.agent.list_sessions():
+                btn = ft.ElevatedButton(name, width=260)
+                btn.on_click = lambda e, n=name: self._load_session(n)
+                self.session_list.controls.append(btn)
+        except Exception:
+            pass
+        self.session_list.update()
+
     def _load_session(self, name: str):
         try:
             ok = self.agent.load_session(name)
@@ -622,17 +633,6 @@ class PrismDesktop:
         except Exception as e:
             self._append_terminal(f"session load error: {e}")
             self._set_status("会话加载异常", ft.colors.RED_400)
-
-    def _refresh_sessions(self):
-        self.session_list.controls.clear()
-        try:
-            for name in self.agent.list_sessions():
-                btn = ft.ElevatedButton(name, width=260)
-                btn.on_click = lambda e, n=name: self._load_session(n)
-                self.session_list.controls.append(btn)
-        except Exception:
-            pass
-        self.session_list.update()
 
 
 def main():
