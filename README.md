@@ -152,20 +152,26 @@ prism config get
 
 ## 本地发布 / 上传 PyPI
 
-当前已构建包：
-- `dist/prism_agent-0.2.1.tar.gz`
-- `dist/prism_agent-0.2.1-py3-none-any.whl`
-
-本地校验：
+### 本地构建
 ```bash
+# 构建分发包
+uv run python -m build
+
+# 校验
 uv run twine check dist/*
 ```
 
-手动上传到 PyPI：
+产物：
+- `dist/prism_agent-0.2.1.tar.gz`
+- `dist/prism_agent-0.2.1-py3-none-any.whl`
+
+### 上传到 PyPI
 ```bash
 pip install twine
 twine upload dist/*
 ```
+
+> 需要 PyPI 账号 + token。未配置前可先用 `pip install .` 本地安装。
 
 ## 故障排查
 

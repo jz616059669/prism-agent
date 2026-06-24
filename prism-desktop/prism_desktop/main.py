@@ -6,6 +6,7 @@ PRISM Agent - 桌面客户端
 
 import sys
 from pathlib import Path
+import json
 import flet as ft
 from typing import Optional
 
@@ -29,6 +30,10 @@ class PrismDesktop:
         self.page.window_height = 800
         self.page.theme = ft.Theme(color_scheme_seed="blue")
         
+        # 持久化设置
+        self._settings_path = Path.home() / ".prism" / "desktop_settings.json"
+        self._settings = self._load_settings()
+        
         self.messages = []
         self.agent = create_agent()
         self.browser_connected = False
@@ -36,6 +41,44 @@ class PrismDesktop:
         self._mcp_logs = []
         self._skill_list_cache = []
         self._build_ui()
+        self._apply_settings()
+        self._bind_context_menu()
+
+    def _load_settings(self) -> dict:
+        if self._settings_path.exists():
+            try:
+                import json
+                return json.loads(self._settings_path.read_text(encoding="utf-8"))
+            except Exception:
+                return {}
+        return {}
+
+    def _save_settings(self) -> None:
+        try:
+            self._settings_path.parent.mkdir(parents=True, exist_ok=True)
+            payload = {
+                "window_width": int(self.page.window_width or 1320),
+                "window_height": int(self.page.window_height or 800),
+                "theme_mode": self.page.theme_mode.value if hasattr(self.page.theme_mode, "value") else str(self.page.theme_mode),
+            }
+            self._settings_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        except Exception:
+            pass
+
+    def _apply_settings(self) -> None:
+        try:
+            width = self._settings.get("window_width")
+            height = self._settings.get("window_height")
+            if isinstance(width, int):
+                self.page.window_width = width
+            if isinstance(height, int):
+                self.page.window_height = height
+        except Exception:
+            pass
+
+    def _bind_context_menu(self) -> None:
+        self.page.on_resized = lambda e: self._save_settings()
+        self.page.on_window_event = lambda e: self._save_settings()
     
     def _build_ui(self):
         self.page.add(
