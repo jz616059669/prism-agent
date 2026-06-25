@@ -284,6 +284,21 @@ class SkillRegistry:
         # 本地路径安装
         local_candidate = Path(name)
         if local_candidate.exists():
+            # 目录批量安装
+            if local_candidate.is_dir():
+                installed = []
+                for skill_file in local_candidate.glob('*.py'):
+                    if skill_file.name == '__init__.py':
+                        continue
+                    target = skill_dir / skill_file.name
+                    if target.exists():
+                        continue
+                    target.write_text(skill_file.read_text(encoding='utf-8'), encoding='utf-8')
+                    installed.append(target.name)
+                self._load_external_skills()
+                return {'success': True, 'message': f'已从目录安装 {len(installed)} 个 skills: {", ".join(installed)}'}
+            
+            # 单文件安装
             target = skill_dir / f"{local_candidate.stem}.py"
             if target.exists():
                 return {'success': False, 'error': f'{target.name} 已存在'}
@@ -291,6 +306,7 @@ class SkillRegistry:
             self._load_external_skills()
             return {'success': True, 'message': f'已从本地安装 {target.name}'}
         
+        # hub 安装
         target = skill_dir / f"{name}.py"
         if target.exists():
             return {'success': False, 'error': f'{name} 已存在'}

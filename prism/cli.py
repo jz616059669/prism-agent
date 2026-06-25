@@ -388,6 +388,31 @@ def install(name: str):
 
 
 @skill.command()
+def install_builtin():
+    """安装内置示例 Skills 到本地 skills 目录"""
+    from pathlib import Path
+    from prism.skills import skills
+    builtin_dir = Path(__file__).resolve().parent.parent / 'skills' / 'builtin'
+    result = skills.install_skill(str(builtin_dir))
+    if result.get('success'):
+        console.print(f"[green]✓[/green] {result.get('message')}")
+    else:
+        console.print(f"[red]✗[/red] {result.get('error', '未知错误')}")
+
+
+@skill.command()
+@click.argument('directory')
+def install_dir(directory: str):
+    """从目录批量安装 Skills"""
+    from prism.skills import skills
+    result = skills.install_skill(directory)
+    if result.get('success'):
+        console.print(f"[green]✓[/green] {result.get('message')}")
+    else:
+        console.print(f"[red]✗[/red] {result.get('error', '未知错误')}")
+
+
+@skill.command()
 @click.argument('name')
 def remove(name: str):
     """移除一个 Skill"""
