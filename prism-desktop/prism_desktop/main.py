@@ -247,12 +247,13 @@ class PrismDesktop:
         self.page.update()
 
     def _cycle_theme(self):
-        current = desktop_settings.get("theme", "Dark")
+        current = self._settings.get("theme", "Dark")
         themes = ["Dark", "Light", "Midnight", "Warm"]
         idx = themes.index(current) if current in themes else 0
         next_theme = themes[(idx + 1) % len(themes)]
-        desktop_settings["theme"] = next_theme
-        self.theme_dropdown.value = next_theme
+        self._settings["theme"] = next_theme
+        if hasattr(self, "theme_dropdown") and self.theme_dropdown is not None:
+            self.theme_dropdown.value = next_theme
         self._apply_theme(next_theme)
 
     def _minimize_to_tray(self):
@@ -498,19 +499,26 @@ class PrismDesktop:
             spacing=8,
         )
     
-    def _append(self, role: str, text: str, retry: bool = False, retry_text: str = ""):
+    def _append(self, role: str, text: str, retry: bool = False, retry_text: str = "", placeholder: bool = False):
         is_user = role == "你"
         align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
         color = ft.colors.PRIMARY_CONTAINER if is_user else ft.colors.SURFACE_VARIANT
         text_color = ft.colors.ON_PRIMARY_CONTAINER if is_user else ft.colors.ON_SURFACE
-        
+
         def _copy(_):
             try:
                 self.page.set_clipboard(text)
                 self._set_status("已复制", ft.colors.GREEN_400)
             except Exception:
                 pass
-        
+
+        def _copy_raw(_):
+            try:
+                self.page.set_clipboard(text)
+                self._set_status("已复制原文", ft.colors.GREEN_400)
+            except Exception:
+                pass
+
         def _delete(_):
             try:
                 self.chat_list.controls.remove(container_wrapper)
@@ -518,16 +526,23 @@ class PrismDesktop:
                 self._append_terminal("message deleted")
             except Exception:
                 pass
-        
+
+        def _on_right_click(e):
+            try:
+                self._show_message_menu(e, container_wrapper, text)
+            except Exception:
+                pass
+
         try:
             import markdown
             rendered = markdown.markdown(text, extensions=["fenced_code", "tables"])
         except Exception:
             rendered = text
-        
+
         actions = [
             ft.Text(self._format_time(), size=9, color=ft.colors.ON_SURFACE_VARIANT),
-            ft.TextButton("复制", on_click=_copy),
+            ft.TextButton("复制渲染", on_click=_copy),
+            ft.TextButton("复制原文", on_click=_copy_raw),
             ft.TextButton("删除", on_click=_delete),
         ]
         if retry and retry_text:
@@ -538,7 +553,10 @@ class PrismDesktop:
                 self.input_field.update()
                 self._send()
             actions.insert(2, ft.TextButton("重发", on_click=_retry))
-        
+
+        if placeholder:
+            actions = [ft.Text(self._format_time(), size=9, color=ft.colors.ON_SURFACE_VARIANT)]
+
         content = ft.Column(
             [
                 ft.Text(role, size=11, color=ft.colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.BOLD),
@@ -547,15 +565,16 @@ class PrismDesktop:
             ],
             tight=True,
         )
-        
+
         container_wrapper = ft.Container(
             content=content,
             bgcolor=color,
             padding=10,
             border_radius=16,
             expand=True,
+            on_secondary_tap=_on_right_click,
         )
-        
+
         self.chat_list.controls.append(
             ft.Row(
                 [
@@ -565,6 +584,7 @@ class PrismDesktop:
             )
         )
         self.chat_list.update()
+        return container_wrapper
     
     def _format_time(self) -> str:
         return datetime.now().strftime("%H:%M")
@@ -572,6 +592,32 @@ class PrismDesktop:
     def _clear_chat(self):
         self.chat_list.controls.clear()
         self.chat_list.update()
+    
+    def _show_message_menu(self, e, target, message_text: str):
+        def _copy_msg(_):
+            try:
+                self.page.set_clipboard(message_text)
+                self._set_status("已复制", ft.colors.GREEN_400)
+            except Exception:
+                pass
+        def _del_msg(_):
+            try:
+                self.chat_list.controls.remove(target)
+                self.chat_list.update()
+            except Exception:
+                pass
+        def _close(_):
+            self.page.close_dialog()
+        self.page.dialog = ft.AlertDialog(
+            title=ft.Text("消息操作"),
+            content=ft.Column([
+                ft.TextButton("复制", on_click=_copy_msg),
+                ft.TextButton("删除", on_click=_del_msg),
+            ], tight=True),
+            actions=[ft.TextButton("取消", on_click=_close)],
+        )
+        self.page.dialog.open = True
+        self.page.update()
     
     def _append_terminal(self, text: str):
         self._terminal_lines.append(text)

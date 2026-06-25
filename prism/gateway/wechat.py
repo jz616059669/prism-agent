@@ -5,6 +5,11 @@ PRISM Agent - 微信 Gateway 适配器（企业微信）
 from typing import Optional, Callable, Dict, Any
 from dataclasses import dataclass, field
 
+try:
+    import requests
+except Exception:  # pragma: no cover - optional dependency
+    requests = None  # type: ignore
+
 from prism.gateway import PlatformAdapter, Message
 
 
@@ -40,11 +45,9 @@ class WechatAdapter(PlatformAdapter):
         if self._access_token:
             return self._access_token
 
-        try:
-            import requests  # noqa: F401
-        except Exception as e:  # pragma: no cover
-            raise RuntimeError("发送微信消息需要 requests，请先安装") from e
-
+        if requests is None:
+            raise RuntimeError("发送微信消息需要 requests，请先安装")
+        
         url = f"{self.config.base_url}/gettoken"
         params = {
             "corpid": self.config.corp_id,
