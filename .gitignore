@@ -10,6 +10,7 @@ build/
 # 本地保留教程，不上传 GitHub
 INSTALL_FEISHU.md
 VIDEO_TUTORIAL.md
+PRISM_*使用文档.md
 
 # 运行时产物
 prism_screenshot_*.png
