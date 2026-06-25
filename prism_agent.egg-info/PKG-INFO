@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: prism-agent
-Version: 0.2.2
+Version: 0.2.3
 Summary: 统一 AI Agent CLI：整合 Hermes/Codex/OpenClaw 能力
 Author-email: PRISM Agent <prism@example.com>
 License: MIT License
