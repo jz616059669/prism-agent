@@ -169,13 +169,26 @@ class PrismDesktop:
         self.theme_icon_btn.on_click = lambda e: self._cycle_theme()
         self.minimize_btn = ft.IconButton(icon=ft.icons.MINIMIZE_ROUNDED, tooltip="最小化到托盘")
         self.minimize_btn.on_click = lambda e: self._minimize_to_tray()
+        self.sidebar_toggle_btn = ft.IconButton(icon=ft.icons.MENU_ROUNDED, tooltip="切换侧边栏")
+        self.sidebar_toggle_btn.on_click = lambda e: self._toggle_sidebar()
         return ft.AppBar(
             title=self.title_text,
             actions=[
+                self.sidebar_toggle_btn,
                 self.theme_icon_btn,
                 self.minimize_btn,
             ],
         )
+
+    def _toggle_sidebar(self):
+        if not hasattr(self, "_sidebar_container"):
+            return
+        visible = self._sidebar_container.visible
+        self._sidebar_container.visible = not visible
+        width = 0 if visible else 280
+        self._sidebar_container.width = width
+        self._sidebar_container.update()
+        self.page.update()
 
     def _cycle_theme(self):
         current = desktop_settings.get("theme", "Dark")
@@ -210,64 +223,59 @@ class PrismDesktop:
         )
     
     def _build_sidebar(self) -> ft.Container:
-        self.model_dropdown = ft.Dropdown(
-            label="模型",
-            value=prism_config.get("model.default", "step-3.7-flash"),
-            options=[
-                ft.dropdown.Option("step-3.7-flash"),
-                ft.dropdown.Option("gpt-4o"),
-                ft.dropdown.Option("gpt-4o-mini"),
-            ],
-            width=260,
+        self._sidebar_container = ft.Container(
+            content=ft.Column(
+                [
+                    ft.Text("PRISM", size=20, weight=ft.FontWeight.BOLD),
+                    ft.Divider(height=12, color=ft.colors.TRANSPARENT),
+                    self.model_dropdown,
+                    ft.Container(height=6),
+                    self.provider_textfield,
+                    ft.Container(height=6),
+                    self.api_key_textfield,
+                    ft.Container(height=6),
+                    save_btn,
+                    ft.Container(height=16),
+                    ft.Text("浏览器控制", size=12, weight=ft.FontWeight.BOLD),
+                    self.url_field,
+                    browser_open_btn,
+                    browser_snapshot_btn,
+                    browser_close_btn,
+                    ft.Container(height=16),
+                    ft.Text("MCP 控制", size=12, weight=ft.FontWeight.BOLD),
+                    self.mcp_refresh_btn,
+                    ft.Container(height=6),
+                    ft.Text("已配置服务器", size=11, color=ft.colors.ON_SURFACE_VARIANT),
+                    self.mcp_server_list,
+                    ft.Container(height=16),
+                    ft.Text("Skills", size=12, weight=ft.FontWeight.BOLD),
+                    self.skill_refresh_btn,
+                    self.skill_install_field,
+                    self.skill_install_btn,
+                    ft.Container(height=6),
+                    ft.Text("可用 Skills", size=11, color=ft.colors.ON_SURFACE_VARIANT),
+                    self.skill_list,
+                    ft.Container(height=16),
+                    ft.Text("会话", size=12, weight=ft.FontWeight.BOLD),
+                    ft.Row([self.session_name_field, self.session_save_btn], spacing=8),
+                    ft.Container(height=6),
+                    ft.Text("已保存会话", size=11, color=ft.colors.ON_SURFACE_VARIANT),
+                    self.session_list,
+                    ft.Container(height=16),
+                    ft.Text("状态", size=12, weight=ft.FontWeight.BOLD),
+                    ft.Row([self.browser_status_icon, self.browser_status_text], spacing=8),
+                    self.status_text,
+                ],
+                tight=True,
+                spacing=6,
+                scroll=ft.ScrollMode.AUTO,
+            ),
+            width=280,
+            padding=16,
+            bgcolor=ft.colors.SURFACE_VARIANT,
+            border_radius=12,
         )
-        self.provider_textfield = ft.TextField(
-            label="提供商",
-            value=prism_config.get("model.provider", "stepfun"),
-            password=True,
-            can_reveal_password=True,
-            width=260,
-        )
-        self.api_key_textfield = ft.TextField(
-            label="API Key",
-            value=prism_config.get("model.api_key", ""),
-            password=True,
-            can_reveal_password=True,
-            width=260,
-        )
-        self.status_text = ft.Text("就绪", size=12, color=ft.colors.GREEN_400)
-        self.browser_status_icon = ft.Icon(ft.icons.CIRCLE, size=10, color=ft.colors.OUTLINE)
-        self.browser_status_text = ft.Text("浏览器未连接", size=12, color=ft.colors.ON_SURFACE_VARIANT)
-        
-        self.theme_dropdown = ft.Dropdown(
-            label="主题",
-            value=desktop_settings.get("theme", "Dark"),
-            width=260,
-            options=[
-                ft.dropdown.Option("Dark"),
-                ft.dropdown.Option("Light"),
-                ft.dropdown.Option("Midnight"),
-                ft.dropdown.Option("Warm"),
-            ],
-        )
-        self.theme_dropdown.on_change = lambda e: self._apply_theme(e.data)
-        
-        self.open_config_btn = ft.ElevatedButton("打开配置目录", width=260)
-        self.open_config_btn.on_click = lambda e: self._open_config_dir(e)
-        
-        self.open_terminal_btn = ft.ElevatedButton("打开终端", width=260)
-        self.open_terminal_btn.on_click = lambda e: self._open_terminal_here(e)
-        
-        self.about_btn = ft.ElevatedButton("关于", width=260)
-        self.about_btn.on_click = lambda e: self._about(e)
-        
-        save_btn = ft.ElevatedButton("保存配置", width=260)
-        save_btn.on_click = lambda e: self._save_config()
-        
-        self.url_field = ft.TextField(
-            hint_text="输入网址...",
-            value="https://example.com",
-            width=260,
-        )
+        return self._sidebar_container
         browser_open_btn = ft.ElevatedButton("打开网页", width=260)
         browser_open_btn.on_click = lambda e: self._browser_open()
         
