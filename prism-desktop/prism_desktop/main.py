@@ -124,12 +124,22 @@ class PrismDesktop:
         except Exception:
             pass
 
-    def _toggle_theme(self):
-        current = self.page.theme_mode
-        next_mode = ft.ThemeMode.LIGHT if current == ft.ThemeMode.DARK else ft.ThemeMode.DARK
-        self.page.theme_mode = next_mode
+    def _apply_theme(self, name: str):
+        name = (name or "Dark").strip()
+        if name == "Light":
+            self.page.theme_mode = ft.ThemeMode.LIGHT
+            self.page.theme = ft.Theme(color_scheme_seed="blue")
+        elif name == "Midnight":
+            self.page.theme_mode = ft.ThemeMode.DARK
+            self.page.theme = ft.Theme(color_scheme_seed="indigo")
+        elif name == "Warm":
+            self.page.theme_mode = ft.ThemeMode.LIGHT
+            self.page.theme = ft.Theme(color_scheme_seed="orange")
+        else:
+            self.page.theme_mode = ft.ThemeMode.DARK
+            self.page.theme = ft.Theme(color_scheme_seed="blue")
         self.page.update()
-        self._append_terminal(f"theme -> {next_mode}")
+        self._append_terminal(f"theme -> {name}")
         self._save_settings()
 
     def _open_config_dir(self, e):
@@ -194,8 +204,18 @@ class PrismDesktop:
         )
         self.status_text = ft.Text("就绪", size=12, color=ft.colors.GREEN_400)
         
-        self.theme_btn = ft.ElevatedButton("切换主题", width=260)
-        self.theme_btn.on_click = lambda e: self._toggle_theme()
+        self.theme_dropdown = ft.Dropdown(
+            label="主题",
+            value=desktop_settings.get("theme", "Dark"),
+            width=260,
+            options=[
+                ft.dropdown.Option("Dark"),
+                ft.dropdown.Option("Light"),
+                ft.dropdown.Option("Midnight"),
+                ft.dropdown.Option("Warm"),
+            ],
+        )
+        self.theme_dropdown.on_change = lambda e: self._apply_theme(e.data)
         
         self.open_config_btn = ft.ElevatedButton("打开配置目录", width=260)
         self.open_config_btn.on_click = lambda e: self._open_config_dir(e)
