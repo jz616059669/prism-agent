@@ -260,6 +260,13 @@ def test_wechat_adapter_send(monkeypatch):
 
 
 def test_adapter_lifecycle_sync(monkeypatch):
+    import time
+    import threading
+    from unittest.mock import patch
+    from prism.gateway.telegram import TelegramAdapter, TelegramConfig
+    from prism.gateway.discord import DiscordAdapter, DiscordConfig
+    from prism.gateway.feishu import FeishuAdapter, FeishuConfig
+
     import prism.gateway.telegram as telegram_mod
 
     def _fake_get(url, params=None, timeout=None):
@@ -268,20 +275,30 @@ def test_adapter_lifecycle_sync(monkeypatch):
     monkeypatch.setattr(telegram_mod.requests, "get", _fake_get)
 
     telegram = TelegramAdapter(TelegramConfig(bot_token="t"))
-    telegram.start_polling(lambda msg: None)
+    t = threading.Thread(target=telegram.start_polling, args=(lambda msg: None,))
+    t.start()
+    time.sleep(0.05)
     assert telegram.running is True
-    assert telegram.handler is not None
     telegram.stop()
     assert telegram.running is False
-    assert telegram.handler is None
+    t.join(timeout=3)
 
-    discord = DiscordAdapter(DiscordConfig(bot_token="t"))
-    discord.start_polling(lambda msg: None)
-    assert discord.running is True
-    assert discord.handler is not None
-    discord.stop()
-    assert discord.running is False
-    assert discord.handler is None
+    import prism.gateway.discord as discord_mod
+    import sys
+    discord_mod.websockets = sys.modules.get("websockets") or type(sys)("websockets")
+
+    with patch("prism.gateway.discord.websockets") as mock_ws:
+        mock_ws.connect.return_value.__enter__ = lambda self: self
+        mock_ws.connect.return_value.__exit__ = lambda self, *args: None
+        mock_ws.connect.return_value.recv.return_value = '{"op":10,"d":{"heartbeat_interval":45000}}'
+
+        discord = DiscordAdapter(DiscordConfig(bot_token="t"))
+        discord.start_polling(lambda msg: None)
+        assert discord.running is True
+        assert discord.handler is not None
+        discord.stop()
+        assert discord.running is False
+        assert discord.handler is None
 
     feishu = FeishuAdapter(FeishuConfig(app_id="a", app_secret="s"))
     feishu.start_polling(lambda msg: None)

@@ -117,6 +117,10 @@ class PrismDesktop:
             }
             if hasattr(self, "_sidebar_container"):
                 payload["sidebar_width"] = int(self._sidebar_container.width or 280)
+            if hasattr(self, "_chat_container"):
+                payload["chat_width"] = int(self._chat_container.width or 0)
+            if hasattr(self, "_right_container"):
+                payload["right_width"] = int(self._right_container.width or 0)
             self._settings_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
         except Exception:
             pass
@@ -131,6 +135,10 @@ class PrismDesktop:
                 self.page.window_height = height
             if hasattr(self, "_sidebar_container") and isinstance(self._settings.get("sidebar_width"), int):
                 self._sidebar_container.width = int(self._settings.get("sidebar_width"))
+            if hasattr(self, "_chat_container") and isinstance(self._settings.get("chat_width"), int):
+                self._chat_container.width = int(self._settings.get("chat_width"))
+            if hasattr(self, "_right_container") and isinstance(self._settings.get("right_width"), int):
+                self._right_container.width = int(self._settings.get("right_width"))
         except Exception:
             pass
 
@@ -158,6 +166,9 @@ class PrismDesktop:
                 def _on_tray_click(icon, item):
                     try:
                         self.page.window_show()
+                        if hasattr(self, "input_field"):
+                            self.input_field.focus()
+                            self.page.update()
                     except Exception:
                         pass
 
@@ -244,6 +255,8 @@ class PrismDesktop:
         width = 0 if visible else 280
         self._sidebar_container.width = width
         self._sidebar_container.update()
+        self._settings["sidebar_collapsed"] = not visible
+        self._save_settings()
         self.page.update()
 
     def _cycle_theme(self):
@@ -265,14 +278,16 @@ class PrismDesktop:
 
     def _build_ui(self):
         self.page.appbar = self._build_appbar()
+        self._chat_container = ft.Container(self._build_chat(), expand=True)
+        self._right_container = ft.Container(self._build_right_panel(), expand=True)
         self.page.add(
             ft.Row(
                 [
                     self._build_sidebar(),
                     ft.VerticalDivider(width=1),
-                    self._build_chat(),
+                    self._chat_container,
                     ft.VerticalDivider(width=1),
-                    self._build_right_panel(),
+                    self._right_container,
                 ],
                 expand=True,
                 spacing=0,
@@ -503,7 +518,7 @@ class PrismDesktop:
         is_user = role == "你"
         align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
         color = ft.colors.PRIMARY_CONTAINER if is_user else ft.colors.SURFACE_VARIANT
-        text_color = ft.colors.ON_PRIMARY_CONTAINER if is_user else ft.colors.ON_SURFACE
+        text_color = ft.colors.ON_PRIMARY_CONTAINER if is_user else ft.colors.ON_SURFACE_VARIANT
 
         def _copy(_):
             try:
@@ -557,11 +572,31 @@ class PrismDesktop:
         if placeholder:
             actions = [ft.Text(self._format_time(), size=9, color=ft.colors.ON_SURFACE_VARIANT)]
 
+        import re
+        code_blocks = re.findall(r'```(?:\w+)?\n(.*?)```', text, re.DOTALL)
+        code_copy_buttons = []
+        for idx, block in enumerate(code_blocks):
+            def _copy_code(b=block, index=idx):
+                def handler(_):
+                    try:
+                        self.page.set_clipboard(b.strip())
+                        self._set_status(f"代码块 {index+1} 已复制", ft.colors.GREEN_400)
+                    except Exception:
+                        pass
+                return handler
+            code_copy_buttons.append(
+                ft.TextButton(f"复制代码块 {idx+1}", on_click=_copy_code(), style=ft.ButtonStyle(padding=4))
+            )
+
+        action_row = ft.Row(actions, spacing=8)
+        if code_copy_buttons:
+            action_row.controls.extend(code_copy_buttons)
+
         content = ft.Column(
             [
                 ft.Text(role, size=11, color=ft.colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.BOLD),
                 ft.Text(rendered, selectable=True, color=text_color),
-                ft.Row(actions, spacing=8),
+                action_row,
             ],
             tight=True,
         )
@@ -684,20 +719,25 @@ class PrismDesktop:
         self.input_field.update()
         self._set_status("思考中...", ft.colors.AMBER_400)
         self._append_terminal(f">>> {text}")
-        
+        placeholder = self._append("PRISM", "正在生成回复...", placeholder=True)
+
         try:
             reply = self.agent.chat(text)
         except Exception as e:
             reply = None
-        
+
         if reply is None:
+            if placeholder in self.chat_list.controls:
+                self.chat_list.controls.remove(placeholder)
             self._append("PRISM", "请求失败，请检查网络或配置。", retry=True, retry_text=text)
             self._set_status("发送失败", ft.colors.RED_400)
             self.input_field.disabled = False
             self.input_field.focus()
             self.input_field.update()
             return
-        
+
+        if placeholder in self.chat_list.controls:
+            self.chat_list.controls.remove(placeholder)
         self._append("PRISM", reply)
         self._append_terminal(f"<<< {reply}")
         self._set_status("就绪")

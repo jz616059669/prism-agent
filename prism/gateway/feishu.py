@@ -171,7 +171,9 @@ class FeishuAdapter(PlatformAdapter):
                     self.end_headers()
                     self.wfile.write(b'ok')
                 except Exception as e:
+                    import traceback
                     print(f"[Feishu] webhook error: {e}")
+                    traceback.print_exc()
                     try:
                         self.send_response(500)
                         self.end_headers()

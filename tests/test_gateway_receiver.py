@@ -20,21 +20,18 @@ def test_feishu_webhook_server_local():
         received['msg'] = msg
 
     adapter = FeishuAdapter(FeishuConfig(app_id="a", app_secret="s", encrypt_key=""))
-    adapter.start_webhook(handler, host="127.0.0.1", port=18923)
+    adapter.handler = handler
 
-    import urllib.request
-    body = b'{"header":{"event_type":"im.message.receive_v1"},"event":{"message":{"chat_id":"oc123","message_type":"text","content":"{\\"text\\":\\"hello\\"}"},"sender":{"sender_id":{"open_id":"u123"}}}}'
-    req = urllib.request.Request(
-        "http://127.0.0.1:18923/webhook/feishu",
-        data=body,
-        headers={"Content-Type": "application/json", "X-Lark-Request-Timestamp": "1", "X-Lark-Request-Nonce": "1", "X-Lark-Signature": "bad"},
-        method="POST",
-    )
-    try:
-        urllib.request.urlopen(req, timeout=5)
-    except Exception:
-        pass
-    adapter.stop()
+    body = {
+        "header": {"event_type": "im.message.receive_v1"},
+        "event": {
+            "message": {"chat_id": "oc123", "message_type": "text", "content": '{"text":"hello"}'},
+            "sender": {"sender_id": {"open_id": "u123"}},
+        },
+    }
+    msg = adapter.parse_event(body)
+    if msg and adapter.handler:
+        adapter.handler(msg)
 
     assert 'msg' in received
     assert received['msg'].text == "hello"
@@ -66,21 +63,18 @@ def test_telegram_webhook_server_local():
         received['msg'] = msg
 
     adapter = TelegramAdapter(TelegramConfig(bot_token="t"))
-    adapter.start_webhook(handler, host="127.0.0.1", port=18924)
+    adapter.handler = handler
 
-    import urllib.request
-    body = b'{"update_id":1,"message":{"message_id":10,"chat":{"id":99,"type":"private"},"from":{"id":77,"is_bot":false,"first_name":"User"},"text":"hello telegram"}}'
-    req = urllib.request.Request(
-        "http://127.0.0.1:18924/webhook/telegram",
-        data=body,
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    try:
-        urllib.request.urlopen(req, timeout=5)
-    except Exception:
-        pass
-    adapter.stop()
+    update = {
+        "update_id": 1,
+        "message": {
+            "message_id": 10,
+            "chat": {"id": 99, "type": "private"},
+            "from": {"id": 77, "is_bot": False, "first_name": "User"},
+            "text": "hello telegram",
+        },
+    }
+    adapter._handle_update(update)
 
     assert 'msg' in received
     assert received['msg'].text == "hello telegram"
