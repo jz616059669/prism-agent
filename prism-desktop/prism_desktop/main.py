@@ -99,6 +99,14 @@ class PrismDesktop:
                 return {}
         return {}
 
+    def _on_input_change(self):
+        try:
+            count = len(self.input_field.value or "")
+            self.input_count.value = f"{count} 字"
+            self.input_count.update()
+        except Exception:
+            pass
+
     def _save_settings(self) -> None:
         try:
             self._settings_path.parent.mkdir(parents=True, exist_ok=True)
@@ -107,6 +115,8 @@ class PrismDesktop:
                 "window_height": int(self.page.window_height or 800),
                 "theme_mode": self.page.theme_mode.value if hasattr(self.page.theme_mode, "value") else str(self.page.theme_mode),
             }
+            if hasattr(self, "_sidebar_container"):
+                payload["sidebar_width"] = int(self._sidebar_container.width or 280)
             self._settings_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
         except Exception:
             pass
@@ -119,6 +129,8 @@ class PrismDesktop:
                 self.page.window_width = width
             if isinstance(height, int):
                 self.page.window_height = height
+            if hasattr(self, "_sidebar_container") and isinstance(self._settings.get("sidebar_width"), int):
+                self._sidebar_container.width = int(self._settings.get("sidebar_width"))
         except Exception:
             pass
 
@@ -411,6 +423,8 @@ class PrismDesktop:
             max_lines=6,
             shift_enter=True,
         )
+        self.input_count = ft.Text("0 字", size=11, color=ft.colors.ON_SURFACE_VARIANT)
+        self.input_field.on_change = lambda e: self._on_input_change()
         send_btn = ft.IconButton(icon=ft.icons.SEND_ROUNDED, tooltip="发送")
         send_btn.on_click = lambda e: self._send()
         self.input_field.on_submit = lambda e: self._send()
@@ -424,7 +438,7 @@ class PrismDesktop:
                 ft.Container(self.chat_list, expand=True, border=ft.border.all(1, ft.colors.OUTLINE_VARIANT), border_radius=12, padding=12),
                 ft.Divider(height=8),
                 ft.Row([self.input_field, send_btn], spacing=8),
-                ft.Row([clear_chat_btn], alignment=ft.MainAxisAlignment.END),
+                ft.Row([clear_chat_btn, self.input_count], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             ],
             expand=True,
             spacing=8,
@@ -484,7 +498,7 @@ class PrismDesktop:
             spacing=8,
         )
     
-    def _append(self, role: str, text: str):
+    def _append(self, role: str, text: str, retry: bool = False, retry_text: str = ""):
         is_user = role == "你"
         align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
         color = ft.colors.PRIMARY_CONTAINER if is_user else ft.colors.SURFACE_VARIANT
@@ -497,31 +511,55 @@ class PrismDesktop:
             except Exception:
                 pass
         
+        def _delete(_):
+            try:
+                self.chat_list.controls.remove(container_wrapper)
+                self.chat_list.update()
+                self._append_terminal("message deleted")
+            except Exception:
+                pass
+        
         try:
             import markdown
             rendered = markdown.markdown(text, extensions=["fenced_code", "tables"])
         except Exception:
             rendered = text
         
+        actions = [
+            ft.Text(self._format_time(), size=9, color=ft.colors.ON_SURFACE_VARIANT),
+            ft.TextButton("复制", on_click=_copy),
+            ft.TextButton("删除", on_click=_delete),
+        ]
+        if retry and retry_text:
+            def _retry(_):
+                self.input_field.value = retry_text
+                self.input_field.disabled = False
+                self.input_field.focus()
+                self.input_field.update()
+                self._send()
+            actions.insert(2, ft.TextButton("重发", on_click=_retry))
+        
         content = ft.Column(
             [
                 ft.Text(role, size=11, color=ft.colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.BOLD),
                 ft.Text(rendered, selectable=True, color=text_color),
-                ft.Row(
-                    [
-                        ft.Text(self._format_time(), size=9, color=ft.colors.ON_SURFACE_VARIANT),
-                        ft.TextButton("复制", on_click=_copy),
-                    ],
-                    spacing=8,
-                ),
+                ft.Row(actions, spacing=8),
             ],
             tight=True,
+        )
+        
+        container_wrapper = ft.Container(
+            content=content,
+            bgcolor=color,
+            padding=10,
+            border_radius=16,
+            expand=True,
         )
         
         self.chat_list.controls.append(
             ft.Row(
                 [
-                    ft.Container(content, bgcolor=color, padding=10, border_radius=16, expand=True),
+                    container_wrapper,
                 ],
                 alignment=align,
             )
@@ -604,7 +642,15 @@ class PrismDesktop:
         try:
             reply = self.agent.chat(text)
         except Exception as e:
-            reply = f"出错：{e}"
+            reply = None
+        
+        if reply is None:
+            self._append("PRISM", "请求失败，请检查网络或配置。", retry=True, retry_text=text)
+            self._set_status("发送失败", ft.colors.RED_400)
+            self.input_field.disabled = False
+            self.input_field.focus()
+            self.input_field.update()
+            return
         
         self._append("PRISM", reply)
         self._append_terminal(f"<<< {reply}")
