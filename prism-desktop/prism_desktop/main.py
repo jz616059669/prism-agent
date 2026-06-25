@@ -458,9 +458,11 @@ class PrismDesktop:
         if len(self._terminal_lines) > 300:
             self._terminal_lines = self._terminal_lines[-300:]
         self.terminal_list.controls.clear()
+        is_error = any(k in text.lower() for k in ["error", "err", "失败", "异常", "fail", "traceback", "error"])
+        color = ft.colors.RED_400 if is_error else ft.colors.ON_SURFACE_VARIANT
         for line in self._terminal_lines[-80:]:
             self.terminal_list.controls.append(
-                ft.Text(line, size=12, color=ft.colors.ON_SURFACE_VARIANT, selectable=True)
+                ft.Text(line, size=12, color=color, selectable=True)
             )
         self.terminal_list.update()
     
@@ -739,12 +741,26 @@ class PrismDesktop:
         self.session_list.controls.clear()
         try:
             for name in self.agent.list_sessions():
-                btn = ft.ElevatedButton(name, width=260)
-                btn.on_click = lambda e, n=name: self._load_session(n)
-                self.session_list.controls.append(btn)
+                load_btn = ft.ElevatedButton(name, width=200)
+                load_btn.on_click = lambda e, n=name: self._load_session(n)
+                del_btn = ft.IconButton(icon=ft.icons.DELETE_OUTLINE, tooltip="删除会话")
+                del_btn.on_click = lambda e, n=name: self._delete_session(n)
+                self.session_list.controls.append(
+                    ft.Row([load_btn, del_btn], spacing=6)
+                )
         except Exception:
             pass
         self.session_list.update()
+
+    def _delete_session(self, name: str):
+        try:
+            ok = self.agent.delete_session(name)
+            self._append_terminal(f"session delete {name}: {'ok' if ok else 'failed'}")
+            self._set_status("会话已删除" if ok else "删除失败", ft.colors.RED_400 if not ok else ft.colors.GREEN_400)
+        except Exception as e:
+            self._append_terminal(f"session delete error: {e}")
+            self._set_status("删除异常", ft.colors.RED_400)
+        self._refresh_sessions()
 
     def _load_session(self, name: str):
         try:
