@@ -573,6 +573,9 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+desktop = [
+    { name = "flet" },
+]
 dev = [
     { name = "flet", extra = ["all"] },
 ]
@@ -580,9 +583,10 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "flet", specifier = ">=0.24.0" },
+    { name = "flet", marker = "extra == 'desktop'", specifier = ">=0.24.0" },
     { name = "flet", extras = ["all"], marker = "extra == 'dev'", specifier = ">=0.24.0" },
 ]
-provides-extras = ["dev"]
+provides-extras = ["dev", "desktop"]
 
 [[package]]
 name = "pydantic"

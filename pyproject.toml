@@ -70,6 +70,8 @@ include = ["prism*", "prism-desktop*"]
 
 [dependency-groups]
 dev = [
+    "flet>=0.85.3",
+    "pyinstaller>=6.21.0",
     "pytest>=9.1.1",
 ]
 

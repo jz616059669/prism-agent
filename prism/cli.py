@@ -187,11 +187,16 @@ def start(platform: Optional[str], token: Optional[str], app_id: Optional[str],
     elif platform == 'telegram':
         try:
             from prism.gateway.telegram import TelegramAdapter, TelegramConfig
-            adapter = TelegramAdapter(TelegramConfig(token=token or ''))
+            adapter = TelegramAdapter(TelegramConfig(bot_token=token or ''))
             gw.register('telegram', adapter)
-            gw.start(lambda m: click.echo(f"[telegram] {m.text}"))
-            started = True
-            click.echo("telegram 已启动")
+            if webhook:
+                adapter.start_webhook(lambda m: click.echo(f"[telegram] {m.text}"), host=host, port=port)
+                started = True
+                click.echo("telegram webhook 已启动")
+            else:
+                gw.start(lambda m: click.echo(f"[telegram] {m.text}"))
+                started = True
+                click.echo("telegram 已启动")
         except Exception as e:
             click.echo(f"telegram 启动失败: {e}")
     elif platform == 'wechat':
