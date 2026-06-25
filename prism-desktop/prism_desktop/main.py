@@ -162,7 +162,38 @@ class PrismDesktop:
         self.page.update()
         self._append_terminal("about dialog opened")
     
+    def _build_appbar(self) -> ft.AppBar:
+        self.title_text = ft.Text("PRISM Agent", size=18, weight=ft.FontWeight.BOLD)
+        self.theme_icon_btn = ft.IconButton(icon=ft.icons.BRIGHTNESS_4_ROUNDED, tooltip="切换主题")
+        self.theme_icon_btn.on_click = lambda e: self._cycle_theme()
+        self.minimize_btn = ft.IconButton(icon=ft.icons.MINIMIZE_ROUNDED, tooltip="最小化到托盘")
+        self.minimize_btn.on_click = lambda e: self._minimize_to_tray()
+        return ft.AppBar(
+            title=self.title_text,
+            actions=[
+                self.theme_icon_btn,
+                self.minimize_btn,
+            ],
+        )
+
+    def _cycle_theme(self):
+        current = desktop_settings.get("theme", "Dark")
+        themes = ["Dark", "Light", "Midnight", "Warm"]
+        idx = themes.index(current) if current in themes else 0
+        next_theme = themes[(idx + 1) % len(themes)]
+        desktop_settings["theme"] = next_theme
+        self.theme_dropdown.value = next_theme
+        self._apply_theme(next_theme)
+
+    def _minimize_to_tray(self):
+        try:
+            self.page.window_hide()
+            self._append_terminal("minimized to tray")
+        except Exception:
+            pass
+
     def _build_ui(self):
+        self.page.appbar = self._build_appbar()
         self.page.add(
             ft.Row(
                 [
