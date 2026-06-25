@@ -397,16 +397,36 @@ class PrismDesktop:
         clear_mcp_btn = ft.TextButton("清空 MCP")
         clear_mcp_btn.on_click = lambda e: self._clear_mcp()
         
-        return ft.Column(
+        terminal_tab = ft.Column(
             [
-                ft.Text("终端", size=14, weight=ft.FontWeight.BOLD),
                 ft.Row([self.terminal_input, terminal_run_btn], spacing=8),
                 ft.Row([clear_terminal_btn], alignment=ft.MainAxisAlignment.END),
                 ft.Container(self.terminal_list, expand=True, border=ft.border.all(1, ft.colors.OUTLINE_VARIANT), border_radius=12, padding=12, bgcolor=ft.colors.SURFACE),
-                ft.Divider(height=12),
-                ft.Text("MCP", size=14, weight=ft.FontWeight.BOLD),
+            ],
+            expand=True,
+            spacing=8,
+        )
+        mcp_tab = ft.Column(
+            [
                 ft.Row([clear_mcp_btn], alignment=ft.MainAxisAlignment.END),
                 ft.Container(self.mcp_list, expand=True, border=ft.border.all(1, ft.colors.OUTLINE_VARIANT), border_radius=12, padding=12, bgcolor=ft.colors.SURFACE),
+            ],
+            expand=True,
+            spacing=8,
+        )
+        self.right_tabs = ft.Tabs(
+            selected_index=0,
+            animation_duration=200,
+            tabs=[
+                ft.Tab(text="终端", content=terminal_tab),
+                ft.Tab(text="MCP", content=mcp_tab),
+            ],
+            expand=True,
+        )
+        return ft.Column(
+            [
+                ft.Text("终端 / MCP", size=14, weight=ft.FontWeight.BOLD),
+                self.right_tabs,
             ],
             expand=True,
             spacing=8,
