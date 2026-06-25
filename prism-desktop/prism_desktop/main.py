@@ -358,6 +358,8 @@ class PrismDesktop:
         send_btn = ft.IconButton(icon=ft.icons.SEND_ROUNDED, tooltip="发送")
         send_btn.on_click = lambda e: self._send()
         self.input_field.on_submit = lambda e: self._send()
+        clear_chat_btn = ft.TextButton("清屏")
+        clear_chat_btn.on_click = lambda e: self._clear_chat()
         
         return ft.Column(
             [
@@ -366,6 +368,7 @@ class PrismDesktop:
                 ft.Container(self.chat_list, expand=True, border=ft.border.all(1, ft.colors.OUTLINE_VARIANT), border_radius=12, padding=12),
                 ft.Divider(height=8),
                 ft.Row([self.input_field, send_btn], spacing=8),
+                ft.Row([clear_chat_btn], alignment=ft.MainAxisAlignment.END),
             ],
             expand=True,
             spacing=8,
@@ -406,24 +409,48 @@ class PrismDesktop:
         )
     
     def _append(self, role: str, text: str):
+        is_user = role == "你"
+        align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
+        color = ft.colors.PRIMARY_CONTAINER if is_user else ft.colors.SURFACE_VARIANT
+        text_color = ft.colors.ON_PRIMARY_CONTAINER if is_user else ft.colors.ON_SURFACE
+        
+        def _copy(_):
+            try:
+                self.page.set_clipboard(text)
+                self._set_status("已复制", ft.colors.GREEN_400)
+            except Exception:
+                pass
+        
+        content = ft.Column(
+            [
+                ft.Text(role, size=11, color=ft.colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.BOLD),
+                ft.Text(text, selectable=True, color=text_color),
+                ft.Row(
+                    [
+                        ft.Text(self._format_time(), size=9, color=ft.colors.ON_SURFACE_VARIANT),
+                        ft.TextButton("复制", on_click=_copy),
+                    ],
+                    spacing=8,
+                ),
+            ],
+            tight=True,
+        )
+        
         self.chat_list.controls.append(
             ft.Row(
                 [
-                    ft.Container(
-                        ft.Text(role, size=11, color=ft.colors.ON_SURFACE_VARIANT),
-                        width=64,
-                    ),
-                    ft.Container(
-                        ft.Text(text, selectable=True),
-                        bgcolor=ft.colors.SURFACE_VARIANT,
-                        padding=10,
-                        border_radius=12,
-                        expand=True,
-                    ),
+                    ft.Container(content, bgcolor=color, padding=10, border_radius=16, expand=True),
                 ],
-                tight=True,
+                alignment=align,
             )
         )
+        self.chat_list.update()
+    
+    def _format_time(self) -> str:
+        return datetime.now().strftime("%H:%M")
+    
+    def _clear_chat(self):
+        self.chat_list.controls.clear()
         self.chat_list.update()
     
     def _append_terminal(self, text: str):
@@ -729,7 +756,8 @@ class PrismDesktop:
                 for m in self.agent.messages:
                     if m.role == "system":
                         continue
-                    self.chat_list.controls.append(ft.Text(f"{m.role}: {m.content}"))
+                    role_label = "你" if m.role == "user" else ("PRISM" if m.role == "assistant" else m.role)
+                    self._append(role_label, m.content or "")
                 self.chat_list.update()
             else:
                 self._append_terminal(f"session load failed: {name}")
