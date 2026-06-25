@@ -17,3 +17,9 @@ desktop = [
 
 [project.scripts]
 prism-desktop = "prism_desktop.main:main"
+
+[dependency-groups]
+dev = [
+    "flet-desktop>=0.85.3",
+    "pyinstaller>=6.21.0",
+]
