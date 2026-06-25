@@ -5,6 +5,7 @@ description = "PRISM Agent Desktop Client"
 requires-python = ">=3.11"
 dependencies = [
     "flet>=0.24.0",
+    "markdown>=3.5",
 ]
 
 [project.optional-dependencies]

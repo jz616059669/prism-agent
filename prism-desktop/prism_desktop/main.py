@@ -445,10 +445,16 @@ class PrismDesktop:
             except Exception:
                 pass
         
+        try:
+            import markdown
+            rendered = markdown.markdown(text, extensions=["fenced_code", "tables"])
+        except Exception:
+            rendered = text
+        
         content = ft.Column(
             [
                 ft.Text(role, size=11, color=ft.colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.BOLD),
-                ft.Text(text, selectable=True, color=text_color),
+                ft.Text(rendered, selectable=True, color=text_color),
                 ft.Row(
                     [
                         ft.Text(self._format_time(), size=9, color=ft.colors.ON_SURFACE_VARIANT),
