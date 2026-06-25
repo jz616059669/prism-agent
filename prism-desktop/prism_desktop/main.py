@@ -45,6 +45,50 @@ class PrismDesktop:
         self._apply_settings()
         self._bind_context_menu()
         self._bind_tray()
+        self._maybe_show_setup_wizard()
+
+    def _maybe_show_setup_wizard(self):
+        try:
+            has_key = bool(prism_config.get("model.api_key"))
+            has_provider = bool(prism_config.get("model.provider"))
+            if has_key and has_provider:
+                return
+        except Exception:
+            pass
+        wizard_provider = ft.TextField(label="模型提供商", value="stepfun", width=320)
+        wizard_key = ft.TextField(label="API Key", password=True, can_reveal_password=True, width=320)
+        wizard_model = ft.TextField(label="默认模型", value="step-3.7-flash", width=320)
+
+        def _save(_):
+            try:
+                if wizard_provider.value.strip():
+                    prism_config.set("model.provider", wizard_provider.value.strip())
+                if wizard_key.value.strip():
+                    prism_config.set("model.api_key", wizard_key.value.strip())
+                if wizard_model.value.strip():
+                    prism_config.set("model.default", wizard_model.value.strip())
+                self.page.close_dialog()
+                self._append_terminal("setup wizard saved")
+                self._set_status("配置已保存", ft.colors.GREEN_400)
+            except Exception as e:
+                self._set_status(f"保存失败：{e}", ft.colors.RED_400)
+
+        self.page.dialog = ft.AlertDialog(
+            title=ft.Text("首次运行配置向导"),
+            content=ft.Column(
+                [
+                    ft.Text("请先填写模型配置，否则无法正常对话。"),
+                    wizard_provider,
+                    wizard_key,
+                    wizard_model,
+                ],
+                tight=True,
+                spacing=12,
+            ),
+            actions=[ft.TextButton("保存", on_click=_save)],
+        )
+        self.page.dialog.open = True
+        self.page.update()
 
     def _load_settings(self) -> dict:
         if self._settings_path.exists():
