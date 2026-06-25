@@ -57,33 +57,32 @@ def test_discord_start_polling_thread():
     assert adapter.running is False
 
 
-def test_telegram_polling_handles_update():
+def test_telegram_webhook_server_local():
     from prism.gateway.telegram import TelegramAdapter, TelegramConfig
-    import prism.gateway.telegram as telegram_mod
 
-    class FakeResp:
-        def __init__(self, data):
-            self._data = data
-        def json(self):
-            return self._data
-        def raise_for_status(self):
-            pass
+    received = {}
 
-    update = {
-        "update_id": 1,
-        "message": {
-            "message_id": 10,
-            "chat": {"id": 99, "type": "private"},
-            "from": {"id": 77, "is_bot": False, "first_name": "User"},
-            "text": "hello telegram",
-        },
-    }
-    telegram_mod.requests.get = lambda url, **kwargs: FakeResp({"ok": True, "result": [update]})
+    def handler(msg):
+        received['msg'] = msg
 
     adapter = TelegramAdapter(TelegramConfig(bot_token="t"))
-    received = {}
-    adapter.handler = lambda msg: received.update({'msg': msg})
-    adapter._poll_once()
+    adapter.start_webhook(handler, host="127.0.0.1", port=18924)
+
+    import urllib.request
+    body = b'{"update_id":1,"message":{"message_id":10,"chat":{"id":99,"type":"private"},"from":{"id":77,"is_bot":false,"first_name":"User"},"text":"hello telegram"}}'
+    req = urllib.request.Request(
+        "http://127.0.0.1:18924/webhook/telegram",
+        data=body,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        urllib.request.urlopen(req, timeout=5)
+    except Exception:
+        pass
+    adapter.stop()
+
+    assert 'msg' in received
     assert received['msg'].text == "hello telegram"
     assert received['msg'].chat_id == "99"
     assert received['msg'].platform == "telegram"
