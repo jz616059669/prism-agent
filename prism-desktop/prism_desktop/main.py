@@ -40,6 +40,7 @@ class PrismDesktop:
         self._terminal_lines = ["PRISM Desktop 已启动"]
         self._mcp_logs = []
         self._skill_list_cache = []
+        self._mcp_server_status = {}
         self._build_ui()
         self._apply_settings()
         self._bind_context_menu()
@@ -234,6 +235,8 @@ class PrismDesktop:
             width=260,
         )
         self.status_text = ft.Text("就绪", size=12, color=ft.colors.GREEN_400)
+        self.browser_status_icon = ft.Icon(ft.icons.CIRCLE, size=10, color=ft.colors.OUTLINE)
+        self.browser_status_text = ft.Text("浏览器未连接", size=12, color=ft.colors.ON_SURFACE_VARIANT)
         
         self.theme_dropdown = ft.Dropdown(
             label="主题",
@@ -333,6 +336,7 @@ class PrismDesktop:
                     self.session_list,
                     ft.Container(height=16),
                     ft.Text("状态", size=12, weight=ft.FontWeight.BOLD),
+                    ft.Row([self.browser_status_icon, self.browser_status_text], spacing=8),
                     self.status_text,
                 ],
                 tight=True,
@@ -491,6 +495,13 @@ class PrismDesktop:
         self.status_text.value = text
         self.status_text.color = color
         self.status_text.update()
+
+    def _set_browser_status(self, connected: bool, text: str):
+        self.browser_connected = connected
+        self.browser_status_text.value = text
+        self.browser_status_icon.color = ft.colors.GREEN_400 if connected else ft.colors.RED_400
+        self.browser_status_icon.update()
+        self.browser_status_text.update()
     
     def _save_config(self):
         prism_config.set("model.default", self.model_dropdown.value)
@@ -533,12 +544,12 @@ class PrismDesktop:
         self._append_terminal(f"browser open {url}")
         result = open_page(url, headless=False)
         if result.get("success"):
-            self.browser_connected = True
+            self._set_browser_status(True, f"已连接：{result.get('url', url)}")
             self._set_status(f"已打开：{result.get('url', url)}")
             self._append("浏览器", f"已打开：{result.get('url', url)}\n标题：{result.get('title', 'N/A')}")
             self._append_terminal(f"browser opened {result.get('url')}")
         else:
-            self.browser_connected = False
+            self._set_browser_status(False, "打开失败")
             self._set_status(f"打开失败：{result.get('error')}", ft.colors.RED_400)
             self._append("浏览器", f"打开失败：{result.get('error')}")
             self._append_terminal(f"browser error: {result.get('error')}")
@@ -556,6 +567,7 @@ class PrismDesktop:
             self._append("页面快照", f"URL：{result.get('url')}\n标题：{result.get('title')}\n\n{content[:1200]}")
             self._append_terminal(f"browser snapshot: {result.get('title')}")
         else:
+            self._set_browser_status(False, "快照失败")
             self._set_status(f"快照失败：{result.get('error')}", ft.colors.RED_400)
             self._append("页面快照", f"失败：{result.get('error')}")
             self._append_terminal(f"browser snapshot error: {result.get('error')}")
@@ -563,12 +575,13 @@ class PrismDesktop:
     def _browser_close(self):
         self._append_terminal("browser close ...")
         result = close_browser()
-        self.browser_connected = False
         if result.get("success"):
+            self._set_browser_status(False, "未连接")
             self._set_status("浏览器已关闭")
             self._append("浏览器", "浏览器已关闭")
             self._append_terminal("browser closed")
         else:
+            self._set_browser_status(False, "关闭失败")
             self._set_status(f"关闭失败：{result.get('error')}", ft.colors.RED_400)
             self._append("浏览器", f"关闭失败：{result.get('error')}")
             self._append_terminal(f"browser close error: {result.get('error')}")
@@ -624,9 +637,15 @@ class PrismDesktop:
 
     def _toggle_mcp_server(self, name: str, button: ft.TextButton):
         self._append_terminal(f"mcp toggle {name}")
-        self._append_mcp(f"[{name}] 切换状态（后续接入真实 MCP 客户端）")
-        button.text = "已启动" if button.text == "启动" else "启动"
-        button.update()
+        try:
+            current = self._mcp_server_status.get(name, False)
+            self._mcp_server_status[name] = not current
+            state = "已启动" if self._mcp_server_status[name] else "已停止"
+            self._append_mcp(f"[{name}] {state}")
+            button.text = "已启动" if self._mcp_server_status[name] else "启动"
+            button.update()
+        except Exception as e:
+            self._append_mcp(f"[{name}] 切换失败：{e}")
 
     def _show_mcp_log(self, name: str):
         self._append_mcp(f"[{name}] 日志入口后续接入真实 MCP 客户端")
