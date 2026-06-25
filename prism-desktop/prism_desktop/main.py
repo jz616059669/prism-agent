@@ -507,6 +507,7 @@ class PrismDesktop:
             return
         self._append("你", text)
         self.input_field.value = ""
+        self.input_field.disabled = True
         self.input_field.update()
         self._set_status("思考中...", ft.colors.AMBER_400)
         self._append_terminal(f">>> {text}")
@@ -519,6 +520,9 @@ class PrismDesktop:
         self._append("PRISM", reply)
         self._append_terminal(f"<<< {reply}")
         self._set_status("就绪")
+        self.input_field.disabled = False
+        self.input_field.focus()
+        self.input_field.update()
     
     def _browser_open(self):
         url = self.url_field.value.strip()
