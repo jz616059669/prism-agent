@@ -42,6 +42,7 @@ class PrismDesktop:
         self._mcp_logs = []
         self._skill_list_cache = []
         self._mcp_server_status = {}
+        self._current_session_name = None
         self._build_ui()
         self._apply_settings()
         self._bind_context_menu()
@@ -975,7 +976,15 @@ class PrismDesktop:
         self.session_list.controls.clear()
         try:
             for name in self.agent.list_sessions():
-                load_btn = ft.ElevatedButton(name, width=200)
+                is_current = name == self._current_session_name
+                load_btn = ft.ElevatedButton(
+                    name,
+                    width=200,
+                    style=ft.ButtonStyle(
+                        bgcolor=ft.colors.PRIMARY_CONTAINER if is_current else None,
+                        color=ft.colors.ON_PRIMARY_CONTAINER if is_current else None,
+                    ),
+                )
                 load_btn.on_click = lambda e, n=name: self._load_session(n)
                 del_btn = ft.IconButton(icon=ft.icons.DELETE_OUTLINE, tooltip="删除会话")
                 del_btn.on_click = lambda e, n=name: self._delete_session(n)
@@ -989,8 +998,10 @@ class PrismDesktop:
     def _delete_session(self, name: str):
         try:
             ok = self.agent.delete_session(name)
+            if ok and name == self._current_session_name:
+                self._current_session_name = None
             self._append_terminal(f"session delete {name}: {'ok' if ok else 'failed'}")
-            self._set_status("会话已删除" if ok else "删除失败", ft.colors.RED_400 if not ok else ft.colors.GREEN_400)
+            self._set_status("会话已删除" if ok else "删除失败", ft.colors.GREEN_400 if ok else ft.colors.RED_400)
         except Exception as e:
             self._append_terminal(f"session delete error: {e}")
             self._set_status("删除异常", ft.colors.RED_400)
@@ -1000,6 +1011,7 @@ class PrismDesktop:
         try:
             ok = self.agent.load_session(name)
             if ok:
+                self._current_session_name = name
                 self._append_terminal(f"session loaded: {name}")
                 self._set_status("会话已加载")
                 self.chat_list.controls.clear()
@@ -1009,6 +1021,7 @@ class PrismDesktop:
                     role_label = "你" if m.role == "user" else ("PRISM" if m.role == "assistant" else m.role)
                     self._append(role_label, m.content or "")
                 self.chat_list.update()
+                self._refresh_sessions()
             else:
                 self._append_terminal(f"session load failed: {name}")
                 self._set_status("会话加载失败", ft.colors.RED_400)
