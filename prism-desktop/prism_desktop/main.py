@@ -377,6 +377,7 @@ class PrismDesktop:
         self.session_save_btn = ft.ElevatedButton("保存会话", width=120)
         self.session_save_btn.on_click = lambda e: self._save_session()
         self.session_list = ft.Column(spacing=4, tight=True)
+        self._session_empty_text = ft.Text("暂无保存的会话", size=11, color=ft.colors.ON_SURFACE_VARIANT)
         
         return ft.Container(
             content=ft.Column(
@@ -975,7 +976,13 @@ class PrismDesktop:
     def _refresh_sessions(self):
         self.session_list.controls.clear()
         try:
-            for name in self.agent.list_sessions():
+            names = self.agent.list_sessions()
+        except Exception:
+            names = []
+        if not names:
+            self.session_list.controls.append(self._session_empty_text)
+        else:
+            for name in names:
                 is_current = name == self._current_session_name
                 load_btn = ft.ElevatedButton(
                     name,
@@ -991,8 +998,6 @@ class PrismDesktop:
                 self.session_list.controls.append(
                     ft.Row([load_btn, del_btn], spacing=6)
                 )
-        except Exception:
-            pass
         self.session_list.update()
 
     def _delete_session(self, name: str):
