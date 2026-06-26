@@ -349,7 +349,6 @@ class PrismDesktop:
             bgcolor=ft.colors.SURFACE_VARIANT,
             border_radius=12,
         )
-        return self._sidebar_container
         browser_open_btn = ft.ElevatedButton("打开网页", width=260)
         browser_open_btn.on_click = lambda e: self._browser_open()
         
@@ -378,6 +377,36 @@ class PrismDesktop:
         self.session_save_btn.on_click = lambda e: self._save_session()
         self.session_list = ft.Column(spacing=4, tight=True)
         self._session_empty_text = ft.Text("暂无保存的会话", size=11, color=ft.colors.ON_SURFACE_VARIANT)
+
+        sidebar_content = self._sidebar_container.content
+        sidebar_content.controls.extend([
+            ft.Text("浏览器控制", size=12, weight=ft.FontWeight.BOLD),
+            self.url_field,
+            browser_open_btn,
+            browser_snapshot_btn,
+            browser_close_btn,
+            ft.Container(height=16),
+            ft.Text("MCP 控制", size=12, weight=ft.FontWeight.BOLD),
+            self.mcp_refresh_btn,
+            ft.Container(height=6),
+            ft.Text("已配置服务器", size=11, color=ft.colors.ON_SURFACE_VARIANT),
+            self.mcp_server_list,
+            ft.Container(height=16),
+            ft.Text("Skills", size=12, weight=ft.FontWeight.BOLD),
+            self.skill_refresh_btn,
+            self.skill_install_field,
+            self.skill_install_btn,
+            ft.Container(height=6),
+            ft.Text("可用 Skills", size=11, color=ft.colors.ON_SURFACE_VARIANT),
+            self.skill_list,
+            ft.Container(height=16),
+            ft.Text("会话", size=12, weight=ft.FontWeight.BOLD),
+            ft.Row([self.session_name_field, self.session_save_btn], spacing=8),
+            ft.Container(height=6),
+            ft.Text("已保存会话", size=11, color=ft.colors.ON_SURFACE_VARIANT),
+            self.session_list,
+        ])
+        return self._sidebar_container
         
         return ft.Container(
             content=ft.Column(
