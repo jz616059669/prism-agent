@@ -282,10 +282,15 @@ class PrismDesktop:
         self.page.appbar = self._build_appbar()
         self._chat_container = ft.Container(self._build_chat(), expand=True)
         self._right_container = ft.Container(self._build_right_panel(), expand=True)
+        sidebar = self._build_sidebar()
+        if str(self._settings.get("sidebar_collapsed", "false")).lower() == "true":
+            sidebar.visible = False
+            sidebar.width = 0
+            sidebar.padding = 0
         self.page.add(
             ft.Row(
                 [
-                    self._build_sidebar(),
+                    sidebar,
                     ft.VerticalDivider(width=1),
                     self._chat_container,
                     ft.VerticalDivider(width=1),
