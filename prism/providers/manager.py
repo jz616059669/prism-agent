@@ -7,8 +7,6 @@ import os
 import time
 from typing import Optional, List, Dict, Any
 from abc import ABC, abstractmethod
-from openai import OpenAI
-import httpx
 
 
 class Provider(ABC):
@@ -33,6 +31,15 @@ class OpenAIProvider(Provider):
         self.base_url = base_url.rstrip('/')
         self.api_key = api_key
         self.model = model
+        # 延迟导入：避免 import prism.providers.manager 时强制要求 openai/httpx 已安装
+        try:
+            from openai import OpenAI
+            import httpx
+        except ImportError as exc:
+            raise ImportError(
+                f"OpenAIProvider 需要 openai 和 httpx 依赖，"
+                f"请执行 `pip install openai httpx` 或 `uv add openai httpx`。"
+            ) from exc
         self.client = OpenAI(
             base_url=f"{base_url}/chat/completions",
             api_key=api_key,
