@@ -73,19 +73,20 @@ class FeishuAdapter(PlatformAdapter):
             print(f"[Feishu] 获取 token 失败: {e}")
             raise
     
-    def send(self, chat_id: str, text: str) -> bool:
+    def send(self, chat_id: str, text: str, receive_id_type: str = "chat_id") -> bool:
         """
         发送消息
         
         Args:
-            chat_id: 会话 ID（可以是 open_id、user_id、group_id）
+            chat_id: 会话 ID
             text: 消息文本
+            receive_id_type: ID 类型，可选 chat_id / open_id / user_id / group_id
         """
         try:
             token = self._get_tenant_access_token()
             
             url = f"{self.config.base_url}/im/v1/messages"
-            params = {"receive_id_type": "chat_id"}
+            params = {"receive_id_type": receive_id_type}
             headers = {
                 "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json; charset=utf-8",
@@ -221,7 +222,7 @@ class FeishuAdapter(PlatformAdapter):
                        signature: str) -> bool:
         """
         验证 Webhook 签名
-        
+
         Args:
             body: 请求体
             timestamp: 时间戳
@@ -230,12 +231,11 @@ class FeishuAdapter(PlatformAdapter):
         """
         if not self.config.encrypt_key:
             return False
-        
+
         try:
-            # 拼接字符串
-            bytes_before = (timestamp + nonce + self.config.encrypt_key).encode()
-            # SHA256 加密
-            sign = hashlib.sha256(bytes_before).hexdigest()
+            # 飞书官方要求：timestamp + "\n" + nonce + "\n" + encrypt_key
+            string_to_sign = f"{timestamp}\n{nonce}\n{self.config.encrypt_key}"
+            sign = hashlib.sha256(string_to_sign.encode()).hexdigest()
             return sign == signature
         except Exception:
             return False

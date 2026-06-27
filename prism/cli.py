@@ -238,9 +238,18 @@ def start(platform: Optional[str], token: Optional[str], app_id: Optional[str],
 @click.argument('platform')
 def stop(platform: str):
     """停止 Gateway 服务"""
-    click.echo(f"停止 {platform} Gateway...")
     from prism.gateway import gateway as gw
-    click.echo("Gateway 已停止")
+    adapter = gw.get_adapter(platform)
+    if adapter is None:
+        click.echo(f"未找到平台: {platform}")
+        return
+    try:
+        if hasattr(adapter, 'stop'):
+            adapter.stop()
+        gw.unregister(platform)
+        click.echo(f"{platform} Gateway 已停止")
+    except Exception as e:
+        click.echo(f"停止失败: {e}")
 
 
 @gateway.command()
@@ -249,7 +258,11 @@ def status():
     from prism.gateway import gateway as gw
     platforms = gw.list_platforms()
     if platforms:
-        click.echo(f"运行中平台: {', '.join(platforms)}")
+        for name in platforms:
+            adapter = gw.get_adapter(name)
+            running = getattr(adapter, 'running', False)
+            status_text = "运行中" if running else "已停止"
+            click.echo(f"{name}: {status_text}")
     else:
         click.echo("未运行任何 Gateway")
 

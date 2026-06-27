@@ -131,18 +131,17 @@ class ProviderPool:
                 'success': False,
                 'error': '未配置可用模型提供商。请先在 ~/.prism/config.yaml 填写 model.api_key，或使用 prism config set model.api_key <你的密钥>。',
             }
-        
+
+        last_error = None
         for provider in self.providers:
-            if not provider.is_available():
-                continue
-            
             result = provider.chat(messages, **kwargs)
             if result.get('success'):
                 return result
-        
+            last_error = result.get('error')
+
         return {
             'success': False,
-            'error': '所有提供商均不可用，请检查网络与 API Key。',
+            'error': last_error or '所有提供商均不可用，请检查网络与 API Key。',
         }
     
     def add_provider(self, provider: Provider):

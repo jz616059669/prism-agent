@@ -86,29 +86,37 @@ class Agent:
         """
         # 添加用户消息
         self.messages.append(Message(role="user", content=user_message))
-        
+
         # 构建 API 消息格式
         api_messages = [
             {"role": m.role, "content": m.content}
             for m in self.messages
         ]
-        
+
         # 调用模型
         result = provider_pool.chat(api_messages)
-        
+
         if not result.get('success'):
             logger.warning("chat failed: %s", result.get('error'))
             return f"Error: {result.get('error', 'Unknown error')}"
-        
-        assistant_content = result.get('content', '')
-        if not assistant_content and result.get('tool_calls'):
-            assistant_content = "[tool call] " + ", ".join(t.get('name', '') for t in result['tool_calls'])
-        
-        logger.info("chat success model=%s", result.get('model'))
-        
+
+        assistant_content = result.get('content', '') or ''
+        tool_calls = result.get('tool_calls') or []
+        function_call = result.get('function_call')
+
+        if not assistant_content and function_call:
+            assistant_content = "[function call] " + str(function_call.get('name', ''))
+
+        if tool_calls:
+            assistant_content = (assistant_content + ' ' if assistant_content else '') + "[tool call] " + ", ".join(
+                t.get('name', '') for t in tool_calls
+            )
+
+        logger.info("chat success model=%s tool_calls=%s", result.get('model'), len(tool_calls))
+
         # 添加助手回复
         self.messages.append(Message(role="assistant", content=assistant_content))
-        
+
         return assistant_content
     
     def execute_tool(self, tool_name: str, **kwargs) -> Dict[str, Any]:
