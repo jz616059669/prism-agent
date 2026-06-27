@@ -40,7 +40,9 @@ prism_agent.egg-info/requires.txt
 prism_agent.egg-info/top_level.txt
 tests/test_acp.py
 tests/test_browser.py
+tests/test_browser_direct.py
 tests/test_browser_minimal.py
+tests/test_browser_minimal_legacy2.py
 tests/test_cli.py
 tests/test_code_executor.py
 tests/test_desktop_tray.py
