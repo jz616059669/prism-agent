@@ -2,6 +2,7 @@
 PRISM Agent - Discord Gateway 适配器
 """
 
+import threading
 import time
 import requests
 from typing import Optional, Callable, Dict, Any, List

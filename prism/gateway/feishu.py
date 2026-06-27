@@ -19,11 +19,33 @@ from lark_oapi.api.im.v1 import (
     ReplyMessageRequest,
     ReplyMessageRequestBody,
 )
-from lark_oapi.event.callback.model.p2_im_message_receive_v1 import (
+from lark_oapi.api.im.v1.model.p2_im_message_receive_v1 import (
     P2ImMessageReceiveV1,
 )
+from lark_oapi.api.contact.v3 import GetUserRequest
 from lark_oapi.event.dispatcher_handler import EventDispatcherHandler
 from lark_oapi.ws import Client as FeishuWSClient
+
+try:
+    import websockets
+except ImportError:
+    websockets = None  # type: ignore[assignment]
+
+try:
+    import aiohttp
+    from aiohttp import web
+except ImportError:
+    aiohttp = None  # type: ignore[assignment]
+    web = None  # type: ignore[assignment]
+
+from prism.gateway.base import PlatformAdapter, Message
+
+try:
+    import requests as _requests
+except ImportError:
+    _requests = None  # type: ignore[assignment]
+
+requests = _requests
 
 
 class FeishuEvent:
@@ -32,6 +54,11 @@ class FeishuEvent:
         self.message = message
 
 
+FEISHU_WEBSOCKET_AVAILABLE = websockets is not None
+FEISHU_WEBHOOK_AVAILABLE = aiohttp is not None
+
+
+@dataclass
 class FeishuConfig:
     app_id: str
     app_secret: str
@@ -50,6 +77,54 @@ class FeishuAdapter(PlatformAdapter):
         self._thread: Optional[threading.Thread] = None
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._ws_client: Optional[FeishuWSClient] = None
+        self.access_token: Optional[str] = None
+        self.token_expires_at: int = 0
+
+    def start_polling(self, handler: Callable[[Message], None]):
+        """Compatibility alias for start()."""
+        self.start(handler)
+
+    def parse_event(self, body: Dict[str, Any]) -> Optional[Message]:
+        """Parse feishu webhook payload to Message."""
+        try:
+            event = body.get("event", {})
+            message = event.get("message", {})
+            sender = event.get("sender", {})
+            chat_id = message.get("chat_id", "")
+            user_id = sender.get("sender_id", {}).get("open_id", "")
+            text = ""
+            if message.get("message_type") == "text":
+                content = json.loads(message.get("content", "{}"))
+                text = content.get("text", "")
+            return Message(
+                platform="feishu",
+                chat_id=chat_id,
+                user_id=user_id,
+                text=text,
+                raw=message,
+            )
+        except Exception as e:
+            print(f"[Feishu] parse_event failed: {e}")
+            return None
+
+    def get_user_info(self, user_id: str) -> Dict[str, Any]:
+        """Get user info via lark_oapi SDK."""
+        try:
+            client = LarkClient.builder() \
+                .app_id(self.config.app_id) \
+                .app_secret(self.config.app_secret) \
+                .build()
+            request = GetUserRequest.builder() \
+                .user_id(user_id) \
+                .user_id_type("open_id") \
+                .build()
+            response = client.contact.v3.user.get(request)
+            if response.success():
+                user = response.data.user if response.data and response.data.user else {}
+                return {"success": True, "user": {"name": user.get("name", "")}}
+            return {"success": False, "error": response.msg}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
 
     def send(self, chat_id: str, text: str) -> bool:
         try:
@@ -101,6 +176,7 @@ class FeishuAdapter(PlatformAdapter):
         self._ws_client = None
         self._loop = None
         self._thread = None
+        self.handler = None
         print("[Feishu] 已停止")
 
     def _run_ws(self) -> None:
@@ -113,7 +189,6 @@ class FeishuAdapter(PlatformAdapter):
                 self.config.app_secret,
                 event_handler=EventDispatcherHandler.builder("", "")
                 .register_p2_im_message_receive_v1(
-                    P2ImMessageReceiveV1,
                     self._on_message_received,
                 )
                 .build(),

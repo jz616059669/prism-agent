@@ -5,12 +5,14 @@ PRISM Agent - 桌面客户端
 """
 
 import sys
+import os
 from pathlib import Path
 import json
 from datetime import datetime
 import flet as ft
 from typing import Optional
 import markdown
+import subprocess
 
 # 让桌面端可直接导入上层 prism 包，无需额外安装
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -44,6 +46,17 @@ class PrismDesktop:
         self._skill_list_cache = []
         self._mcp_server_status = {}
         self._current_session_name = None
+
+        self.model_dropdown = ft.Dropdown(
+            label="默认模型",
+            options=[ft.dropdown.Option("step-3.7-flash"), ft.dropdown.Option("gpt-4o-mini")],
+            value=prism_config.get("model.default", "step-3.7-flash") or "step-3.7-flash",
+            width=260,
+        )
+        self.provider_textfield = ft.TextField(label="模型提供商", value=prism_config.get("model.provider", "stepfun") or "stepfun", width=260)
+        self.base_url_textfield = ft.TextField(label="Base URL", value=prism_config.get("model.base_url", "https://api.stepfun.com/step_plan/v1") or "https://api.stepfun.com/step_plan/v1", width=260)
+        self.api_key_textfield = ft.TextField(label="API Key", password=True, can_reveal_password=True, value=prism_config.get("model.api_key", "") or "", width=260)
+
         self._build_ui()
         self._apply_settings()
         self._bind_context_menu()
@@ -217,17 +230,33 @@ class PrismDesktop:
     def _open_config_dir(self, e):
         config_dir = Path.home() / ".prism"
         config_dir.mkdir(parents=True, exist_ok=True)
-        os.startfile(str(config_dir))
+        try:
+            if sys.platform == "win32":
+                os.startfile(str(config_dir))
+            elif sys.platform == "darwin":
+                subprocess.run(["open", str(config_dir)], check=False)
+            else:
+                subprocess.run(["xdg-open", str(config_dir)], check=False)
+        except Exception as ex:
+            self._append_terminal(f"open config dir failed: {ex}")
         self._append_terminal(f"open config dir: {config_dir}")
 
     def _open_terminal_here(self, e):
-        os.system('start cmd')
+        try:
+            if sys.platform == "win32":
+                subprocess.run(["cmd", "/c", "start", "cmd"], shell=False, check=False)
+            elif sys.platform == "darwin":
+                subprocess.run(["open", "-a", "Terminal", "."], check=False)
+            else:
+                subprocess.run(["xdg-terminal-exec", "."], check=False)
+        except Exception as ex:
+            self._append_terminal(f"open terminal failed: {ex}")
         self._append_terminal("open terminal")
 
     def _about(self, e):
         self.page.dialog = ft.AlertDialog(
             title=ft.Text("PRISM Agent"),
-            content=ft.Text("版本：0.2.1\n统一 AI Agent CLI + 桌面客户端"),
+            content=ft.Text("版本：0.2.6\n统一 AI Agent CLI + 桌面客户端"),
             actions=[ft.TextButton("关闭", on_click=lambda e: self.page.close_dialog())],
         )
         self.page.dialog.open = True
@@ -315,12 +344,6 @@ class PrismDesktop:
                 [
                     ft.Text("PRISM", size=20, weight=ft.FontWeight.BOLD),
                     ft.Divider(height=12, color=ft.Colors.TRANSPARENT),
-                    self.model_dropdown,
-                    ft.Container(height=6),
-                    self.provider_textfield,
-                    ft.Container(height=6),
-                    self.api_key_textfield,
-                    ft.Container(height=6),
                 ],
                 tight=True,
                 spacing=6,
@@ -364,6 +387,15 @@ class PrismDesktop:
 
         sidebar_content = self._sidebar_container.content
         sidebar_content.controls.extend([
+            ft.Text("模型配置", size=12, weight=ft.FontWeight.BOLD),
+            self.model_dropdown,
+            ft.Container(height=6),
+            self.provider_textfield,
+            ft.Container(height=6),
+            self.base_url_textfield,
+            ft.Container(height=6),
+            self.api_key_textfield,
+            ft.Container(height=6),
             save_btn,
             ft.Container(height=16),
             ft.Text("浏览器控制", size=12, weight=ft.FontWeight.BOLD),
@@ -688,7 +720,7 @@ class PrismDesktop:
     def _save_config(self):
         prism_config.set("model.default", self.model_dropdown.value)
         prism_config.set("model.provider", self.provider_textfield.value)
-        prism_config.set("model.base_url", "https://api.stepfun.com/step_plan/v1")
+        prism_config.set("model.base_url", (self.base_url_textfield.value or "").strip())
         prism_config.set("model.api_key", self.api_key_textfield.value)
         self._set_status("配置已保存")
         self._append_terminal("配置已保存")

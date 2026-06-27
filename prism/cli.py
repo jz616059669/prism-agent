@@ -53,7 +53,7 @@ logger.addHandler(ch)
 
 
 @click.group()
-@click.version_option(version="0.2.1", prog_name="PRISM")
+@click.version_option(version="0.2.6", prog_name="PRISM")
 def cli():
     """
     PRISM Agent - 统一 AI Agent CLI
@@ -604,7 +604,7 @@ def model():
 @cli.command()
 def version():
     """显示版本信息"""
-    console.print("PRISM Agent v0.2.1")
+    console.print("PRISM Agent v0.2.6")
     console.print("整合 Hermes + Codex + OpenClaw 能力")
 
 

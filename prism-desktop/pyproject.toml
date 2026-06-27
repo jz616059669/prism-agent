@@ -1,11 +1,12 @@
 [project]
 name = "prism-desktop"
-version = "0.1.0"
+version = "0.2.6"
 description = "PRISM Agent Desktop Client"
 requires-python = ">=3.11"
 dependencies = [
     "flet>=0.24.0",
     "markdown>=3.5",
+    "prism-agent @ file:///C:/Users/zd/prism",
 ]
 
 [project.optional-dependencies]

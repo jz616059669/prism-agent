@@ -4,7 +4,7 @@ PRISM Agent - 统一 Gateway
 """
 
 from prism.gateway.base import Message, PlatformAdapter
-from typing import Callable
+from typing import Callable, Optional
 
 
 __all__ = ['Gateway', 'gateway', 'Message', 'PlatformAdapter']
@@ -35,17 +35,22 @@ class Gateway:
         self.running = True
         for name, adapter in self.adapters.items():
             try:
-                adapter.start(handler)
+                start_fn = getattr(adapter, "start", None) or getattr(adapter, "start_polling", None)
+                if start_fn is None:
+                    raise AttributeError(f"'{type(adapter).__name__}' object has no 'start' or 'start_polling'")
+                start_fn(handler)
                 print(f"[Gateway] {name} 启动成功")
             except Exception as e:
                 print(f"[Gateway] {name} 启动失败: {e}")
-    
+
     def stop(self):
         """停止所有平台"""
         self.running = False
         for name, adapter in self.adapters.items():
             try:
-                adapter.stop()
+                stop_fn = getattr(adapter, "stop", None)
+                if stop_fn is not None:
+                    stop_fn()
                 print(f"[Gateway] {name} 已停止")
             except Exception as e:
                 print(f"[Gateway] {name} 停止失败: {e}")
@@ -69,6 +74,9 @@ class Gateway:
         
         return adapter.send(chat_id, text)
     
+    def get_adapter(self, name: str) -> Optional[PlatformAdapter]:
+        return self.adapters.get(name)
+
     def list_platforms(self) -> list:
         """列出已注册的平台，并补充配置中存在的平台"""
         registered = list(self.adapters.keys())

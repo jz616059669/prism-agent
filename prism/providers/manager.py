@@ -81,11 +81,17 @@ class ProviderPool:
     
     def __init__(self):
         self.providers: List[Provider] = []
-        self._load_from_config()
-    
+        self._loaded = False
+
     def _load_from_config(self):
         """从配置文件加载提供商"""
-        from prism.config import config
+        if self._loaded:
+            return
+        self._loaded = True
+        try:
+            from prism.config import config
+        except Exception:
+            return
         
         # 主提供商
         default_model = config.get('model.default', 'gpt-4o')
@@ -126,6 +132,8 @@ class ProviderPool:
     
     def chat(self, messages: List[Dict], **kwargs) -> Dict[str, Any]:
         """发送请求，自动降级"""
+        self._load_from_config()
+        
         if not self.providers:
             return {
                 'success': False,
@@ -150,6 +158,7 @@ class ProviderPool:
     
     def list_providers(self) -> List[str]:
         """列出所有提供商"""
+        self._load_from_config()
         return [p.name for p in self.providers]
 
 

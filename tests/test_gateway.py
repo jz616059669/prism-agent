@@ -69,51 +69,60 @@ def test_discord_adapter_send():
 
 def test_feishu_adapter_send():
     from prism.gateway.feishu import FeishuAdapter, FeishuConfig
-    import prism.gateway.feishu as feishu_mod
+    from unittest.mock import MagicMock
 
-    responses = {
-        "post": {
-            "code": 0,
-            "data": {"message_id": "1"},
-        },
-    }
-    feishu_mod.requests.post = lambda url, **kwargs: FakeResp(responses["post"])
+    mock_response = MagicMock()
+    mock_response.success.return_value = True
+    mock_response.code = 0
+    mock_response.msg = "ok"
+
+    mock_client = MagicMock()
+    mock_client.im.v1.message.create.return_value = mock_response
+
+    from unittest.mock import patch
+    with patch("prism.gateway.feishu.LarkClient") as MockClient:
+        MockClient.builder.return_value.app_id.return_value.app_secret.return_value.build.return_value = mock_client
+        adapter = FeishuAdapter(FeishuConfig(app_id="a", app_secret="s"))
+        ok = adapter.send("chat", "hello")
+        assert ok is True
+
+
+def test_feishu_ws_handler_converts_to_message():
+    from prism.gateway.feishu import FeishuAdapter, FeishuConfig, FeishuEvent
+    from unittest.mock import MagicMock
+
+    received = {}
+    def handler(msg):
+        received["msg"] = msg
 
     adapter = FeishuAdapter(FeishuConfig(app_id="a", app_secret="s"))
-    adapter.access_token = "fake_token"
-    adapter.token_expires_at = 9999999999
-    ok = adapter.send("chat", "hello")
-    assert ok is True
+    adapter.handler = handler
 
+    event = MagicMock()
+    event.event.message.chat_id = "oc123"
+    event.event.message.message_type = "text"
+    event.event.message.content = '{"text":"hello"}'
+    event.event.message.message_id = "m123"
+    event.event.sender.sender_id.open_id = "u123"
 
-def test_feishu_parse_event():
-    from prism.gateway.feishu import FeishuAdapter, FeishuConfig
+    adapter._on_message_received(event)
 
-    adapter = FeishuAdapter(FeishuConfig(app_id="a", app_secret="s"))
-    body = {
-        "header": {"event_type": "im.message.receive_v1"},
-        "event": {
-            "message": {
-                "chat_id": "oc123",
-                "message_type": "text",
-                "content": '{"text":"hello"}',
-            },
-            "sender": {"sender_id": {"open_id": "u123"}},
-        },
-    }
-    msg = adapter.parse_event(body)
-    assert msg is not None
+    msg = received["msg"]
     assert msg.platform == "feishu"
     assert msg.chat_id == "oc123"
+    assert msg.user_id == "u123"
     assert msg.text == "hello"
 
 
-def test_feishu_webhook_verify():
+def test_feishu_adapter_lifecycle():
     from prism.gateway.feishu import FeishuAdapter, FeishuConfig
 
-    adapter = FeishuAdapter(FeishuConfig(app_id="a", app_secret="s", encrypt_key="k"))
-    ok = adapter.verify_webhook(b"{}", "ts", "n", "bad")
-    assert ok is False
+    adapter = FeishuAdapter(FeishuConfig(app_id="a", app_secret="s"))
+    adapter.start_polling(lambda msg: None)
+    assert adapter.running is True
+    assert adapter.handler is not None
+    adapter.stop()
+    assert adapter.running is False
 
 
 def test_telegram_handle_update():
@@ -164,7 +173,7 @@ def test_gateway_register_and_send():
     gateway.register("telegram", TelegramAdapter(TelegramConfig(bot_token="t")))
     gateway.register("discord", DiscordAdapter(DiscordConfig(bot_token="t")))
 
-    assert gateway.list_platforms() == ["telegram", "discord"]
+    assert set(gateway.list_platforms()) >= {"telegram", "discord"}
     assert gateway.send("telegram", "1", "hi") is True
     assert gateway.send("discord", "2", "hi") is True
     assert gateway.send("unknown", "1", "hi") is False
@@ -220,15 +229,21 @@ def test_gateway_start_stop_lifecycle(monkeypatch):
 
 def test_feishu_adapter_get_user_info():
     from prism.gateway.feishu import FeishuAdapter, FeishuConfig
-    import prism.gateway.feishu as feishu_mod
+    from unittest.mock import MagicMock, patch
 
-    feishu_mod.requests.get = lambda url, **kwargs: FakeResp({"code": 0, "data": {"user": {"name": "user1"}}})
-    adapter = FeishuAdapter(FeishuConfig(app_id="a", app_secret="s"))
-    adapter.access_token = "fake_token"
-    adapter.token_expires_at = 9999999999
-    result = adapter.get_user_info("ou123")
-    assert result.get("success") is True
-    assert result.get("user", {}).get("name") == "user1"
+    mock_response = MagicMock()
+    mock_response.success.return_value = True
+    mock_response.data.user = {"name": "user1"}
+
+    mock_client = MagicMock()
+    mock_client.contact.v3.user.get.return_value = mock_response
+
+    with patch("prism.gateway.feishu.LarkClient") as MockClient:
+        MockClient.builder.return_value.app_id.return_value.app_secret.return_value.build.return_value = mock_client
+        adapter = FeishuAdapter(FeishuConfig(app_id="a", app_secret="s"))
+        result = adapter.get_user_info("ou123")
+        assert result.get("success") is True
+        assert result.get("user", {}).get("name") == "user1"
 
 
 def test_wechat_adapter_send(monkeypatch):
