@@ -480,8 +480,9 @@ class PrismDesktop:
     def _append(self, role: str, text: str, retry: bool = False, retry_text: str = "", placeholder: bool = False):
         is_user = role == "你"
         align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
-        color = ft.colors.PRIMARY_CONTAINER if is_user else ft.colors.SURFACE_VARIANT
+        bg = ft.colors.PRIMARY_CONTAINER if is_user else ft.colors.SURFACE_VARIANT
         text_color = ft.colors.ON_PRIMARY_CONTAINER if is_user else ft.colors.ON_SURFACE_VARIANT
+        avatar = ft.Icon(ft.icons.PERSON_ROUNDED if is_user else ft.icons.SMART_TOY_ROUNDED, size=28, color=ft.colors.ON_SURFACE_VARIANT)
 
         def _copy(_):
             try:
@@ -566,18 +567,21 @@ class PrismDesktop:
 
         container_wrapper = ft.Container(
             content=content,
-            bgcolor=color,
+            bgcolor=bg,
             padding=10,
             border_radius=16,
             expand=True,
             on_secondary_tap=_on_right_click,
         )
 
+        spacer = ft.Container(width=8)
+        if is_user:
+            row_controls = [container_wrapper, spacer, avatar]
+        else:
+            row_controls = [avatar, spacer, container_wrapper]
         self.chat_list.controls.append(
             ft.Row(
-                [
-                    container_wrapper,
-                ],
+                row_controls,
                 alignment=align,
             )
         )
@@ -585,7 +589,7 @@ class PrismDesktop:
         return container_wrapper
     
     def _format_time(self) -> str:
-        return datetime.now().strftime("%H:%M")
+        return datetime.now().strftime("%m-%d %H:%M")
     
     def _clear_chat(self):
         self.chat_list.controls.clear()
