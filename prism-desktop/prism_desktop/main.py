@@ -404,8 +404,10 @@ class PrismDesktop:
         )
         self.input_count = ft.Text("0 字", size=11, color=ft.colors.ON_SURFACE_VARIANT)
         self.input_field.on_change = lambda e: self._on_input_change()
-        send_btn = ft.IconButton(icon=ft.icons.SEND_ROUNDED, tooltip="发送")
-        send_btn.on_click = lambda e: self._send()
+        self.send_btn = ft.IconButton(icon=ft.icons.SEND_ROUNDED, tooltip="发送")
+        self.send_btn.on_click = lambda e: self._send()
+        self.stop_btn = ft.IconButton(icon=ft.icons.STOP_ROUNDED, tooltip="停止生成", visible=False)
+        self.stop_btn.on_click = lambda e: self._stop_send()
         self.input_field.on_submit = lambda e: self._send()
         clear_chat_btn = ft.TextButton("清屏")
         clear_chat_btn.on_click = lambda e: self._clear_chat()
@@ -416,7 +418,7 @@ class PrismDesktop:
                 ft.Divider(height=8),
                 ft.Container(self.chat_list, expand=True, border=ft.border.all(1, ft.colors.OUTLINE_VARIANT), border_radius=12, padding=12),
                 ft.Divider(height=8),
-                ft.Row([self.input_field, send_btn], spacing=8),
+                ft.Row([self.input_field, self.send_btn, self.stop_btn], spacing=8),
                 ft.Row([clear_chat_btn, self.input_count], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             ],
             expand=True,
@@ -683,7 +685,11 @@ class PrismDesktop:
         self._append("你", text)
         self.input_field.value = ""
         self.input_field.disabled = True
+        self.send_btn.visible = False
+        self.stop_btn.visible = True
         self.input_field.update()
+        self.send_btn.update()
+        self.stop_btn.update()
         self._set_status("思考中...", ft.colors.AMBER_400)
         self._append_terminal(f">>> {text}")
         placeholder = self._append("PRISM", "正在生成回复...", placeholder=True)
@@ -692,6 +698,11 @@ class PrismDesktop:
             reply = self.agent.chat(text)
         except Exception as e:
             reply = None
+
+        self.send_btn.visible = True
+        self.stop_btn.visible = False
+        self.send_btn.update()
+        self.stop_btn.update()
 
         if reply is None:
             if placeholder in self.chat_list.controls:
@@ -711,6 +722,16 @@ class PrismDesktop:
         self.input_field.disabled = False
         self.input_field.focus()
         self.input_field.update()
+
+    def _stop_send(self):
+        self.input_field.disabled = False
+        self.input_field.focus()
+        self.input_field.update()
+        self.send_btn.visible = True
+        self.stop_btn.visible = False
+        self.send_btn.update()
+        self.stop_btn.update()
+        self._set_status("已停止", ft.colors.RED_400)
     
     def _browser_open(self):
         url = self.url_field.value.strip()
