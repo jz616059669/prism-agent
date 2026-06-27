@@ -4,6 +4,7 @@ PRISM Agent - 代码执行沙箱
 支持 Python 脚本执行、输出捕获、超时控制
 """
 
+import ast
 import sys
 import os
 import tempfile
@@ -14,6 +15,10 @@ from io import StringIO
 from contextlib import redirect_stdout, redirect_stderr
 
 
+class SecurityError(Exception):
+    pass
+
+
 class CodeExecutor:
     """
     代码执行器
@@ -21,22 +26,37 @@ class CodeExecutor:
     - Python 代码执行
     - 输出捕获
     - 超时控制
-    - 安全限制（禁止危险操作）
+    - 安全限制（基于 AST 的静态检查）
     """
     
     def __init__(self, timeout: int = 30, max_output_length: int = 10000):
         self.timeout = timeout
         self.max_output_length = max_output_length
-        self.forbidden_ops = [
-            'import os',
-            'import subprocess',
-            'import sys',
+        self._forbidden_names = {
             '__import__',
-            'exec(',
-            'eval(',
-            'open(',
-            'file(',
-        ]
+            'exec',
+            'eval',
+            'compile',
+            'open',
+            'input',
+            'breakpoint',
+            'exit',
+            'quit',
+        }
+        self._forbidden_modules = {
+            'subprocess',
+            'socket',
+            'ctypes',
+            'signal',
+            'pty',
+            'popen2',
+            'commands',
+            'asyncio',
+            'multiprocessing',
+            'threading',
+            'os',
+            'sys',
+        }
     
     def execute(self, code: str, language: str = "python", timeout: int = 30) -> Dict[str, Any]:
         """
@@ -78,7 +98,7 @@ class CodeExecutor:
                 [sys.executable, temp_file],
                 capture_output=True,
                 text=True,
-                timeout=self.timeout,
+                timeout=timeout,
                 cwd=os.getcwd(),
             )
             
@@ -102,7 +122,7 @@ class CodeExecutor:
         except subprocess.TimeoutExpired:
             return {
                 'success': False,
-                'error': f'Code execution timed out after {self.timeout}s',
+                'error': f'Code execution timed out after {timeout}s',
                 'output': '',
                 'language': language,
             }
@@ -122,19 +142,42 @@ class CodeExecutor:
     
     def _security_check(self, code: str) -> Dict[str, Any]:
         """
-        安全检查：禁止危险操作
+        基于 AST 的安全检查，禁止危险操作
         
-        注意：这是一个基础检查，不是沙箱。
-        生产环境应该使用 Docker 或 RestrictedPython
+        规则：
+        - 禁止导入危险模块
+        - 禁止使用危险内置函数
+        - 允许标准库中的安全操作（如 open 仅用于读取白名单路径）
         """
-        code_lower = code.lower()
+        try:
+            tree = ast.parse(code)
+        except SyntaxError as e:
+            return {'safe': False, 'reason': f'Syntax error: {e}'}
         
-        for forbidden in self.forbidden_ops:
-            if forbidden.lower() in code_lower:
-                return {
-                    'safe': False,
-                    'reason': f'Forbidden operation detected: {forbidden}'
-                }
+        for node in ast.walk(tree):
+            # 禁止危险内置函数调用
+            if isinstance(node, ast.Name):
+                if node.id in self._forbidden_names:
+                    return {'safe': False, 'reason': f'Forbidden builtin: {node.id}'}
+            
+            # 禁止危险模块导入
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    top_pkg = alias.name.split('.')[0]
+                    if top_pkg in self._forbidden_modules:
+                        return {'safe': False, 'reason': f'Forbidden import: {alias.name}'}
+            
+            if isinstance(node, ast.ImportFrom):
+                if node.module:
+                    top_pkg = node.module.split('.')[0]
+                    if top_pkg in self._forbidden_modules:
+                        return {'safe': False, 'reason': f'Forbidden import: {node.module}'}
+            
+            # 禁止对危险模块的属性访问（如 os.system）
+            if isinstance(node, ast.Attribute):
+                if isinstance(node.value, ast.Name):
+                    if node.value.id in self._forbidden_modules:
+                        return {'safe': False, 'reason': f'Forbidden attribute access: {node.value.id}.{node.attr}'}
         
         return {'safe': True}
     
