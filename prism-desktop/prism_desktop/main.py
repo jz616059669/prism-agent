@@ -1028,7 +1028,7 @@ class PrismDesktop:
 
 
 def main():
-    ft.app(target=lambda page: PrismDesktop(page))
+    ft.run(target=lambda page: PrismDesktop(page))
 
 
 if __name__ == "__main__":
