@@ -287,6 +287,12 @@ class PrismDesktop:
             sidebar.visible = False
             sidebar.width = 0
             sidebar.padding = 0
+        if isinstance(self._settings.get("sidebar_width"), int):
+            sidebar.width = int(self._settings.get("sidebar_width"))
+        if isinstance(self._settings.get("chat_width"), int):
+            self._chat_container.width = int(self._settings.get("chat_width"))
+        if isinstance(self._settings.get("right_width"), int):
+            self._right_container.width = int(self._settings.get("right_width"))
         self.page.add(
             ft.Row(
                 [
