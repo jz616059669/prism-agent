@@ -71,9 +71,9 @@ class PrismDesktop:
                     prism_config.set("model.default", wizard_model.value.strip())
                 self.page.close_dialog()
                 self._append_terminal("setup wizard saved")
-                self._set_status("配置已保存", ft.colors.GREEN_400)
+                self._set_status("配置已保存", ft.Colors.GREEN_400)
             except Exception as e:
-                self._set_status(f"保存失败：{e}", ft.colors.RED_400)
+                self._set_status(f"保存失败：{e}", ft.Colors.RED_400)
 
         self.page.dialog = ft.AlertDialog(
             title=ft.Text("首次运行配置向导"),
@@ -312,7 +312,7 @@ class PrismDesktop:
             content=ft.Column(
                 [
                     ft.Text("PRISM", size=20, weight=ft.FontWeight.BOLD),
-                    ft.Divider(height=12, color=ft.colors.TRANSPARENT),
+                    ft.Divider(height=12, color=ft.Colors.TRANSPARENT),
                     self.model_dropdown,
                     ft.Container(height=6),
                     self.provider_textfield,
@@ -326,7 +326,7 @@ class PrismDesktop:
             ),
             width=280,
             padding=16,
-            bgcolor=ft.colors.SURFACE_VARIANT,
+            bgcolor=ft.Colors.SURFACE_VARIANT,
             border_radius=12,
         )
 
@@ -360,7 +360,7 @@ class PrismDesktop:
         self.session_save_btn = ft.ElevatedButton("保存会话", width=120)
         self.session_save_btn.on_click = lambda e: self._save_session()
         self.session_list = ft.Column(spacing=4, tight=True)
-        self._session_empty_text = ft.Text("暂无保存的会话", size=11, color=ft.colors.ON_SURFACE_VARIANT)
+        self._session_empty_text = ft.Text("暂无保存的会话", size=11, color=ft.Colors.ON_SURFACE_VARIANT)
 
         sidebar_content = self._sidebar_container.content
         sidebar_content.controls.extend([
@@ -375,7 +375,7 @@ class PrismDesktop:
             ft.Text("MCP 控制", size=12, weight=ft.FontWeight.BOLD),
             self.mcp_refresh_btn,
             ft.Container(height=6),
-            ft.Text("已配置服务器", size=11, color=ft.colors.ON_SURFACE_VARIANT),
+            ft.Text("已配置服务器", size=11, color=ft.Colors.ON_SURFACE_VARIANT),
             self.mcp_server_list,
             ft.Container(height=16),
             ft.Text("Skills", size=12, weight=ft.FontWeight.BOLD),
@@ -383,13 +383,13 @@ class PrismDesktop:
             self.skill_install_field,
             self.skill_install_btn,
             ft.Container(height=6),
-            ft.Text("可用 Skills", size=11, color=ft.colors.ON_SURFACE_VARIANT),
+            ft.Text("可用 Skills", size=11, color=ft.Colors.ON_SURFACE_VARIANT),
             self.skill_list,
             ft.Container(height=16),
             ft.Text("会话", size=12, weight=ft.FontWeight.BOLD),
             ft.Row([self.session_name_field, self.session_save_btn], spacing=8),
             ft.Container(height=6),
-            ft.Text("已保存会话", size=11, color=ft.colors.ON_SURFACE_VARIANT),
+            ft.Text("已保存会话", size=11, color=ft.Colors.ON_SURFACE_VARIANT),
             self.session_list,
             ft.Container(height=16),
             ft.Text("状态", size=12, weight=ft.FontWeight.BOLD),
@@ -408,7 +408,7 @@ class PrismDesktop:
             max_lines=6,
             shift_enter=True,
         )
-        self.input_count = ft.Text("0 字", size=11, color=ft.colors.ON_SURFACE_VARIANT)
+        self.input_count = ft.Text("0 字", size=11, color=ft.Colors.ON_SURFACE_VARIANT)
         self.input_field.on_change = lambda e: self._on_input_change()
         self.send_btn = ft.IconButton(icon=ft.icons.SEND_ROUNDED, tooltip="发送")
         self.send_btn.on_click = lambda e: self._send()
@@ -422,7 +422,7 @@ class PrismDesktop:
             [
                 ft.Text("对话", size=18, weight=ft.FontWeight.BOLD),
                 ft.Divider(height=8),
-                ft.Container(self.chat_list, expand=True, border=ft.border.all(1, ft.colors.OUTLINE_VARIANT), border_radius=12, padding=12),
+                ft.Container(self.chat_list, expand=True, border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=12, padding=12),
                 ft.Divider(height=8),
                 ft.Row([self.input_field, self.send_btn, self.stop_btn], spacing=8),
                 ft.Row([clear_chat_btn, self.input_count], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
@@ -454,7 +454,7 @@ class PrismDesktop:
             [
                 ft.Row([self.terminal_input, terminal_run_btn], spacing=8),
                 ft.Row([clear_terminal_btn], alignment=ft.MainAxisAlignment.END),
-                ft.Container(self.terminal_list, expand=True, border=ft.border.all(1, ft.colors.OUTLINE_VARIANT), border_radius=12, padding=12, bgcolor=ft.colors.SURFACE),
+                ft.Container(self.terminal_list, expand=True, border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=12, padding=12, bgcolor=ft.Colors.SURFACE),
             ],
             expand=True,
             spacing=8,
@@ -462,7 +462,7 @@ class PrismDesktop:
         mcp_tab = ft.Column(
             [
                 ft.Row([clear_mcp_btn], alignment=ft.MainAxisAlignment.END),
-                ft.Container(self.mcp_list, expand=True, border=ft.border.all(1, ft.colors.OUTLINE_VARIANT), border_radius=12, padding=12, bgcolor=ft.colors.SURFACE),
+                ft.Container(self.mcp_list, expand=True, border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=12, padding=12, bgcolor=ft.Colors.SURFACE),
             ],
             expand=True,
             spacing=8,
@@ -488,21 +488,21 @@ class PrismDesktop:
     def _append(self, role: str, text: str, retry: bool = False, retry_text: str = "", placeholder: bool = False):
         is_user = role == "你"
         align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
-        bg = ft.colors.PRIMARY_CONTAINER if is_user else ft.colors.SURFACE_VARIANT
-        text_color = ft.colors.ON_PRIMARY_CONTAINER if is_user else ft.colors.ON_SURFACE_VARIANT
-        avatar = ft.Icon(ft.icons.PERSON_ROUNDED if is_user else ft.icons.SMART_TOY_ROUNDED, size=28, color=ft.colors.ON_SURFACE_VARIANT)
+        bg = ft.Colors.PRIMARY_CONTAINER if is_user else ft.Colors.SURFACE_VARIANT
+        text_color = ft.Colors.ON_PRIMARY_CONTAINER if is_user else ft.Colors.ON_SURFACE_VARIANT
+        avatar = ft.Icon(ft.icons.PERSON_ROUNDED if is_user else ft.icons.SMART_TOY_ROUNDED, size=28, color=ft.Colors.ON_SURFACE_VARIANT)
 
         def _copy(_):
             try:
                 self.page.set_clipboard(text)
-                self._set_status("已复制", ft.colors.GREEN_400)
+                self._set_status("已复制", ft.Colors.GREEN_400)
             except Exception:
                 pass
 
         def _copy_raw(_):
             try:
                 self.page.set_clipboard(text)
-                self._set_status("已复制原文", ft.colors.GREEN_400)
+                self._set_status("已复制原文", ft.Colors.GREEN_400)
             except Exception:
                 pass
 
@@ -527,7 +527,7 @@ class PrismDesktop:
             rendered = text
 
         actions = [
-            ft.Text(self._format_time(), size=9, color=ft.colors.ON_SURFACE_VARIANT),
+            ft.Text(self._format_time(), size=9, color=ft.Colors.ON_SURFACE_VARIANT),
             ft.TextButton("复制渲染", on_click=_copy),
             ft.TextButton("复制原文", on_click=_copy_raw),
             ft.TextButton("删除", on_click=_delete),
@@ -542,7 +542,7 @@ class PrismDesktop:
             actions.insert(2, ft.TextButton("重发", on_click=_retry))
 
         if placeholder:
-            actions = [ft.Text(self._format_time(), size=9, color=ft.colors.ON_SURFACE_VARIANT)]
+            actions = [ft.Text(self._format_time(), size=9, color=ft.Colors.ON_SURFACE_VARIANT)]
 
         import re
         code_blocks = re.findall(r'```(?:\w+)?\n(.*?)```', text, re.DOTALL)
@@ -552,7 +552,7 @@ class PrismDesktop:
                 def handler(_):
                     try:
                         self.page.set_clipboard(b.strip())
-                        self._set_status(f"代码块 {index+1} 已复制", ft.colors.GREEN_400)
+                        self._set_status(f"代码块 {index+1} 已复制", ft.Colors.GREEN_400)
                     except Exception:
                         pass
                 return handler
@@ -566,7 +566,7 @@ class PrismDesktop:
 
         content = ft.Column(
             [
-                ft.Text(role, size=11, color=ft.colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.BOLD),
+                ft.Text(role, size=11, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.BOLD),
                 ft.Text(rendered, selectable=True, color=text_color),
                 action_row,
             ],
@@ -608,7 +608,7 @@ class PrismDesktop:
         def _copy_msg(_):
             try:
                 self.page.set_clipboard(message_text)
-                self._set_status("已复制", ft.colors.GREEN_400)
+                self._set_status("已复制", ft.Colors.GREEN_400)
             except Exception:
                 pass
         def _del_msg(_):
@@ -636,7 +636,7 @@ class PrismDesktop:
             self._terminal_lines = self._terminal_lines[-300:]
         self.terminal_list.controls.clear()
         is_error = any(k in text.lower() for k in ["error", "err", "失败", "异常", "fail", "traceback", "error"])
-        color = ft.colors.RED_400 if is_error else ft.colors.ON_SURFACE_VARIANT
+        color = ft.Colors.RED_400 if is_error else ft.Colors.ON_SURFACE_VARIANT
         for line in self._terminal_lines[-80:]:
             self.terminal_list.controls.append(
                 ft.Text(line, size=12, color=color, selectable=True)
@@ -650,7 +650,7 @@ class PrismDesktop:
         self.mcp_list.controls.clear()
         for line in self._mcp_logs[-80:]:
             self.mcp_list.controls.append(
-                ft.Text(line, size=12, color=ft.colors.ON_SURFACE_VARIANT, selectable=True)
+                ft.Text(line, size=12, color=ft.Colors.ON_SURFACE_VARIANT, selectable=True)
             )
         self.mcp_list.update()
     
@@ -664,7 +664,7 @@ class PrismDesktop:
         self.mcp_list.controls.clear()
         self.mcp_list.update()
     
-    def _set_status(self, text: str, color=ft.colors.GREEN_400):
+    def _set_status(self, text: str, color=ft.Colors.GREEN_400):
         self.status_text.value = text
         self.status_text.color = color
         self.status_text.update()
@@ -672,7 +672,7 @@ class PrismDesktop:
     def _set_browser_status(self, connected: bool, text: str):
         self.browser_connected = connected
         self.browser_status_text.value = text
-        self.browser_status_icon.color = ft.colors.GREEN_400 if connected else ft.colors.RED_400
+        self.browser_status_icon.color = ft.Colors.GREEN_400 if connected else ft.Colors.RED_400
         self.browser_status_icon.update()
         self.browser_status_text.update()
     
@@ -697,7 +697,7 @@ class PrismDesktop:
         self.input_field.update()
         self.send_btn.update()
         self.stop_btn.update()
-        self._set_status("思考中...", ft.colors.AMBER_400)
+        self._set_status("思考中...", ft.Colors.AMBER_400)
         self._append_terminal(f">>> {text}")
         placeholder = self._append("PRISM", "正在生成回复...", placeholder=True)
 
@@ -715,7 +715,7 @@ class PrismDesktop:
             if placeholder in self.chat_list.controls:
                 self.chat_list.controls.remove(placeholder)
             self._append("PRISM", "请求失败，请检查网络或配置。", retry=True, retry_text=text)
-            self._set_status("发送失败", ft.colors.RED_400)
+            self._set_status("发送失败", ft.Colors.RED_400)
             self.input_field.disabled = False
             self.input_field.focus()
             self.input_field.update()
@@ -738,14 +738,14 @@ class PrismDesktop:
         self.stop_btn.visible = False
         self.send_btn.update()
         self.stop_btn.update()
-        self._set_status("已停止", ft.colors.RED_400)
+        self._set_status("已停止", ft.Colors.RED_400)
     
     def _browser_open(self):
         url = self.url_field.value.strip()
         if not url:
-            self._set_status("请输入网址", ft.colors.RED_400)
+            self._set_status("请输入网址", ft.Colors.RED_400)
             return
-        self._set_status("正在打开网页...", ft.colors.AMBER_400)
+        self._set_status("正在打开网页...", ft.Colors.AMBER_400)
         self._append_terminal(f"browser open {url}")
         result = open_page(url, headless=False)
         if result.get("success"):
@@ -755,15 +755,15 @@ class PrismDesktop:
             self._append_terminal(f"browser opened {result.get('url')}")
         else:
             self._set_browser_status(False, "打开失败")
-            self._set_status(f"打开失败：{result.get('error')}", ft.colors.RED_400)
+            self._set_status(f"打开失败：{result.get('error')}", ft.Colors.RED_400)
             self._append("浏览器", f"打开失败：{result.get('error')}")
             self._append_terminal(f"browser error: {result.get('error')}")
     
     def _browser_snapshot(self):
         if not self.browser_connected:
-            self._set_status("浏览器未连接", ft.colors.RED_400)
+            self._set_status("浏览器未连接", ft.Colors.RED_400)
             return
-        self._set_status("正在读取页面...", ft.colors.AMBER_400)
+        self._set_status("正在读取页面...", ft.Colors.AMBER_400)
         self._append_terminal("browser snapshot ...")
         result = page_snapshot()
         if result.get("success"):
@@ -773,7 +773,7 @@ class PrismDesktop:
             self._append_terminal(f"browser snapshot: {result.get('title')}")
         else:
             self._set_browser_status(False, "快照失败")
-            self._set_status(f"快照失败：{result.get('error')}", ft.colors.RED_400)
+            self._set_status(f"快照失败：{result.get('error')}", ft.Colors.RED_400)
             self._append("页面快照", f"失败：{result.get('error')}")
             self._append_terminal(f"browser snapshot error: {result.get('error')}")
     
@@ -787,7 +787,7 @@ class PrismDesktop:
             self._append_terminal("browser closed")
         else:
             self._set_browser_status(False, "关闭失败")
-            self._set_status(f"关闭失败：{result.get('error')}", ft.colors.RED_400)
+            self._set_status(f"关闭失败：{result.get('error')}", ft.Colors.RED_400)
             self._append("浏览器", f"关闭失败：{result.get('error')}")
             self._append_terminal(f"browser close error: {result.get('error')}")
 
@@ -798,7 +798,7 @@ class PrismDesktop:
         self._append_terminal(f">>> {command}")
         self.terminal_input.value = ""
         self.terminal_input.update()
-        self._set_status("执行命令中...", ft.colors.AMBER_400)
+        self._set_status("执行命令中...", ft.Colors.AMBER_400)
         try:
             from prism.tools.registry import registry
             result = registry.execute('terminal', command=command, timeout=180)
@@ -818,7 +818,7 @@ class PrismDesktop:
             raw = []
         if not raw:
             self.mcp_server_list.controls.append(
-                ft.Text("未配置 MCP 服务器", size=12, color=ft.colors.ON_SURFACE_VARIANT)
+                ft.Text("未配置 MCP 服务器", size=12, color=ft.Colors.ON_SURFACE_VARIANT)
             )
         else:
             for idx, server in enumerate(raw):
@@ -831,7 +831,7 @@ class PrismDesktop:
                 row = ft.Row(
                     [
                         ft.Text(name, size=12, expand=True),
-                        ft.Text(status, size=11, color=ft.colors.ON_SURFACE_VARIANT),
+                        ft.Text(status, size=11, color=ft.Colors.ON_SURFACE_VARIANT),
                         start_btn,
                         log_btn,
                     ]
@@ -868,7 +868,7 @@ class PrismDesktop:
         self._skill_list_cache = items
         if not items:
             self.skill_list.controls.append(
-                ft.Text("暂无可用 Skills", size=12, color=ft.colors.ON_SURFACE_VARIANT)
+                ft.Text("暂无可用 Skills", size=12, color=ft.Colors.ON_SURFACE_VARIANT)
             )
         else:
             for skill in items:
@@ -886,7 +886,7 @@ class PrismDesktop:
                     ft.Row(
                         [
                             ft.Text(name, size=12, expand=True),
-                            ft.Text(status, size=11, color=ft.colors.ON_SURFACE_VARIANT),
+                            ft.Text(status, size=11, color=ft.Colors.ON_SURFACE_VARIANT),
                             toggle,
                             run_btn,
                         ]
@@ -894,11 +894,11 @@ class PrismDesktop:
                 )
                 if desc:
                     self.skill_list.controls.append(
-                        ft.Text(desc, size=11, color=ft.colors.ON_SURFACE_VARIANT)
+                        ft.Text(desc, size=11, color=ft.Colors.ON_SURFACE_VARIANT)
                     )
                 if trigger_text:
                     self.skill_list.controls.append(
-                        ft.Text(f"触发词：{trigger_text}", size=10, color=ft.colors.ON_SURFACE_VARIANT)
+                        ft.Text(f"触发词：{trigger_text}", size=10, color=ft.Colors.ON_SURFACE_VARIANT)
                     )
         self.skill_list.update()
         self._append_mcp(f"已刷新 Skills：{len(items)} 个")
@@ -930,7 +930,7 @@ class PrismDesktop:
     def _install_skill_from_ui(self):
         name = (self.skill_install_field.value or "").strip()
         if not name:
-            self._set_status("请输入 Skill 名称或本地路径", ft.colors.RED_400)
+            self._set_status("请输入 Skill 名称或本地路径", ft.Colors.RED_400)
             return
         self._append_terminal(f"skill install {name}")
         try:
@@ -941,10 +941,10 @@ class PrismDesktop:
                 self._set_status("Skill 安装成功")
             else:
                 self._append_mcp(f"[install] 失败：{result.get('error')}")
-                self._set_status("Skill 安装失败", ft.colors.RED_400)
+                self._set_status("Skill 安装失败", ft.Colors.RED_400)
         except Exception as e:
             self._append_mcp(f"[install] 异常：{e}")
-            self._set_status("Skill 安装异常", ft.colors.RED_400)
+            self._set_status("Skill 安装异常", ft.Colors.RED_400)
         self.skill_install_field.value = ""
         self.skill_install_field.update()
         self._refresh_skills()
@@ -952,7 +952,7 @@ class PrismDesktop:
     def _save_session(self):
         name = (self.session_name_field.value or "").strip()
         if not name:
-            self._set_status("请输入会话名称", ft.colors.RED_400)
+            self._set_status("请输入会话名称", ft.Colors.RED_400)
             return
         try:
             path = self.agent.save_session(name)
@@ -960,7 +960,7 @@ class PrismDesktop:
             self._set_status("会话已保存")
         except Exception as e:
             self._append_terminal(f"session save failed: {e}")
-            self._set_status("会话保存失败", ft.colors.RED_400)
+            self._set_status("会话保存失败", ft.Colors.RED_400)
         self.session_name_field.value = ""
         self.session_name_field.update()
         self._refresh_sessions()
@@ -980,8 +980,8 @@ class PrismDesktop:
                     name,
                     width=200,
                     style=ft.ButtonStyle(
-                        bgcolor=ft.colors.PRIMARY_CONTAINER if is_current else None,
-                        color=ft.colors.ON_PRIMARY_CONTAINER if is_current else None,
+                        bgcolor=ft.Colors.PRIMARY_CONTAINER if is_current else None,
+                        color=ft.Colors.ON_PRIMARY_CONTAINER if is_current else None,
                     ),
                 )
                 load_btn.on_click = lambda e, n=name: self._load_session(n)
@@ -998,10 +998,10 @@ class PrismDesktop:
             if ok and name == self._current_session_name:
                 self._current_session_name = None
             self._append_terminal(f"session delete {name}: {'ok' if ok else 'failed'}")
-            self._set_status("会话已删除" if ok else "删除失败", ft.colors.GREEN_400 if ok else ft.colors.RED_400)
+            self._set_status("会话已删除" if ok else "删除失败", ft.Colors.GREEN_400 if ok else ft.Colors.RED_400)
         except Exception as e:
             self._append_terminal(f"session delete error: {e}")
-            self._set_status("删除异常", ft.colors.RED_400)
+            self._set_status("删除异常", ft.Colors.RED_400)
         self._refresh_sessions()
 
     def _load_session(self, name: str):
@@ -1021,10 +1021,10 @@ class PrismDesktop:
                 self._refresh_sessions()
             else:
                 self._append_terminal(f"session load failed: {name}")
-                self._set_status("会话加载失败", ft.colors.RED_400)
+                self._set_status("会话加载失败", ft.Colors.RED_400)
         except Exception as e:
             self._append_terminal(f"session load error: {e}")
-            self._set_status("会话加载异常", ft.colors.RED_400)
+            self._set_status("会话加载异常", ft.Colors.RED_400)
 
 
 def main():
