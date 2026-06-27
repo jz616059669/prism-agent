@@ -10,6 +10,7 @@ import json
 from datetime import datetime
 import flet as ft
 from typing import Optional
+import markdown
 
 # 让桌面端可直接导入上层 prism 包，无需额外安装
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -567,7 +568,7 @@ class PrismDesktop:
         content = ft.Column(
             [
                 ft.Text(role, size=11, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.BOLD),
-                ft.Text(rendered, selectable=True, color=text_color),
+                self._markdown_to_ft(rendered),
                 action_row,
             ],
             tight=True,
@@ -599,6 +600,15 @@ class PrismDesktop:
     
     def _format_time(self) -> str:
         return datetime.now().strftime("%m-%d %H:%M")
+    
+    def _markdown_to_ft(self, text: str):
+        html = markdown.markdown(text, extensions=["fenced_code", "tables", "nl2br"])
+        return ft.Markdown(
+            value=html,
+            selectable=True,
+            extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
+            on_tap_link=lambda e: self.page.launch_url(e.data),
+        )
     
     def _clear_chat(self):
         self.chat_list.controls.clear()
