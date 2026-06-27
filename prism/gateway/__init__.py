@@ -28,14 +28,14 @@ class Gateway:
     def start(self, handler: Callable[[Message], None]):
         """
         启动所有平台
-        
+
         Args:
             handler: 统一消息处理器，接收 Message 对象
         """
         self.running = True
         for name, adapter in self.adapters.items():
             try:
-                adapter.start_polling(handler)
+                adapter.start(handler)
                 print(f"[Gateway] {name} 启动成功")
             except Exception as e:
                 print(f"[Gateway] {name} 启动失败: {e}")

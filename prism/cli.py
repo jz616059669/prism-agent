@@ -174,14 +174,9 @@ def start(platform: Optional[str], token: Optional[str], app_id: Optional[str],
                 verification_token=verification_token,
             ))
             gw.register('feishu', adapter)
-            if webhook:
-                adapter.start_webhook(lambda m: click.echo(f"[feishu] {m.text}"), host=host, port=port)
-                started = True
-                click.echo("feishu webhook 已启动")
-            else:
-                gw.start(lambda m: click.echo(f"[feishu] {m.text}"))
-                started = True
-                click.echo("feishu 已启动")
+            gw.start(lambda m: click.echo(f"[feishu] {m.message.get('text','')}"))
+            started = True
+            click.echo("feishu WebSocket 已启动")
         except Exception as e:
             click.echo(f"feishu 启动失败: {e}")
     elif platform == 'telegram':
