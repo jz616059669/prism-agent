@@ -308,43 +308,6 @@ class PrismDesktop:
                     ft.Container(height=6),
                     self.api_key_textfield,
                     ft.Container(height=6),
-                ]
-            )
-            save_btn = ft.ElevatedButton("保存配置", width=260)
-            save_btn.on_click = lambda e: self._save_config()
-            sidebar_content = self._sidebar_container.content
-            sidebar_content.controls.extend([
-                save_btn,
-                ft.Container(height=16),
-                    ft.Text("浏览器控制", size=12, weight=ft.FontWeight.BOLD),
-                    self.url_field,
-                    browser_open_btn,
-                    browser_snapshot_btn,
-                    browser_close_btn,
-                    ft.Container(height=16),
-                    ft.Text("MCP 控制", size=12, weight=ft.FontWeight.BOLD),
-                    self.mcp_refresh_btn,
-                    ft.Container(height=6),
-                    ft.Text("已配置服务器", size=11, color=ft.colors.ON_SURFACE_VARIANT),
-                    self.mcp_server_list,
-                    ft.Container(height=16),
-                    ft.Text("Skills", size=12, weight=ft.FontWeight.BOLD),
-                    self.skill_refresh_btn,
-                    self.skill_install_field,
-                    self.skill_install_btn,
-                    ft.Container(height=6),
-                    ft.Text("可用 Skills", size=11, color=ft.colors.ON_SURFACE_VARIANT),
-                    self.skill_list,
-                    ft.Container(height=16),
-                    ft.Text("会话", size=12, weight=ft.FontWeight.BOLD),
-                    ft.Row([self.session_name_field, self.session_save_btn], spacing=8),
-                    ft.Container(height=6),
-                    ft.Text("已保存会话", size=11, color=ft.colors.ON_SURFACE_VARIANT),
-                    self.session_list,
-                    ft.Container(height=16),
-                    ft.Text("状态", size=12, weight=ft.FontWeight.BOLD),
-                    ft.Row([self.browser_status_icon, self.browser_status_text], spacing=8),
-                    self.status_text,
                 ],
                 tight=True,
                 spacing=6,
@@ -355,20 +318,24 @@ class PrismDesktop:
             bgcolor=ft.colors.SURFACE_VARIANT,
             border_radius=12,
         )
+
+        save_btn = ft.ElevatedButton("保存配置", width=260)
+        save_btn.on_click = lambda e: self._save_config()
+
         browser_open_btn = ft.ElevatedButton("打开网页", width=260)
         browser_open_btn.on_click = lambda e: self._browser_open()
-        
+
         browser_snapshot_btn = ft.ElevatedButton("读取页面快照", width=260)
         browser_snapshot_btn.on_click = lambda e: self._browser_snapshot()
-        
+
         browser_close_btn = ft.ElevatedButton("关闭浏览器", width=260)
         browser_close_btn.on_click = lambda e: self._browser_close()
-        
+
         # MCP
         self.mcp_refresh_btn = ft.ElevatedButton("刷新 MCP 服务器", width=260)
         self.mcp_refresh_btn.on_click = lambda e: self._refresh_mcp()
         self.mcp_server_list = ft.Column(spacing=4, tight=True)
-        
+
         # Skills
         self.skill_refresh_btn = ft.ElevatedButton("刷新 Skills", width=260)
         self.skill_refresh_btn.on_click = lambda e: self._refresh_skills()
@@ -376,7 +343,7 @@ class PrismDesktop:
         self.skill_install_btn = ft.ElevatedButton("安装 Skill", width=260)
         self.skill_install_btn.on_click = lambda e: self._install_skill_from_ui()
         self.skill_list = ft.Column(spacing=4, tight=True)
-        
+
         # 会话
         self.session_name_field = ft.TextField(hint_text="会话名称", width=200)
         self.session_save_btn = ft.ElevatedButton("保存会话", width=120)
@@ -386,6 +353,8 @@ class PrismDesktop:
 
         sidebar_content = self._sidebar_container.content
         sidebar_content.controls.extend([
+            save_btn,
+            ft.Container(height=16),
             ft.Text("浏览器控制", size=12, weight=ft.FontWeight.BOLD),
             self.url_field,
             browser_open_btn,
@@ -411,9 +380,13 @@ class PrismDesktop:
             ft.Container(height=6),
             ft.Text("已保存会话", size=11, color=ft.colors.ON_SURFACE_VARIANT),
             self.session_list,
+            ft.Container(height=16),
+            ft.Text("状态", size=12, weight=ft.FontWeight.BOLD),
+            ft.Row([self.browser_status_icon, self.browser_status_text], spacing=8),
+            self.status_text,
         ])
         return self._sidebar_container
-    
+
     def _build_chat(self) -> ft.Column:
         self.chat_list = ft.ListView(expand=True, spacing=10, auto_scroll=True)
         self.input_field = ft.TextField(
