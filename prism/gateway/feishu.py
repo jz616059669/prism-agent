@@ -19,8 +19,8 @@ from lark_oapi.api.im.v1 import (
     ReplyMessageRequest,
     ReplyMessageRequestBody,
 )
-from lark_oapi.event.callback.model.p2_im_message_message_read_v1 import (
-    P2ImMessageMessageReadV1,
+from lark_oapi.event.callback.model.p2_im_message_receive_v1 import (
+    P2ImMessageReceiveV1,
 )
 from lark_oapi.event.dispatcher_handler import EventDispatcherHandler
 from lark_oapi.ws import Client as FeishuWSClient
@@ -40,19 +40,12 @@ class FeishuConfig:
     base_url: str = "https://open.feishu.cn/open-apis"
 
 
-class FeishuAdapter:
-    """
-    飞书适配器（WebSocket 长连接模式）
-    支持：
-    - 接收消息（WebSocket）
-    - 发送消息
-    """
-
+class FeishuAdapter(PlatformAdapter):
     platform = "feishu"
 
     def __init__(self, config: FeishuConfig):
         self.config = config
-        self.handler: Optional[Callable[[FeishuEvent], None]] = None
+        self.handler: Optional[Callable[[Message], None]] = None
         self.running = False
         self._thread: Optional[threading.Thread] = None
         self._loop: Optional[asyncio.AbstractEventLoop] = None
@@ -84,7 +77,7 @@ class FeishuAdapter:
             print(f"[Feishu] 发送消息异常: {e}")
             return False
 
-    def start(self, handler: Callable[[FeishuEvent], None]) -> bool:
+    def start(self, handler: Callable[[Message], None]) -> bool:
         self.handler = handler
         self.running = True
         self._thread = threading.Thread(target=self._run_ws, daemon=True)
@@ -119,8 +112,8 @@ class FeishuAdapter:
                 self.config.app_id,
                 self.config.app_secret,
                 event_handler=EventDispatcherHandler.builder("", "")
-                .register_p2_im_message_message_read_v1(
-                    P2ImMessageMessageReadV1,
+                .register_p2_im_message_receive_v1(
+                    P2ImMessageReceiveV1,
                     self._on_message_received,
                 )
                 .build(),
@@ -131,7 +124,7 @@ class FeishuAdapter:
             print(f"[Feishu] WebSocket 启动失败: {e}")
             self.running = False
 
-    def _on_message_received(self, event: P2ImMessageMessageReadV1) -> None:
+    def _on_message_received(self, event: P2ImMessageReceiveV1) -> None:
         try:
             message = event.event.message
             sender = event.event.sender
@@ -153,7 +146,15 @@ class FeishuAdapter:
                 },
             )
 
+            message_obj = Message(
+                platform="feishu",
+                chat_id=feishu_event.message.get("chat_id", ""),
+                user_id=feishu_event.message.get("user_id", ""),
+                text=feishu_event.message.get("text", ""),
+                raw=feishu_event.message,
+            )
+
             if self.handler:
-                self.handler(feishu_event)
+                self.handler(message_obj)
         except Exception as e:
             print(f"[Feishu] 解析消息失败: {e}")
