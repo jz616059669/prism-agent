@@ -503,7 +503,7 @@ def chat(model: Optional[str], provider: Optional[str]):
         console.print(f"[red]配置错误：{e}[/red]")
         return
     console.print(Panel.fit(
-        "[bold cyan]PRISM Agent[/bold cyan] [dim]v0.1.0[/dim]\n"
+        "[bold cyan]PRISM Agent[/bold cyan] [dim]v0.2.6[/dim]\n"
         "整合 Hermes + Codex + OpenClaw 能力\n"
         "输入 /help 查看命令，/exit 退出",
         border_style="cyan"
