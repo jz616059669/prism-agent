@@ -308,8 +308,14 @@ class PrismDesktop:
                     ft.Container(height=6),
                     self.api_key_textfield,
                     ft.Container(height=6),
-                    save_btn,
-                    ft.Container(height=16),
+                ]
+            )
+            save_btn = ft.ElevatedButton("保存配置", width=260)
+            save_btn.on_click = lambda e: self._save_config()
+            sidebar_content = self._sidebar_container.content
+            sidebar_content.controls.extend([
+                save_btn,
+                ft.Container(height=16),
                     ft.Text("浏览器控制", size=12, weight=ft.FontWeight.BOLD),
                     self.url_field,
                     browser_open_btn,
@@ -407,59 +413,6 @@ class PrismDesktop:
             self.session_list,
         ])
         return self._sidebar_container
-        
-        return ft.Container(
-            content=ft.Column(
-                [
-                    ft.Text("PRISM", size=20, weight=ft.FontWeight.BOLD),
-                    ft.Divider(height=12, color=ft.colors.TRANSPARENT),
-                    self.model_dropdown,
-                    ft.Container(height=6),
-                    self.provider_textfield,
-                    ft.Container(height=6),
-                    self.api_key_textfield,
-                    ft.Container(height=6),
-                    save_btn,
-                    ft.Container(height=16),
-                    ft.Text("浏览器控制", size=12, weight=ft.FontWeight.BOLD),
-                    self.url_field,
-                    browser_open_btn,
-                    browser_snapshot_btn,
-                    browser_close_btn,
-                    ft.Container(height=16),
-                    ft.Text("MCP 控制", size=12, weight=ft.FontWeight.BOLD),
-                    self.mcp_refresh_btn,
-                    ft.Container(height=6),
-                    ft.Text("已配置服务器", size=11, color=ft.colors.ON_SURFACE_VARIANT),
-                    self.mcp_server_list,
-                    ft.Container(height=16),
-                    ft.Text("Skills", size=12, weight=ft.FontWeight.BOLD),
-                    self.skill_refresh_btn,
-                    self.skill_install_field,
-                    self.skill_install_btn,
-                    ft.Container(height=6),
-                    ft.Text("可用 Skills", size=11, color=ft.colors.ON_SURFACE_VARIANT),
-                    self.skill_list,
-                    ft.Container(height=16),
-                    ft.Text("会话", size=12, weight=ft.FontWeight.BOLD),
-                    ft.Row([self.session_name_field, self.session_save_btn], spacing=8),
-                    ft.Container(height=6),
-                    ft.Text("已保存会话", size=11, color=ft.colors.ON_SURFACE_VARIANT),
-                    self.session_list,
-                    ft.Container(height=16),
-                    ft.Text("状态", size=12, weight=ft.FontWeight.BOLD),
-                    ft.Row([self.browser_status_icon, self.browser_status_text], spacing=8),
-                    self.status_text,
-                ],
-                tight=True,
-                spacing=6,
-                scroll=ft.ScrollMode.AUTO,
-            ),
-            width=280,
-            padding=16,
-            bgcolor=ft.colors.SURFACE_VARIANT,
-            border_radius=12,
-        )
     
     def _build_chat(self) -> ft.Column:
         self.chat_list = ft.ListView(expand=True, spacing=10, auto_scroll=True)
