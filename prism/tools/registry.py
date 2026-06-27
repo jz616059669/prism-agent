@@ -5,6 +5,8 @@ PRISM Agent - 统一工具系统
 
 import json
 import os
+import re
+import shlex
 import subprocess
 import tempfile
 from typing import Dict, List, Any, Optional, Callable
@@ -128,15 +130,63 @@ class TerminalTool(Tool):
                 background: bool = False, workdir: Optional[str] = None) -> Dict[str, Any]:
         try:
             cwd = workdir or os.getcwd()
-            result = subprocess.run(
-                command,
-                shell=True,
-                capture_output=True,
-                text=True,
-                timeout=timeout,
-                cwd=cwd,
-                env={**os.environ, 'PYTHONIOENCODING': 'utf-8'},
-            )
+            
+            # 安全检查：禁止明显危险的命令模式
+            dangerous_patterns = [
+                r'rm\s+-rf\s+/',
+                r'del\s+/[fs]',
+                r'format\s+[c-z]:',
+                r'shutdown',
+                r'reboot',
+                r':>',  # Windows 重定向破坏
+            ]
+            cmd_lower = command.lower()
+            for pattern in dangerous_patterns:
+                if re.search(pattern, cmd_lower):
+                    return {
+                        'success': False,
+                        'error': f'Dangerous command blocked: pattern matched {pattern}',
+                        'exit_code': -1,
+                    }
+            
+            # 使用 shlex.split 解析命令，避免 shell=True
+            if os.name == 'nt':
+                # Windows 下保留 shell=True 以支持内部命令（dir/path/echo 等）
+                result = subprocess.run(
+                    command,
+                    shell=True,
+                    capture_output=True,
+                    text=True,
+                    timeout=timeout,
+                    cwd=cwd,
+                    env={**os.environ, 'PYTHONIOENCODING': 'utf-8'},
+                )
+            else:
+                # Unix 下尽量用 shlex 避免 shell 注入
+                try:
+                    args = shlex.split(command)
+                    if not args:
+                        return {'success': False, 'error': 'Empty command'}
+                    result = subprocess.run(
+                        args,
+                        capture_output=True,
+                        text=True,
+                        timeout=timeout,
+                        cwd=cwd,
+                        env={**os.environ, 'PYTHONIOENCODING': 'utf-8'},
+                    )
+                except ValueError:
+                    # 回退：复杂 shell 语法仍允许 shell=True
+                    result = subprocess.run(
+                        command,
+                        shell=True,
+                        capture_output=True,
+                        text=True,
+                        timeout=timeout,
+                        cwd=cwd,
+                        env={**os.environ, 'PYTHONIOENCODING': 'utf-8'},
+                    )
+            
             return {
                 'success': result.returncode == 0,
                 'output': result.stdout,
