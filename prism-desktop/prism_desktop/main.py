@@ -236,11 +236,11 @@ class PrismDesktop:
     
     def _build_appbar(self) -> ft.AppBar:
         self.title_text = ft.Text("PRISM Agent", size=18, weight=ft.FontWeight.BOLD)
-        self.theme_icon_btn = ft.IconButton(icon=ft.icons.BRIGHTNESS_4_ROUNDED, tooltip="切换主题")
+        self.theme_icon_btn = ft.IconButton(icon=ft.Icons.SETTINGS, tooltip="切换主题")
         self.theme_icon_btn.on_click = lambda e: self._cycle_theme()
-        self.minimize_btn = ft.IconButton(icon=ft.icons.MINIMIZE_ROUNDED, tooltip="最小化到托盘")
+        self.minimize_btn = ft.IconButton(icon=ft.Icons.MINIMIZE_ROUNDED, tooltip="最小化到托盘")
         self.minimize_btn.on_click = lambda e: self._minimize_to_tray()
-        self.sidebar_toggle_btn = ft.IconButton(icon=ft.icons.MENU_ROUNDED, tooltip="切换侧边栏")
+        self.sidebar_toggle_btn = ft.IconButton(icon=ft.Icons.MENU_ROUNDED, tooltip="切换侧边栏")
         self.sidebar_toggle_btn.on_click = lambda e: self._toggle_sidebar()
         return ft.AppBar(
             title=self.title_text,
@@ -332,32 +332,32 @@ class PrismDesktop:
             border_radius=12,
         )
 
-        save_btn = ft.ElevatedButton("保存配置", icon=ft.icons.SAVE_ROUNDED, width=260)
+        save_btn = ft.ElevatedButton("保存配置", icon=ft.Icons.SAVE_ROUNDED, width=260)
         save_btn.on_click = lambda e: self._save_config()
 
-        browser_open_btn = ft.ElevatedButton("打开网页", icon=ft.icons.LANGUAGE_ROUNDED, width=260)
+        browser_open_btn = ft.ElevatedButton("打开网页", icon=ft.Icons.LANGUAGE_ROUNDED, width=260)
         browser_open_btn.on_click = lambda e: self._browser_open()
-        browser_snapshot_btn = ft.ElevatedButton("读取页面快照", icon=ft.icons.ARTICLE_ROUNDED, width=260)
+        browser_snapshot_btn = ft.ElevatedButton("读取页面快照", icon=ft.Icons.ARTICLE_ROUNDED, width=260)
         browser_snapshot_btn.on_click = lambda e: self._browser_snapshot()
-        browser_close_btn = ft.ElevatedButton("关闭浏览器", icon=ft.icons.CLOSE_ROUNDED, width=260)
+        browser_close_btn = ft.ElevatedButton("关闭浏览器", icon=ft.Icons.CLOSE_ROUNDED, width=260)
         browser_close_btn.on_click = lambda e: self._browser_close()
 
         # MCP
-        self.mcp_refresh_btn = ft.ElevatedButton("刷新 MCP 服务器", icon=ft.icons.REFRESH_ROUNDED, width=260)
+        self.mcp_refresh_btn = ft.ElevatedButton("刷新 MCP 服务器", icon=ft.Icons.REFRESH_ROUNDED, width=260)
         self.mcp_refresh_btn.on_click = lambda e: self._refresh_mcp()
         self.mcp_server_list = ft.Column(spacing=4, tight=True)
 
         # Skills
-        self.skill_refresh_btn = ft.ElevatedButton("刷新 Skills", icon=ft.icons.REFRESH_ROUNDED, width=260)
+        self.skill_refresh_btn = ft.ElevatedButton("刷新 Skills", icon=ft.Icons.REFRESH_ROUNDED, width=260)
         self.skill_refresh_btn.on_click = lambda e: self._refresh_skills()
         self.skill_install_field = ft.TextField(hint_text="安装 Skill 名称或本地路径", width=260)
-        self.skill_install_btn = ft.ElevatedButton("安装 Skill", icon=ft.icons.DOWNLOAD_ROUNDED, width=260)
+        self.skill_install_btn = ft.ElevatedButton("安装 Skill", icon=ft.Icons.DOWNLOAD_ROUNDED, width=260)
         self.skill_install_btn.on_click = lambda e: self._install_skill_from_ui()
         self.skill_list = ft.Column(spacing=4, tight=True)
 
         # 会话
         self.session_name_field = ft.TextField(hint_text="会话名称", width=200)
-        self.session_save_btn = ft.ElevatedButton("保存会话", icon=ft.icons.BOOKMARK_ROUNDED, width=120)
+        self.session_save_btn = ft.ElevatedButton("保存会话", icon=ft.Icons.BOOKMARK_ROUNDED, width=120)
         self.session_save_btn.on_click = lambda e: self._save_session()
         self.session_list = ft.Column(spacing=4, tight=True)
         self._session_empty_text = ft.Text("暂无保存的会话", size=11, color=ft.Colors.ON_SURFACE_VARIANT)
@@ -410,9 +410,9 @@ class PrismDesktop:
         )
         self.input_count = ft.Text("0 字", size=11, color=ft.Colors.ON_SURFACE_VARIANT)
         self.input_field.on_change = lambda e: self._on_input_change()
-        self.send_btn = ft.IconButton(icon=ft.icons.SEND_ROUNDED, tooltip="发送")
+        self.send_btn = ft.IconButton(icon=ft.Icons.SEND_ROUNDED, tooltip="发送")
         self.send_btn.on_click = lambda e: self._send()
-        self.stop_btn = ft.IconButton(icon=ft.icons.STOP_ROUNDED, tooltip="停止生成", visible=False)
+        self.stop_btn = ft.IconButton(icon=ft.Icons.STOP_ROUNDED, tooltip="停止生成", visible=False)
         self.stop_btn.on_click = lambda e: self._stop_send()
         self.input_field.on_submit = lambda e: self._send()
         clear_chat_btn = ft.TextButton("清屏")
@@ -439,7 +439,7 @@ class PrismDesktop:
             max_lines=3,
             shift_enter=True,
         )
-        terminal_run_btn = ft.IconButton(icon=ft.icons.PLAY_ARROW_ROUNDED, tooltip="执行命令")
+        terminal_run_btn = ft.IconButton(icon=ft.Icons.PLAY_ARROW_ROUNDED, tooltip="执行命令")
         terminal_run_btn.on_click = lambda e: self._run_terminal_command()
         self.terminal_input.on_submit = lambda e: self._run_terminal_command()
         self.terminal_list = ft.ListView(expand=True, spacing=4, auto_scroll=True)
@@ -490,7 +490,7 @@ class PrismDesktop:
         align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
         bg = ft.Colors.PRIMARY_CONTAINER if is_user else ft.Colors.SURFACE_VARIANT
         text_color = ft.Colors.ON_PRIMARY_CONTAINER if is_user else ft.Colors.ON_SURFACE_VARIANT
-        avatar = ft.Icon(ft.icons.PERSON_ROUNDED if is_user else ft.icons.SMART_TOY_ROUNDED, size=28, color=ft.Colors.ON_SURFACE_VARIANT)
+        avatar = ft.Icon(ft.Icons.PERSON_ROUNDED if is_user else ft.Icons.SMART_TOY_ROUNDED, size=28, color=ft.Colors.ON_SURFACE_VARIANT)
 
         def _copy(_):
             try:
@@ -994,7 +994,7 @@ class PrismDesktop:
                     ),
                 )
                 load_btn.on_click = lambda e, n=name: self._load_session(n)
-                del_btn = ft.IconButton(icon=ft.icons.DELETE_OUTLINE, tooltip="删除会话")
+                del_btn = ft.IconButton(icon=ft.Icons.DELETE_OUTLINE, tooltip="删除会话")
                 del_btn.on_click = lambda e, n=name: self._delete_session(n)
                 self.session_list.controls.append(
                     ft.Row([load_btn, del_btn], spacing=6)
@@ -1037,7 +1037,9 @@ class PrismDesktop:
 
 
 def main():
-    ft.run(target=lambda page: PrismDesktop(page))
+    def _app(page: ft.Page):
+        PrismDesktop(page)
+    ft.run(main=_app)
 
 
 if __name__ == "__main__":
