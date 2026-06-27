@@ -151,7 +151,8 @@ class PrismDesktop:
 
     def _bind_tray(self) -> None:
         try:
-            self.page.window.prevent_close = True
+            if hasattr(self.page.window, "prevent_close"):
+                self.page.window.prevent_close = True
             self.page.on_window_event = lambda e: (
                 self._save_settings() if getattr(e, "data", None) != "close" else None
             )
