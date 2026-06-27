@@ -331,34 +331,32 @@ class PrismDesktop:
             border_radius=12,
         )
 
-        save_btn = ft.ElevatedButton("保存配置", width=260)
+        save_btn = ft.ElevatedButton("保存配置", icon=ft.icons.SAVE_ROUNDED, width=260)
         save_btn.on_click = lambda e: self._save_config()
 
-        browser_open_btn = ft.ElevatedButton("打开网页", width=260)
+        browser_open_btn = ft.ElevatedButton("打开网页", icon=ft.icons.LANGUAGE_ROUNDED, width=260)
         browser_open_btn.on_click = lambda e: self._browser_open()
-
-        browser_snapshot_btn = ft.ElevatedButton("读取页面快照", width=260)
+        browser_snapshot_btn = ft.ElevatedButton("读取页面快照", icon=ft.icons.ARTICLE_ROUNDED, width=260)
         browser_snapshot_btn.on_click = lambda e: self._browser_snapshot()
-
-        browser_close_btn = ft.ElevatedButton("关闭浏览器", width=260)
+        browser_close_btn = ft.ElevatedButton("关闭浏览器", icon=ft.icons.CLOSE_ROUNDED, width=260)
         browser_close_btn.on_click = lambda e: self._browser_close()
 
         # MCP
-        self.mcp_refresh_btn = ft.ElevatedButton("刷新 MCP 服务器", width=260)
+        self.mcp_refresh_btn = ft.ElevatedButton("刷新 MCP 服务器", icon=ft.icons.REFRESH_ROUNDED, width=260)
         self.mcp_refresh_btn.on_click = lambda e: self._refresh_mcp()
         self.mcp_server_list = ft.Column(spacing=4, tight=True)
 
         # Skills
-        self.skill_refresh_btn = ft.ElevatedButton("刷新 Skills", width=260)
+        self.skill_refresh_btn = ft.ElevatedButton("刷新 Skills", icon=ft.icons.REFRESH_ROUNDED, width=260)
         self.skill_refresh_btn.on_click = lambda e: self._refresh_skills()
         self.skill_install_field = ft.TextField(hint_text="安装 Skill 名称或本地路径", width=260)
-        self.skill_install_btn = ft.ElevatedButton("安装 Skill", width=260)
+        self.skill_install_btn = ft.ElevatedButton("安装 Skill", icon=ft.icons.DOWNLOAD_ROUNDED, width=260)
         self.skill_install_btn.on_click = lambda e: self._install_skill_from_ui()
         self.skill_list = ft.Column(spacing=4, tight=True)
 
         # 会话
         self.session_name_field = ft.TextField(hint_text="会话名称", width=200)
-        self.session_save_btn = ft.ElevatedButton("保存会话", width=120)
+        self.session_save_btn = ft.ElevatedButton("保存会话", icon=ft.icons.BOOKMARK_ROUNDED, width=120)
         self.session_save_btn.on_click = lambda e: self._save_session()
         self.session_list = ft.Column(spacing=4, tight=True)
         self._session_empty_text = ft.Text("暂无保存的会话", size=11, color=ft.Colors.ON_SURFACE_VARIANT)
