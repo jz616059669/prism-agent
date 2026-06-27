@@ -196,9 +196,12 @@ class Agent:
             self.system_prompt = payload.get("system_prompt", self.system_prompt)
             self.messages = []
             for m in payload.get("messages", []):
+                ts_raw = m.get("timestamp")
+                ts = datetime.fromisoformat(ts_raw) if ts_raw else datetime.now()
                 self.messages.append(Message(
                     role=m.get("role", "user"),
                     content=m.get("content", ""),
+                    timestamp=ts,
                 ))
             return True
         except Exception:
