@@ -593,6 +593,7 @@ class PrismDesktop:
                 alignment=align,
             )
         )
+        self.chat_list.scroll_to(offset=-1, duration=150)
         self.chat_list.update()
         return container_wrapper
     
