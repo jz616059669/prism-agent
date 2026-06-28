@@ -90,12 +90,10 @@ def _send(self, text=None):
             reply = _agent.chat(text, on_stream=_on_chunk) or ""
         except Exception as e:
             reply = f"Error: {e}"
-        if not full_reply:
-            full_reply = reply or "(无回复)"
         try:
-            self.page.call_later(0, lambda: _finish())
+            self.page.call_later(0, lambda: _finish(reply))
         except Exception:
-            _finish()
+            _finish(reply)
 
     def _watchdog():
         if _send_lock.get(id(self)):
