@@ -190,5 +190,9 @@ def _send(self: PrismDesktop):
     if not full_reply:
         full_reply = reply or "(无回复)"
         placeholder.content.controls[1] = _markdown_to_ft(self, full_reply)
+        placeholder.content.controls[0].color = ft.Colors.ON_SURFACE_VARIANT
+        placeholder.bgcolor = ft.Colors.SURFACE
         placeholder.update()
     self._set_status("就绪")
+    self.input_field.focus()
+    self.input_field.update()
