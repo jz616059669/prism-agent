@@ -268,6 +268,19 @@ class PrismDesktop:
             self._append_terminal(f"open config dir failed: {ex}")
         self._append_terminal(f"open config dir: {config_dir}")
 
+    def _open_github_releases(self, e):
+        try:
+            url = "https://github.com/jz616059669/prism-agent/releases/latest"
+            if sys.platform == "win32":
+                os.startfile(url)
+            elif sys.platform == "darwin":
+                subprocess.run(["open", url], check=False)
+            else:
+                subprocess.run(["xdg-open", url], check=False)
+            self._append_terminal("open github releases")
+        except Exception as ex:
+            self._append_terminal(f"open github releases failed: {ex}")
+
     def _open_terminal_here(self, e):
         try:
             if sys.platform == "win32":
@@ -281,10 +294,31 @@ class PrismDesktop:
         self._append_terminal("open terminal")
 
     def _about(self, e):
+        config_path = str(Path.home() / ".prism")
+        content = ft.Column(
+            [
+                ft.Text("PRISM Agent", size=20, weight=ft.FontWeight.BOLD),
+                ft.Divider(height=12),
+                ft.Text("版本：1.0.1", size=14),
+                ft.Text("配置目录：", size=12, weight=ft.FontWeight.BOLD),
+                ft.Text(config_path, size=11, color=ft.Colors.ON_SURFACE_VARIANT),
+                ft.TextButton("打开配置目录", on_click=lambda e: self._open_config_dir(e)),
+                ft.Container(height=8),
+                ft.Text("模型配置", size=12, weight=ft.FontWeight.BOLD),
+                ft.Text(f"提供商：{self.provider_textfield.value or '-'}", size=11),
+                ft.Text(f"模型：{self.model_dropdown.value or '-'}", size=11),
+                ft.Text(f"Base URL：{(self.base_url_textfield.value or '-')[:60]}", size=11),
+            ],
+            tight=True,
+            width=360,
+        )
         self.page.dialog = ft.AlertDialog(
-            title=ft.Text("PRISM Agent"),
-            content=ft.Text("版本：1.0.1"),
-            actions=[ft.TextButton("关闭", on_click=lambda e: self.page.close_dialog())],
+            title=ft.Text("关于 PRISM Agent"),
+            content=content,
+            actions=[
+                ft.TextButton("前往 GitHub 检查更新", on_click=lambda e: self._open_github_releases(e)),
+                ft.TextButton("关闭", on_click=lambda e: self.page.close_dialog()),
+            ],
         )
         self.page.dialog.open = True
         self.page.update()
