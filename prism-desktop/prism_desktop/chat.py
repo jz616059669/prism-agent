@@ -208,30 +208,34 @@ def _send(self: PrismDesktop):
                 reply = f"Error: {e}"
                 self._append_terminal(f"chat error: {e}")
 
-            self._append_terminal("DEBUG _finish called")
             if not full_reply:
                 full_reply = reply or "(无回复)"
-            self._set_status("就绪")
-            self.input_field.disabled = False
-            self.send_btn.visible = True
-            self.stop_btn.visible = False
-            self._append(self, "PRISM", full_reply)
-            self._append_terminal(f"<<< {full_reply[:120]}")
-            self.send_btn.update()
-            self.stop_btn.update()
-            try:
-                self.input_field.focus()
-            except Exception:
-                pass
-            try:
+
+            def _finish():
+                self._append_terminal("DEBUG _finish called")
+                self._set_status("就绪")
+                self._append(self, "PRISM", full_reply)
+                self._append_terminal(f"<<< {full_reply[:120]}")
+                self.input_field.disabled = False
+                self.send_btn.visible = True
+                self.stop_btn.visible = False
+                self.send_btn.update()
+                self.stop_btn.update()
+                try:
+                    self.input_field.focus()
+                except Exception:
+                    pass
                 self.page.update()
+
+            try:
+                self.page.call_later(0, _finish)
             except Exception:
-                pass
+                _finish()
 
         import threading
         t = threading.Thread(target=_do_chat, daemon=True)
         t.start()
-        self._append_terminal(f"DEBUG thread started")
+        self._append_terminal("DEBUG thread started")
     except Exception as e:
         self._append_terminal(f"send error: {e}")
         self.input_field.disabled = False
