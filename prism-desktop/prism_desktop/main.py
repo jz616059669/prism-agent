@@ -14,10 +14,12 @@ from typing import Optional
 import markdown
 import subprocess
 
-# 让桌面端可直接导入上层 prism 包，无需额外安装
+# 让桌面端可直接导入上层 prism 包和同目录 prism_desktop 包
 REPO_ROOT = Path(__file__).resolve().parents[2]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
+DESKTOP_ROOT = Path(__file__).resolve().parent.parent
+for _p in (str(REPO_ROOT), str(DESKTOP_ROOT)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 from prism.config import config as prism_config
 from prism.agent import create_agent

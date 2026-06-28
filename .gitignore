@@ -19,3 +19,9 @@ prism_screenshot_*.png
 # Windows 打包产物（体积大，不上传 Git）
 dist-windows/
 build-windows/
+
+# Desktop build artifacts
+prism-desktop/main.spec
+prism-desktop/dist/
+prism-desktop/build/
+prism-desktop/run_prism.bat
