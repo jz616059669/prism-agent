@@ -490,6 +490,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
+                ink=True,
             ),
             ft.Container(height=12),
             ft.Container(
@@ -516,6 +517,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
+                ink=True,
             ),
             ft.Container(height=12),
             ft.Container(
@@ -547,6 +549,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
+                ink=True,
             ),
             ft.Container(height=12),
             ft.Container(
@@ -559,6 +562,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
+                ink=True,
             ),
         ])
         return self._sidebar_container
@@ -604,8 +608,9 @@ class PrismDesktop:
                 ft.Container(
                     content=ft.Row([self.input_field, self.send_btn, self.stop_btn], spacing=8, expand=True),
                     bgcolor=ft.Colors.SURFACE_CONTAINER,
-                    border_radius=10,
-                    padding=ft.Padding(10, 6, 10, 6),
+                    border_radius=12,
+                    padding=ft.Padding(12, 8, 12, 8),
+                    border=ft.Border(bottom=ft.border.BorderSide(1.5, ft.Colors.OUTLINE_VARIANT)),
                 ),
                 ft.Row([clear_chat_btn, self.input_count], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             ],
@@ -1013,6 +1018,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
+                ink=True,
             ),
             ft.Container(height=12),
             ft.Container(
@@ -1039,6 +1045,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
+                ink=True,
             ),
             ft.Container(height=12),
             ft.Container(
@@ -1070,6 +1077,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
+                ink=True,
             ),
             ft.Container(height=12),
             ft.Container(
@@ -1082,6 +1090,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
+                ink=True,
             ),
         ])
         return self._sidebar_container
@@ -1127,8 +1136,9 @@ class PrismDesktop:
                 ft.Container(
                     content=ft.Row([self.input_field, self.send_btn, self.stop_btn], spacing=8, expand=True),
                     bgcolor=ft.Colors.SURFACE_CONTAINER,
-                    border_radius=10,
-                    padding=ft.Padding(10, 6, 10, 6),
+                    border_radius=12,
+                    padding=ft.Padding(12, 8, 12, 8),
+                    border=ft.Border(bottom=ft.border.BorderSide(1.5, ft.Colors.OUTLINE_VARIANT)),
                 ),
                 ft.Row([clear_chat_btn, self.input_count], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             ],
