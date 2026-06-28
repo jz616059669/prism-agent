@@ -192,6 +192,7 @@ class Agent:
                     "role": m.role,
                     "content": m.content,
                     "timestamp": m.timestamp.isoformat() if hasattr(m.timestamp, "isoformat") else str(m.timestamp),
+                    "metadata": m.metadata or {},
                 }
                 for m in self.messages
             ],
