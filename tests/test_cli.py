@@ -65,7 +65,7 @@ def test_cli_ask(runner):
 
 
 def test_cli_chat(runner):
-    result = runner.invoke(cli, ["chat"], input="hello\n")
+    result = runner.invoke(cli, ["chat"], input="hello\n/exit\n")
     assert result.exit_code == 0
     # 未配置模型时，chat 会返回配置错误提示
     assert "配置" in result.output or "hello" in result.output or "PRISM" in result.output
