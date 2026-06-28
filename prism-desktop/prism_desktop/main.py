@@ -40,6 +40,8 @@ class PrismDesktop:
         self.page.window_height = 800
         self.page.theme = ft.Theme(color_scheme_seed="blue")
         
+        self._settings = {}
+        
         self.status_text = ft.Text("就绪", size=11, color=ft.Colors.RED_400)
         self.browser_status_icon = ft.Icon(ft.Icons.LANGUAGE_ROUNDED, size=16, color=ft.Colors.RED_400)
         self.browser_status_text = ft.Text("未连接", size=11, color=ft.Colors.RED_400)
@@ -64,7 +66,6 @@ class PrismDesktop:
         self.api_key_textfield = ft.TextField(label="API Key", password=True, can_reveal_password=True, value=prism_config.get("model.api_key", "") or "", width=260)
 
         self._build_ui()
-
         self._format_time = lambda: chat_ui._format_time(self)
         self._markdown_to_ft = lambda text: chat_ui._markdown_to_ft(self, text)
         self._append = lambda *args, **kwargs: chat_ui._append(self, *args, **kwargs)
