@@ -8,6 +8,7 @@ echo ""
 
 VERSION="1.0.1"
 APP_NAME="PRISM Agent"
+OUTPUT_NAME="prism-desktop-${VERSION}-macos"
 
 # 检查依赖
 if ! command -v flet &> /dev/null; then
@@ -25,20 +26,18 @@ mkdir -p "$BUILD_DIR"
 
 # 使用 flet build 打包
 flet build macos \
-    --name "$APP_NAME" \
     --output "$BUILD_DIR" \
-    --icon ../assets/icon.png 2>/dev/null || \
+    --artifact-name "$OUTPUT_NAME" 2>/dev/null || \
 flet build macos \
-    --name "$APP_NAME" \
     --output "$BUILD_DIR"
 
 echo "[2/4] 打包为 .tar.gz..."
 cd "$BUILD_DIR"
 APP_BUNDLE=$(find . -maxdepth 1 -type d -name "*.app" | head -n 1)
 if [ -n "$APP_BUNDLE" ]; then
-    tar -czf "prism-desktop-${VERSION}-macos.tar.gz" "$APP_BUNDLE"
+    tar -czf "${OUTPUT_NAME}.tar.gz" "$APP_BUNDLE"
 else
-    tar -czf "prism-desktop-${VERSION}-macos.tar.gz" *
+    tar -czf "${OUTPUT_NAME}.tar.gz" *
 fi
 
 echo "[3/4] 清理..."
@@ -51,5 +50,5 @@ echo "输出文件："
 ls -lh build/macos/*.tar.gz 2>/dev/null || echo "请检查 build/macos/ 目录"
 echo ""
 echo "安装方式："
-echo "  tar -xzf prism-desktop-${VERSION}-macos.tar.gz"
+echo "  tar -xzf ${OUTPUT_NAME}.tar.gz"
 echo "  将 ${APP_NAME}.app 拖入 Applications 文件夹"

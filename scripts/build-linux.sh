@@ -25,16 +25,14 @@ mkdir -p "$BUILD_DIR"
 
 # 使用 flet build 打包
 flet build linux \
-    --name "PRISM Agent" \
     --output "$BUILD_DIR" \
-    --icon ../assets/icon.png 2>/dev/null || \
+    --artifact-name "$OUTPUT_NAME" 2>/dev/null || \
 flet build linux \
-    --name "PRISM Agent" \
     --output "$BUILD_DIR"
 
 echo "[2/3] 打包为 .tar.xz..."
 cd "$BUILD_DIR"
-BIN_DIR=$(find . -maxdepth 1 -type d -name "PRISM*" | head -n 1)
+BIN_DIR=$(find . -maxdepth 1 -type d -name "PRISM*" -o -type d -name "prism*" | head -n 1)
 if [ -n "$BIN_DIR" ]; then
     mv "$BIN_DIR" "$OUTPUT_NAME"
     tar -cJf "${OUTPUT_NAME}.tar.xz" "$OUTPUT_NAME" 2>/dev/null || \
