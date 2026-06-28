@@ -50,6 +50,7 @@ class Agent:
         self.tool_calls: List[ToolCall] = []
         self.system_prompt = system_prompt or self._default_system_prompt()
         self.max_turns = 150
+        self.max_messages = 200  # 防止上下文无限增长
         self.tools_enabled = True
         
         # 初始化系统消息
@@ -57,6 +58,16 @@ class Agent:
             role="system",
             content=self.system_prompt,
         ))
+
+    def _trim_messages(self):
+        """保留 system + 最新 max_messages 条，超出时丢弃最早的 user/assistant 对"""
+        if len(self.messages) <= self.max_messages:
+            return
+        # 保留 system 和最后 N 条
+        system = self.messages[:1]
+        tail = self.messages[-(self.max_messages - 1):]
+        self.messages = system + tail
+        logger.info("messages trimmed: total=%d, kept=%d", len(self.messages), len(system) + len(tail))
     
     def _default_system_prompt(self) -> str:
         """默认系统提示词"""
@@ -83,6 +94,7 @@ class Agent:
         """
         # 添加用户消息
         self.messages.append(Message(role="user", content=user_message))
+        self._trim_messages()
 
         # 构建 API 消息格式
         api_messages = [
@@ -116,6 +128,7 @@ class Agent:
 
         # 添加助手回复
         self.messages.append(Message(role="assistant", content=assistant_content))
+        self._trim_messages()
 
         return assistant_content
 

@@ -632,6 +632,10 @@ class PrismDesktop:
                 alignment=align,
             )
         )
+        # 防止聊天列表无限增长
+        max_chat_items = 200
+        if len(self.chat_list.controls) > max_chat_items:
+            self.chat_list.controls = self.chat_list.controls[-max_chat_items:]
         self.chat_list.scroll_to(offset=-1, duration=150)
         self.chat_list.update()
         return container_wrapper
