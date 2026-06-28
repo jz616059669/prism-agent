@@ -298,33 +298,33 @@ class PrismDesktop:
             border_radius=12,
         )
 
-        save_btn = ft.Button("保存配置", icon=ft.Icons.SAVE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.padding.symmetric(horizontal=16, vertical=12)))
+        save_btn = ft.Button("保存配置", icon=ft.Icons.SAVE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding(16, 12, 16, 12)))
         save_btn.on_click = lambda e: self._save_config()
 
         self.url_field = ft.TextField(hint_text="输入网址...", width=260, border_radius=8)
-        browser_open_btn = ft.Button("打开网页", icon=ft.Icons.LANGUAGE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.padding.symmetric(horizontal=16, vertical=12)))
+        browser_open_btn = ft.Button("打开网页", icon=ft.Icons.LANGUAGE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding(16, 12, 16, 12)))
         browser_open_btn.on_click = lambda e: self._browser_open()
-        browser_snapshot_btn = ft.Button("读取页面快照", icon=ft.Icons.ARTICLE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.padding.symmetric(horizontal=16, vertical=12)))
+        browser_snapshot_btn = ft.Button("读取页面快照", icon=ft.Icons.ARTICLE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding(16, 12, 16, 12)))
         browser_snapshot_btn.on_click = lambda e: self._browser_snapshot()
-        browser_close_btn = ft.Button("关闭浏览器", icon=ft.Icons.CLOSE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.padding.symmetric(horizontal=16, vertical=12)))
+        browser_close_btn = ft.Button("关闭浏览器", icon=ft.Icons.CLOSE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding(16, 12, 16, 12)))
         browser_close_btn.on_click = lambda e: self._browser_close()
 
         # MCP
-        self.mcp_refresh_btn = ft.Button("刷新 MCP 服务器", icon=ft.Icons.REFRESH_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.padding.symmetric(horizontal=16, vertical=12)))
+        self.mcp_refresh_btn = ft.Button("刷新 MCP 服务器", icon=ft.Icons.REFRESH_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding(16, 12, 16, 12)))
         self.mcp_refresh_btn.on_click = lambda e: self._refresh_mcp()
         self.mcp_server_list = ft.Column(spacing=4, tight=True)
 
         # Skills
-        self.skill_refresh_btn = ft.Button("刷新 Skills", icon=ft.Icons.REFRESH_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.padding.symmetric(horizontal=16, vertical=12)))
+        self.skill_refresh_btn = ft.Button("刷新 Skills", icon=ft.Icons.REFRESH_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding(16, 12, 16, 12)))
         self.skill_refresh_btn.on_click = lambda e: self._refresh_skills()
         self.skill_install_field = ft.TextField(hint_text="安装 Skill 名称或本地路径", width=260, border_radius=8)
-        self.skill_install_btn = ft.Button("安装 Skill", icon=ft.Icons.DOWNLOAD_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.padding.symmetric(horizontal=16, vertical=12)))
+        self.skill_install_btn = ft.Button("安装 Skill", icon=ft.Icons.DOWNLOAD_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding(16, 12, 16, 12)))
         self.skill_install_btn.on_click = lambda e: self._install_skill_from_ui()
         self.skill_list = ft.Column(spacing=4, tight=True)
 
         # 会话
         self.session_name_field = ft.TextField(hint_text="会话名称", width=200, border_radius=8)
-        self.session_save_btn = ft.Button("保存会话", icon=ft.Icons.BOOKMARK_ROUNDED, width=120, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.padding.symmetric(horizontal=12, vertical=10)))
+        self.session_save_btn = ft.Button("保存会话", icon=ft.Icons.BOOKMARK_ROUNDED, width=120, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding(12, 10, 12, 10)))
         self.session_save_btn.on_click = lambda e: self._save_session()
         self.session_list = ft.Column(spacing=4, tight=True)
         self._session_empty_text = ft.Text("暂无保存的会话", size=11, color=ft.Colors.ON_SURFACE)
@@ -344,7 +344,7 @@ class PrismDesktop:
                     ft.Container(height=8),
                     save_btn,
                 ], tight=True, spacing=4),
-                bgcolor=ft.Colors.SURFACE_VARIANT,
+                bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
             ),
@@ -355,7 +355,7 @@ class PrismDesktop:
                     self.url_field,
                     ft.Row([browser_open_btn, browser_snapshot_btn, browser_close_btn], spacing=6, wrap=True),
                 ], tight=True, spacing=4),
-                bgcolor=ft.Colors.SURFACE_VARIANT,
+                bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
             ),
@@ -368,7 +368,7 @@ class PrismDesktop:
                     ft.Text("已配置服务器", size=10, color=ft.Colors.ON_SURFACE),
                     self.mcp_server_list,
                 ], tight=True, spacing=4),
-                bgcolor=ft.Colors.SURFACE_VARIANT,
+                bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
             ),
@@ -384,7 +384,7 @@ class PrismDesktop:
                     ft.Text("可用 Skills", size=10, color=ft.Colors.ON_SURFACE),
                     self.skill_list,
                 ], tight=True, spacing=4),
-                bgcolor=ft.Colors.SURFACE_VARIANT,
+                bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
             ),
@@ -397,7 +397,7 @@ class PrismDesktop:
                     ft.Text("已保存会话", size=10, color=ft.Colors.ON_SURFACE),
                     self.session_list,
                 ], tight=True, spacing=4),
-                bgcolor=ft.Colors.SURFACE_VARIANT,
+                bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
             ),
@@ -408,7 +408,7 @@ class PrismDesktop:
                     ft.Row([self.browser_status_icon, self.browser_status_text], spacing=8),
                     self.status_text,
                 ], tight=True, spacing=4),
-                bgcolor=ft.Colors.SURFACE_VARIANT,
+                bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
             ),
@@ -439,13 +439,13 @@ class PrismDesktop:
             [
                 ft.Text("对话", size=18, weight=ft.FontWeight.BOLD),
                 ft.Divider(height=4, color=ft.Colors.OUTLINE_VARIANT),
-                ft.Container(self.chat_list, expand=True, bgcolor=ft.Colors.SURFACE, border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=8, padding=8),
+                ft.Container(self.chat_list, expand=True, bgcolor=ft.Colors.SURFACE, border=ft.border.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=8, padding=8),
                 ft.Divider(height=4, color=ft.Colors.OUTLINE_VARIANT),
                 ft.Container(
                     content=ft.Row([self.input_field, self.send_btn, self.stop_btn], spacing=8),
-                    bgcolor=ft.Colors.SURFACE_VARIANT,
+                    bgcolor=ft.Colors.SURFACE_CONTAINER,
                     border_radius=10,
-                    padding=ft.padding.symmetric(horizontal=8, vertical=4),
+                    padding=ft.Padding(8, 4, 8, 4),
                 ),
                 ft.Row([clear_chat_btn, self.input_count], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             ],
@@ -643,33 +643,33 @@ class PrismDesktop:
             border_radius=12,
         )
 
-        save_btn = ft.Button("保存配置", icon=ft.Icons.SAVE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.padding.symmetric(horizontal=16, vertical=12)))
+        save_btn = ft.Button("保存配置", icon=ft.Icons.SAVE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding(16, 12, 16, 12)))
         save_btn.on_click = lambda e: self._save_config()
 
         self.url_field = ft.TextField(hint_text="输入网址...", width=260, border_radius=8)
-        browser_open_btn = ft.Button("打开网页", icon=ft.Icons.LANGUAGE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.padding.symmetric(horizontal=16, vertical=12)))
+        browser_open_btn = ft.Button("打开网页", icon=ft.Icons.LANGUAGE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding(16, 12, 16, 12)))
         browser_open_btn.on_click = lambda e: self._browser_open()
-        browser_snapshot_btn = ft.Button("读取页面快照", icon=ft.Icons.ARTICLE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.padding.symmetric(horizontal=16, vertical=12)))
+        browser_snapshot_btn = ft.Button("读取页面快照", icon=ft.Icons.ARTICLE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding(16, 12, 16, 12)))
         browser_snapshot_btn.on_click = lambda e: self._browser_snapshot()
-        browser_close_btn = ft.Button("关闭浏览器", icon=ft.Icons.CLOSE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.padding.symmetric(horizontal=16, vertical=12)))
+        browser_close_btn = ft.Button("关闭浏览器", icon=ft.Icons.CLOSE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding(16, 12, 16, 12)))
         browser_close_btn.on_click = lambda e: self._browser_close()
 
         # MCP
-        self.mcp_refresh_btn = ft.Button("刷新 MCP 服务器", icon=ft.Icons.REFRESH_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.padding.symmetric(horizontal=16, vertical=12)))
+        self.mcp_refresh_btn = ft.Button("刷新 MCP 服务器", icon=ft.Icons.REFRESH_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding(16, 12, 16, 12)))
         self.mcp_refresh_btn.on_click = lambda e: self._refresh_mcp()
         self.mcp_server_list = ft.Column(spacing=4, tight=True)
 
         # Skills
-        self.skill_refresh_btn = ft.Button("刷新 Skills", icon=ft.Icons.REFRESH_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.padding.symmetric(horizontal=16, vertical=12)))
+        self.skill_refresh_btn = ft.Button("刷新 Skills", icon=ft.Icons.REFRESH_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding(16, 12, 16, 12)))
         self.skill_refresh_btn.on_click = lambda e: self._refresh_skills()
         self.skill_install_field = ft.TextField(hint_text="安装 Skill 名称或本地路径", width=260, border_radius=8)
-        self.skill_install_btn = ft.Button("安装 Skill", icon=ft.Icons.DOWNLOAD_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.padding.symmetric(horizontal=16, vertical=12)))
+        self.skill_install_btn = ft.Button("安装 Skill", icon=ft.Icons.DOWNLOAD_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding(16, 12, 16, 12)))
         self.skill_install_btn.on_click = lambda e: self._install_skill_from_ui()
         self.skill_list = ft.Column(spacing=4, tight=True)
 
         # 会话
         self.session_name_field = ft.TextField(hint_text="会话名称", width=200, border_radius=8)
-        self.session_save_btn = ft.Button("保存会话", icon=ft.Icons.BOOKMARK_ROUNDED, width=120, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.padding.symmetric(horizontal=12, vertical=10)))
+        self.session_save_btn = ft.Button("保存会话", icon=ft.Icons.BOOKMARK_ROUNDED, width=120, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding(12, 10, 12, 10)))
         self.session_save_btn.on_click = lambda e: self._save_session()
         self.session_list = ft.Column(spacing=4, tight=True)
         self._session_empty_text = ft.Text("暂无保存的会话", size=11, color=ft.Colors.ON_SURFACE)
@@ -689,7 +689,7 @@ class PrismDesktop:
                     ft.Container(height=8),
                     save_btn,
                 ], tight=True, spacing=4),
-                bgcolor=ft.Colors.SURFACE_VARIANT,
+                bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
             ),
@@ -700,7 +700,7 @@ class PrismDesktop:
                     self.url_field,
                     ft.Row([browser_open_btn, browser_snapshot_btn, browser_close_btn], spacing=6, wrap=True),
                 ], tight=True, spacing=4),
-                bgcolor=ft.Colors.SURFACE_VARIANT,
+                bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
             ),
@@ -713,7 +713,7 @@ class PrismDesktop:
                     ft.Text("已配置服务器", size=10, color=ft.Colors.ON_SURFACE),
                     self.mcp_server_list,
                 ], tight=True, spacing=4),
-                bgcolor=ft.Colors.SURFACE_VARIANT,
+                bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
             ),
@@ -729,7 +729,7 @@ class PrismDesktop:
                     ft.Text("可用 Skills", size=10, color=ft.Colors.ON_SURFACE),
                     self.skill_list,
                 ], tight=True, spacing=4),
-                bgcolor=ft.Colors.SURFACE_VARIANT,
+                bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
             ),
@@ -742,7 +742,7 @@ class PrismDesktop:
                     ft.Text("已保存会话", size=10, color=ft.Colors.ON_SURFACE),
                     self.session_list,
                 ], tight=True, spacing=4),
-                bgcolor=ft.Colors.SURFACE_VARIANT,
+                bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
             ),
@@ -753,7 +753,7 @@ class PrismDesktop:
                     ft.Row([self.browser_status_icon, self.browser_status_text], spacing=8),
                     self.status_text,
                 ], tight=True, spacing=4),
-                bgcolor=ft.Colors.SURFACE_VARIANT,
+                bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
             ),
@@ -784,13 +784,13 @@ class PrismDesktop:
             [
                 ft.Text("对话", size=18, weight=ft.FontWeight.BOLD),
                 ft.Divider(height=4, color=ft.Colors.OUTLINE_VARIANT),
-                ft.Container(self.chat_list, expand=True, bgcolor=ft.Colors.SURFACE, border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=8, padding=8),
+                ft.Container(self.chat_list, expand=True, bgcolor=ft.Colors.SURFACE, border=ft.border.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=8, padding=8),
                 ft.Divider(height=4, color=ft.Colors.OUTLINE_VARIANT),
                 ft.Container(
                     content=ft.Row([self.input_field, self.send_btn, self.stop_btn], spacing=8),
-                    bgcolor=ft.Colors.SURFACE_VARIANT,
+                    bgcolor=ft.Colors.SURFACE_CONTAINER,
                     border_radius=10,
-                    padding=ft.padding.symmetric(horizontal=8, vertical=4),
+                    padding=ft.Padding(8, 4, 8, 4),
                 ),
                 ft.Row([clear_chat_btn, self.input_count], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             ],
