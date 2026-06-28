@@ -163,14 +163,25 @@ class MCPClient:
         Args:
             server_name: 指定服务器名，None 表示所有服务器
         """
-        tools = []
         servers = [server_name] if server_name else list(self.servers.keys())
-
+        tools = []
         for name in servers:
-            if name in self.tools:
-                tools.extend(self.tools[name])
-
+            self._refresh_tools(name)
+            tools.extend(self.tools.get(name, []))
         return tools
+
+    def _refresh_tools(self, server_name: str):
+        if server_name not in self.servers:
+            return
+        if server_name in self.tools:
+            return
+        server = self.servers[server_name]
+        discovered = []
+        if server.transport == "stdio":
+            discovered = self._list_stdio_tools(server_name)
+        elif server.transport in ["http", "sse"]:
+            discovered = self._list_http_tools(server_name)
+        self.tools[server_name] = discovered
 
     def call_tool(self, server_name: str, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -243,6 +254,37 @@ class MCPClient:
             return {'success': False, 'error': f'HTTP client not connected: {server_name}'}
         return client.call_tool(tool_name, arguments)
 
+    def _list_stdio_tools(self, server_name: str) -> List[Dict[str, Any]]:
+        process = self.processes.get(server_name)
+        if not process:
+            return []
+        try:
+            if not self._stdio_initialized.get(server_name):
+                self._initialize_stdio(self.servers[server_name], process)
+            payload = {
+                "jsonrpc": "2.0",
+                "id": 10,
+                "method": "tools/list",
+                "params": {},
+            }
+            process.stdin.write(json.dumps(payload, ensure_ascii=False) + "\n")
+            process.stdin.flush()
+            response = self._read_stdio_response(process, timeout=30.0)
+            if response and "result" in response:
+                return response["result"].get("tools", [])
+        except Exception:
+            pass
+        return []
+
+    def _list_http_tools(self, server_name: str) -> List[Dict[str, Any]]:
+        client = self.http_clients.get(server_name)
+        if not client:
+            return []
+        result = client.list_tools()
+        if result.get("success"):
+            return result.get("tools", [])
+        return []
+
     def close(self):
         """关闭所有连接"""
         for name, process in list(self.processes.items()):
@@ -262,6 +304,7 @@ class MCPClient:
             except Exception:
                 pass
         self.http_clients.clear()
+        self.tools.clear()
 
 
 # 全局 MCP 客户端
