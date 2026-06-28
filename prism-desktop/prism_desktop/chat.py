@@ -199,43 +199,57 @@ def _send(self: PrismDesktop):
             full_reply += chunk
 
         def _do_chat():
-            self._append_terminal("DEBUG _do_chat started")
-            reply = ""
-            try:
-                reply = self.agent.chat(text, on_stream=_on_chunk) or ""
-                self._append_terminal(f"DEBUG chat returned: {reply[:80]!r}")
-            except Exception as e:
-                reply = f"Error: {e}"
-                self._append_terminal(f"chat error: {e}")
-
-            if not full_reply:
-                full_reply = reply or "(无回复)"
-
-            def _finish():
-                self._append_terminal("DEBUG _finish called")
-                self._set_status("就绪")
-                self._append(self, "PRISM", full_reply)
-                self._append_terminal(f"<<< {full_reply[:120]}")
-                self.input_field.disabled = False
-                self.send_btn.visible = True
-                self.stop_btn.visible = False
-                self.send_btn.update()
-                self.stop_btn.update()
+            def _do_chat():
+                self._append_terminal("DEBUG _do_chat started")
+                reply = ""
                 try:
-                    self.input_field.focus()
+                    import threading
+                    result_holder = {}
+                    def _chat():
+                        try:
+                            result_holder['reply'] = self.agent.chat(text, on_stream=_on_chunk) or ""
+                        except Exception as e:
+                            result_holder['reply'] = f"Error: {e}"
+                    t = threading.Thread(target=_chat, daemon=True)
+                    t.start()
+                    t.join(timeout=60)
+                    if t.is_alive():
+                        reply = "Error: 请求超时，请检查网络或稍后重试。"
+                        self._append_terminal("chat timeout")
+                    else:
+                        reply = result_holder.get('reply', '')
+                        self._append_terminal(f"DEBUG chat returned: {reply[:80]!r}")
+                except Exception as e:
+                    reply = f"Error: {e}"
+                    self._append_terminal(f"chat error: {e}")
+
+                def _finish():
+                    self._append_terminal("DEBUG _finish called")
+                    if not full_reply:
+                        full_reply = reply or "(无回复)"
+                    self._set_status("就绪")
+                    self._append(self, "PRISM", full_reply)
+                    self._append_terminal(f"<<< {full_reply[:120]}")
+                    self.input_field.disabled = False
+                    self.send_btn.visible = True
+                    self.stop_btn.visible = False
+                    self.send_btn.update()
+                    self.stop_btn.update()
+                    try:
+                        self.input_field.focus()
+                    except Exception:
+                        pass
+                    self.page.update()
+
+                try:
+                    self.page.call_later(0, _finish)
                 except Exception:
-                    pass
-                self.page.update()
+                    _finish()
 
-            try:
-                self.page.call_later(0, _finish)
-            except Exception:
-                _finish()
-
-        import threading
-        t = threading.Thread(target=_do_chat, daemon=True)
-        t.start()
-        self._append_terminal("DEBUG thread started")
+            import threading
+            t = threading.Thread(target=_do_chat, daemon=True)
+            t.start()
+            self._append_terminal("DEBUG thread started")
     except Exception as e:
         self._append_terminal(f"send error: {e}")
         self.input_field.disabled = False
