@@ -1060,61 +1060,7 @@ class PrismDesktop:
         self._append_terminal("配置已保存")
         self.agent = create_agent()
     
-    def _send(self):
-        text = self.input_field.value.strip()
-        if not text:
-            return
-        self._append("你", text)
-        self.input_field.value = ""
-        self.input_field.disabled = True
-        self.send_btn.visible = False
-        self.stop_btn.visible = True
-        self.input_field.update()
-        self.send_btn.update()
-        self.stop_btn.update()
-        self._set_status("思考中...", ft.Colors.AMBER_400)
-        self._append_terminal(f">>> {text}")
-        placeholder = self._append("PRISM", "", placeholder=True)
 
-        streamed_text = []
-
-        def _on_chunk(chunk: str):
-            streamed_text.append(chunk)
-            current = ''.join(streamed_text)
-            # Update placeholder content in-place
-            placeholder.content.controls[1].value = self._markdown_to_ft(current)
-            placeholder.update()
-
-        try:
-            reply = self.agent.chat(text, on_stream=_on_chunk)
-        except Exception as e:
-            reply = f"Error: {e}"
-            self._append_terminal(f"chat error: {e}")
-
-        self.send_btn.visible = True
-        self.stop_btn.visible = False
-        self.send_btn.update()
-        self.stop_btn.update()
-
-        if reply is None or (isinstance(reply, str) and reply.startswith("Error:")):
-            if placeholder in self.chat_list.controls:
-                self.chat_list.controls.remove(placeholder)
-            error_msg = reply if isinstance(reply, str) else "请求失败，请检查网络或配置。"
-            self._append("PRISM", error_msg, retry=True, retry_text=text)
-            self._set_status("发送失败", ft.Colors.RED_400)
-            self.input_field.disabled = False
-            self.input_field.focus()
-            self.input_field.update()
-            return
-
-        if placeholder in self.chat_list.controls:
-            self.chat_list.controls.remove(placeholder)
-        self._append("PRISM", reply)
-        self._append_terminal(f"<<< {reply}")
-        self._set_status("就绪")
-        self.input_field.disabled = False
-        self.input_field.focus()
-        self.input_field.update()
 
     def _stop_send(self):
         self.input_field.disabled = False
