@@ -22,6 +22,10 @@ if str(REPO_ROOT) not in sys.path:
 from prism.config import config as prism_config
 from prism.agent import create_agent
 from prism.tools.browser_bridge import open_page, page_snapshot, close_browser
+from prism_desktop import chat as chat_ui
+from prism_desktop import settings as settings_ui
+from prism_desktop import mcp as mcp_ui
+from prism_desktop import system as system_ui
 
 
 class PrismDesktop:
@@ -62,6 +66,27 @@ class PrismDesktop:
         self.api_key_textfield = ft.TextField(label="API Key", password=True, can_reveal_password=True, value=prism_config.get("model.api_key", "") or "", width=260)
 
         self._build_ui()
+        self._format_time = lambda: chat_ui._format_time(self)
+        self._markdown_to_ft = lambda text: chat_ui._markdown_to_ft(self, text)
+        self._append = lambda *args, **kwargs: chat_ui._append(self, *args, **kwargs)
+        self._clear_chat = lambda: chat_ui._clear_chat(self)
+        self._show_message_menu = lambda e, target, message_text: chat_ui._show_message_menu(self, e, target, message_text)
+        self._send = lambda: chat_ui._send(self)
+        self._load_settings = lambda: settings_ui._load_settings(self)
+        self._save_settings = lambda: settings_ui._save_settings(self)
+        self._apply_settings = lambda: settings_ui._apply_settings(self)
+        self._refresh_mcp = lambda: mcp_ui._refresh_mcp(self)
+        self._toggle_mcp_server = lambda name, button: mcp_ui._toggle_mcp_server(self, name, button)
+        self._show_mcp_log = lambda name: mcp_ui._show_mcp_log(self, name)
+        self._show_mcp_tools = lambda name: mcp_ui._show_mcp_tools(self, name)
+        self._bind_tray = lambda: system_ui._bind_tray(self)
+        self._bind_context_menu = lambda: system_ui._bind_context_menu(self)
+        self._minimize_to_tray = lambda: system_ui._minimize_to_tray(self)
+        self._open_config_dir = lambda e: system_ui._open_config_dir(self, e)
+        self._open_terminal_here = lambda e: system_ui._open_terminal_here(self, e)
+        self._about = lambda e: system_ui._about(self, e)
+        self._open_github_releases = lambda e: system_ui._open_github_releases(self, e)
+
         self._apply_settings()
         self._bind_context_menu()
         self._bind_tray()
@@ -109,86 +134,6 @@ class PrismDesktop:
         )
         self.page.dialog.open = True
         self.page.update()
-
-    def _load_settings(self) -> dict:
-        if self._settings_path.exists():
-            try:
-                import json
-                return json.loads(self._settings_path.read_text(encoding="utf-8"))
-            except Exception:
-                return {}
-        return {}
-
-    def _on_input_change(self):
-        try:
-            count = len(self.input_field.value or "")
-            self.input_count.value = f"{count} 字"
-            self.input_count.update()
-        except Exception:
-            pass
-
-    def _save_settings(self) -> None:
-        try:
-            self._settings_path.parent.mkdir(parents=True, exist_ok=True)
-            payload = {
-                "window_width": int(self.page.window_width or 1320),
-                "window_height": int(self.page.window_height or 800),
-                "theme_mode": self.page.theme_mode.value if hasattr(self.page.theme_mode, "value") else str(self.page.theme_mode),
-                "theme_seed": self.page.theme.color_scheme_seed if self.page.theme else "blue",
-                "model_default": self.model_dropdown.value,
-                "model_provider": (self.provider_textfield.value or "").strip(),
-                "model_base_url": (self.base_url_textfield.value or "").strip(),
-                "model_api_key": self.api_key_textfield.value or "",
-            }
-            if hasattr(self, "_sidebar_container"):
-                payload["sidebar_width"] = int(self._sidebar_container.width or 280)
-            if hasattr(self, "_chat_container"):
-                payload["chat_width"] = int(self._chat_container.width or 0)
-            if hasattr(self, "_right_container"):
-                payload["right_width"] = int(self._right_container.width or 0)
-            self._settings_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-        except Exception:
-            pass
-
-    def _apply_settings(self) -> None:
-        try:
-            width = self._settings.get("window_width")
-            height = self._settings.get("window_height")
-            if isinstance(width, int):
-                self.page.window_width = width
-            if isinstance(height, int):
-                self.page.window_height = height
-            if hasattr(self, "_sidebar_container") and isinstance(self._settings.get("sidebar_width"), int):
-                self._sidebar_container.width = int(self._settings.get("sidebar_width"))
-            if hasattr(self, "_chat_container") and isinstance(self._settings.get("chat_width"), int):
-                self._chat_container.width = int(self._settings.get("chat_width"))
-            if hasattr(self, "_right_container") and isinstance(self._settings.get("right_width"), int):
-                self._right_container.width = int(self._settings.get("right_width"))
-            theme_name = self._settings.get("theme_mode")
-            if isinstance(theme_name, str):
-                theme_mode_map = {
-                    "dark": ft.ThemeMode.DARK,
-                    "light": ft.ThemeMode.LIGHT,
-                    "system": ft.ThemeMode.SYSTEM,
-                }
-                self.page.theme_mode = theme_mode_map.get(theme_name.lower(), ft.ThemeMode.DARK)
-            theme_seed = self._settings.get("theme_seed")
-            if isinstance(theme_seed, str) and theme_seed:
-                self.page.theme = ft.Theme(color_scheme_seed=theme_seed)
-            model_default = self._settings.get("model_default")
-            if isinstance(model_default, str) and model_default and hasattr(self, "model_dropdown"):
-                self.model_dropdown.value = model_default
-            model_provider = self._settings.get("model_provider")
-            if isinstance(model_provider, str) and model_provider and hasattr(self, "provider_textfield"):
-                self.provider_textfield.value = model_provider
-            model_base_url = self._settings.get("model_base_url")
-            if isinstance(model_base_url, str) and model_base_url and hasattr(self, "base_url_textfield"):
-                self.base_url_textfield.value = model_base_url
-            model_api_key = self._settings.get("model_api_key")
-            if isinstance(model_api_key, str) and model_api_key and hasattr(self, "api_key_textfield"):
-                self.api_key_textfield.value = model_api_key
-        except Exception:
-            pass
 
     def _bind_context_menu(self) -> None:
         self.page.on_resized = lambda e: self._save_settings()
@@ -254,75 +199,383 @@ class PrismDesktop:
         self._append_terminal(f"theme -> {name}")
         self._save_settings()
 
-    def _open_config_dir(self, e):
-        config_dir = Path.home() / ".prism"
-        config_dir.mkdir(parents=True, exist_ok=True)
-        try:
-            if sys.platform == "win32":
-                os.startfile(str(config_dir))
-            elif sys.platform == "darwin":
-                subprocess.run(["open", str(config_dir)], check=False)
-            else:
-                subprocess.run(["xdg-open", str(config_dir)], check=False)
-        except Exception as ex:
-            self._append_terminal(f"open config dir failed: {ex}")
-        self._append_terminal(f"open config dir: {config_dir}")
+    def _build_appbar(self) -> ft.AppBar:
+        self.title_text = ft.Text("PRISM Agent", size=18, weight=ft.FontWeight.BOLD)
+        self.theme_icon_btn = ft.IconButton(icon=ft.Icons.SETTINGS, tooltip="切换主题")
+        self.theme_icon_btn.on_click = lambda e: self._cycle_theme()
+        self.minimize_btn = ft.IconButton(icon=ft.Icons.MINIMIZE_ROUNDED, tooltip="最小化到托盘")
+        self.minimize_btn.on_click = lambda e: self._minimize_to_tray()
+        self.sidebar_toggle_btn = ft.IconButton(icon=ft.Icons.MENU_ROUNDED, tooltip="切换侧边栏")
+        self.sidebar_toggle_btn.on_click = lambda e: self._toggle_sidebar()
+        return ft.AppBar(
+            title=self.title_text,
+            actions=[
+                self.sidebar_toggle_btn,
+                self.theme_icon_btn,
+                self.minimize_btn,
+            ],
+        )
 
-    def _open_github_releases(self, e):
-        try:
-            url = "https://github.com/jz616059669/prism-agent/releases/latest"
-            if sys.platform == "win32":
-                os.startfile(url)
-            elif sys.platform == "darwin":
-                subprocess.run(["open", url], check=False)
-            else:
-                subprocess.run(["xdg-open", url], check=False)
-            self._append_terminal("open github releases")
-        except Exception as ex:
-            self._append_terminal(f"open github releases failed: {ex}")
+    def _toggle_sidebar(self):
+        if not hasattr(self, "_sidebar_container"):
+            return
+        visible = self._sidebar_container.visible
+        self._sidebar_container.visible = not visible
+        width = 0 if visible else 280
+        self._sidebar_container.width = width
+        self._sidebar_container.update()
+        self._settings["sidebar_collapsed"] = not visible
+        self._save_settings()
+        self.page.update()
 
-    def _open_terminal_here(self, e):
-        try:
-            if sys.platform == "win32":
-                subprocess.run(["cmd", "/c", "start", "cmd"], shell=False, check=False)
-            elif sys.platform == "darwin":
-                subprocess.run(["open", "-a", "Terminal", "."], check=False)
-            else:
-                subprocess.run(["xdg-terminal-exec", "."], check=False)
-        except Exception as ex:
-            self._append_terminal(f"open terminal failed: {ex}")
-        self._append_terminal("open terminal")
+    def _cycle_theme(self):
+        current = self._settings.get("theme", "Dark")
+        themes = ["Dark", "Light", "Midnight", "Warm"]
+        idx = themes.index(current) if current in themes else 0
+        next_theme = themes[(idx + 1) % len(themes)]
+        self._settings["theme"] = next_theme
+        if hasattr(self, "theme_dropdown") and self.theme_dropdown is not None:
+            self.theme_dropdown.value = next_theme
+        self._apply_theme(next_theme)
 
-    def _about(self, e):
-        config_path = str(Path.home() / ".prism")
+    def _minimize_to_tray(self):
+        try:
+            self.page.window_hide()
+            self._append_terminal("minimized to tray")
+        except Exception:
+            pass
+
+    def _build_ui(self):
+        self.page.appbar = self._build_appbar()
+        self._chat_container = ft.Container(self._build_chat(), expand=True)
+        self._right_container = ft.Container(self._build_right_panel(), expand=True)
+        sidebar = self._build_sidebar()
+        if str(self._settings.get("sidebar_collapsed", "false")).lower() == "true":
+            sidebar.visible = False
+            sidebar.width = 0
+            sidebar.padding = 0
+        if isinstance(self._settings.get("sidebar_width"), int):
+            sidebar.width = int(self._settings.get("sidebar_width"))
+        if isinstance(self._settings.get("chat_width"), int):
+            self._chat_container.width = int(self._settings.get("chat_width"))
+        if isinstance(self._settings.get("right_width"), int):
+            self._right_container.width = int(self._settings.get("right_width"))
+        self.page.add(
+            ft.Row(
+                [
+                    sidebar,
+                    ft.VerticalDivider(width=1),
+                    self._chat_container,
+                    ft.VerticalDivider(width=1),
+                    self._right_container,
+                ],
+                expand=True,
+                spacing=0,
+            )
+        )
+    
+    def _build_sidebar(self) -> ft.Container:
+        self._sidebar_container = ft.Container(
+            content=ft.Column(
+                [
+                    ft.Text("PRISM", size=20, weight=ft.FontWeight.BOLD),
+                    ft.Divider(height=12, color=ft.Colors.TRANSPARENT),
+                ],
+                tight=True,
+                spacing=6,
+                scroll=ft.ScrollMode.AUTO,
+            ),
+            width=280,
+            padding=16,
+            bgcolor=ft.Colors.SURFACE,
+            border_radius=12,
+        )
+
+        save_btn = ft.ElevatedButton("保存配置", icon=ft.Icons.SAVE_ROUNDED, width=260)
+        save_btn.on_click = lambda e: self._save_config()
+
+        self.url_field = ft.TextField(hint_text="输入网址...", width=260)
+        browser_open_btn = ft.ElevatedButton("打开网页", icon=ft.Icons.LANGUAGE_ROUNDED, width=260)
+        browser_open_btn.on_click = lambda e: self._browser_open()
+        browser_snapshot_btn = ft.ElevatedButton("读取页面快照", icon=ft.Icons.ARTICLE_ROUNDED, width=260)
+        browser_snapshot_btn.on_click = lambda e: self._browser_snapshot()
+        browser_close_btn = ft.ElevatedButton("关闭浏览器", icon=ft.Icons.CLOSE_ROUNDED, width=260)
+        browser_close_btn.on_click = lambda e: self._browser_close()
+
+        # MCP
+        self.mcp_refresh_btn = ft.ElevatedButton("刷新 MCP 服务器", icon=ft.Icons.REFRESH_ROUNDED, width=260)
+        self.mcp_refresh_btn.on_click = lambda e: self._refresh_mcp()
+        self.mcp_server_list = ft.Column(spacing=4, tight=True)
+
+        # Skills
+        self.skill_refresh_btn = ft.ElevatedButton("刷新 Skills", icon=ft.Icons.REFRESH_ROUNDED, width=260)
+        self.skill_refresh_btn.on_click = lambda e: self._refresh_skills()
+        self.skill_install_field = ft.TextField(hint_text="安装 Skill 名称或本地路径", width=260)
+        self.skill_install_btn = ft.ElevatedButton("安装 Skill", icon=ft.Icons.DOWNLOAD_ROUNDED, width=260)
+        self.skill_install_btn.on_click = lambda e: self._install_skill_from_ui()
+        self.skill_list = ft.Column(spacing=4, tight=True)
+
+        # 会话
+        self.session_name_field = ft.TextField(hint_text="会话名称", width=200)
+        self.session_save_btn = ft.ElevatedButton("保存会话", icon=ft.Icons.BOOKMARK_ROUNDED, width=120)
+        self.session_save_btn.on_click = lambda e: self._save_session()
+        self.session_list = ft.Column(spacing=4, tight=True)
+        self._session_empty_text = ft.Text("暂无保存的会话", size=11, color=ft.Colors.ON_SURFACE)
+
+        sidebar_content = self._sidebar_container.content
+        sidebar_content.controls.extend([
+            ft.Text("模型配置", size=12, weight=ft.FontWeight.BOLD),
+            self.model_dropdown,
+            ft.Container(height=6),
+            self.provider_textfield,
+            ft.Container(height=6),
+            self.base_url_textfield,
+            ft.Container(height=6),
+            self.api_key_textfield,
+            ft.Container(height=6),
+            save_btn,
+            ft.Container(height=16),
+            ft.Text("浏览器控制", size=12, weight=ft.FontWeight.BOLD),
+            self.url_field,
+            browser_open_btn,
+            browser_snapshot_btn,
+            browser_close_btn,
+            ft.Container(height=16),
+            ft.Text("MCP 控制", size=12, weight=ft.FontWeight.BOLD),
+            self.mcp_refresh_btn,
+            ft.Container(height=6),
+            ft.Text("已配置服务器", size=11, color=ft.Colors.ON_SURFACE),
+            self.mcp_server_list,
+            ft.Container(height=16),
+            ft.Text("Skills", size=12, weight=ft.FontWeight.BOLD),
+            self.skill_refresh_btn,
+            self.skill_install_field,
+            self.skill_install_btn,
+            ft.Container(height=6),
+            ft.Text("可用 Skills", size=11, color=ft.Colors.ON_SURFACE),
+            self.skill_list,
+            ft.Container(height=16),
+            ft.Text("会话", size=12, weight=ft.FontWeight.BOLD),
+            ft.Row([self.session_name_field, self.session_save_btn], spacing=8),
+            ft.Container(height=6),
+            ft.Text("已保存会话", size=11, color=ft.Colors.ON_SURFACE),
+            self.session_list,
+            ft.Container(height=16),
+            ft.Text("状态", size=12, weight=ft.FontWeight.BOLD),
+            ft.Row([self.browser_status_icon, self.browser_status_text], spacing=8),
+            self.status_text,
+        ])
+        return self._sidebar_container
+
+    def _build_chat(self) -> ft.Column:
+        self.chat_list = ft.ListView(expand=True, spacing=10, auto_scroll=True)
+        self.input_field = ft.TextField(
+            hint_text="输入消息...",
+            expand=True,
+            multiline=True,
+            min_lines=1,
+            max_lines=6,
+            shift_enter=True,
+        )
+        self.input_count = ft.Text("0 字", size=11, color=ft.Colors.ON_SURFACE)
+        self.input_field.on_change = lambda e: self._on_input_change()
+        self.send_btn = ft.IconButton(icon=ft.Icons.SEND_ROUNDED, tooltip="发送")
+        self.send_btn.on_click = lambda e: self._send()
+        self.stop_btn = ft.IconButton(icon=ft.Icons.STOP_ROUNDED, tooltip="停止生成", visible=False)
+        self.stop_btn.on_click = lambda e: self._stop_send()
+        self.input_field.on_submit = lambda e: self._send()
+        clear_chat_btn = ft.TextButton("清屏")
+        clear_chat_btn.on_click = lambda e: self._clear_chat()
+        
+        return ft.Column(
+            [
+                ft.Text("对话", size=18, weight=ft.FontWeight.BOLD),
+                ft.Divider(height=8),
+                ft.Container(self.chat_list, expand=True, border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), bottom=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), right=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)), border_radius=12, padding=12),
+                ft.Divider(height=8),
+                ft.Row([self.input_field, self.send_btn, self.stop_btn], spacing=8),
+                ft.Row([clear_chat_btn, self.input_count], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+            ],
+            expand=True,
+            spacing=8,
+        )
+    
+    def _build_right_panel(self) -> ft.Column:
+        self.terminal_input = ft.TextField(
+            hint_text="输入终端命令...",
+            expand=True,
+            min_lines=1,
+            max_lines=3,
+            shift_enter=True,
+        )
+        terminal_run_btn = ft.IconButton(icon=ft.Icons.PLAY_ARROW_ROUNDED, tooltip="执行命令")
+        terminal_run_btn.on_click = lambda e: self._run_terminal_command()
+        self.terminal_input.on_submit = lambda e: self._run_terminal_command()
+        self.terminal_list = ft.ListView(expand=True, spacing=4, auto_scroll=True)
+        self.mcp_list = ft.ListView(expand=True, spacing=4, auto_scroll=True)
+        
+        clear_terminal_btn = ft.TextButton("清空终端")
+        clear_terminal_btn.on_click = lambda e: self._clear_terminal()
+        clear_mcp_btn = ft.TextButton("清空 MCP")
+        clear_mcp_btn.on_click = lambda e: self._clear_mcp()
+        
+        terminal_tab = ft.Column(
+            [
+                ft.Row([self.terminal_input, terminal_run_btn], spacing=8),
+                ft.Row([clear_terminal_btn], alignment=ft.MainAxisAlignment.END),
+                ft.Container(self.terminal_list, expand=True, border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), bottom=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), right=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)), border_radius=12, padding=12, bgcolor=ft.Colors.SURFACE),
+            ],
+            expand=True,
+            spacing=8,
+        )
+        mcp_tab = ft.Column(
+            [
+                ft.Row([clear_mcp_btn], alignment=ft.MainAxisAlignment.END),
+                ft.Container(self.mcp_list, expand=True, border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), bottom=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), right=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)), border_radius=12, padding=12, bgcolor=ft.Colors.SURFACE),
+            ],
+            expand=True,
+            spacing=8,
+        )
+        self._right_terminal_tab = terminal_tab
+        self._right_mcp_tab = mcp_tab
+        self._right_tab_content = ft.Column(
+            [
+                terminal_tab,
+                mcp_tab,
+            ],
+            expand=True,
+        )
+        self.right_tabs = ft.Tabs(
+            content=self._right_tab_content,
+            length=400,
+            selected_index=0,
+            on_change=lambda e: None,
+            expand=True,
+        )
+        return ft.Column(
+            [
+                ft.Text("终端 / MCP", size=14, weight=ft.FontWeight.BOLD),
+                self.right_tabs,
+            ],
+            expand=True,
+            spacing=8,
+        )
+    
+    def _append(self, role: str, text: str, retry: bool = False, retry_text: str = "", placeholder: bool = False):
+        is_user = role == "你"
+        align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
+        bg = ft.Colors.PRIMARY_CONTAINER if is_user else ft.Colors.SURFACE
+        text_color = ft.Colors.ON_PRIMARY_CONTAINER if is_user else ft.Colors.ON_SURFACE
+        avatar = ft.Icon(ft.Icons.PERSON_ROUNDED if is_user else ft.Icons.SMART_TOY_ROUNDED, size=28, color=ft.Colors.ON_SURFACE)
+
+        def _copy(_):
+            try:
+                self.page.set_clipboard(text)
+                self._set_status("已复制", ft.Colors.GREEN_400)
+            except Exception:
+                pass
+
+        def _copy_raw(_):
+            try:
+                self.page.set_clipboard(text)
+                self._set_status("已复制原文", ft.Colors.GREEN_400)
+            except Exception:
+                pass
+
+        def _delete(_):
+            try:
+                self.chat_list.controls.remove(container_wrapper)
+                self.chat_list.update()
+                self._append_terminal("message deleted")
+            except Exception:
+                pass
+
+        def _on_right_click(e):
+            try:
+                self._show_message_menu(e, container_wrapper, text)
+            except Exception:
+                pass
+
+        try:
+            import markdown
+            rendered = markdown.markdown(text, extensions=["fenced_code", "tables"])
+        except Exception:
+            rendered = text
+
+        actions = [
+            ft.Text(self._format_time(), size=9, color=ft.Colors.ON_SURFACE),
+            ft.TextButton("复制渲染", on_click=_copy),
+            ft.TextButton("复制原文", on_click=_copy_raw),
+            ft.TextButton("删除", on_click=_delete),
+        ]
+        if retry and retry_text:
+            def _retry(_):
+                self.input_field.value = retry_text
+                self.input_field.disabled = False
+                self.input_field.focus()
+                self.input_field.update()
+                self._send()
+            actions.insert(2, ft.TextButton("重发", on_click=_retry))
+
+        if placeholder:
+            actions = [ft.Text(self._format_time(), size=9, color=ft.Colors.ON_SURFACE)]
+
+        import re
+        code_blocks = re.findall(r'```(?:\w+)?\n(.*?)```', text, re.DOTALL)
+        code_copy_buttons = []
+        for idx, block in enumerate(code_blocks):
+            def _copy_code(b=block, index=idx):
+                def handler(_):
+                    try:
+                        self.page.set_clipboard(b.strip())
+                        self._set_status(f"代码块 {index+1} 已复制", ft.Colors.GREEN_400)
+                    except Exception:
+                        pass
+                return handler
+            code_copy_buttons.append(
+                ft.TextButton(f"复制代码块 {idx+1}", on_click=_copy_code(), style=ft.ButtonStyle(padding=4))
+            )
+
+        action_row = ft.Row(actions, spacing=8)
+        if code_copy_buttons:
+            action_row.controls.extend(code_copy_buttons)
+
         content = ft.Column(
             [
-                ft.Text("PRISM Agent", size=20, weight=ft.FontWeight.BOLD),
-                ft.Divider(height=12),
-                ft.Text("版本：1.0.1", size=14),
-                ft.Text("配置目录：", size=12, weight=ft.FontWeight.BOLD),
-                ft.Text(config_path, size=11, color=ft.Colors.ON_SURFACE_VARIANT),
-                ft.TextButton("打开配置目录", on_click=lambda e: self._open_config_dir(e)),
-                ft.Container(height=8),
-                ft.Text("模型配置", size=12, weight=ft.FontWeight.BOLD),
-                ft.Text(f"提供商：{self.provider_textfield.value or '-'}", size=11),
-                ft.Text(f"模型：{self.model_dropdown.value or '-'}", size=11),
-                ft.Text(f"Base URL：{(self.base_url_textfield.value or '-')[:60]}", size=11),
+                ft.Text(role, size=11, color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
+                self._markdown_to_ft(rendered),
+                action_row,
             ],
             tight=True,
-            width=360,
         )
-        self.page.dialog = ft.AlertDialog(
-            title=ft.Text("关于 PRISM Agent"),
+
+        container_wrapper = ft.Container(
             content=content,
-            actions=[
-                ft.TextButton("前往 GitHub 检查更新", on_click=lambda e: self._open_github_releases(e)),
-                ft.TextButton("关闭", on_click=lambda e: self.page.close_dialog()),
-            ],
+            bgcolor=bg,
+            padding=10,
+            border_radius=16,
+            expand=True,
+            on_long_press=_on_right_click,
         )
-        self.page.dialog.open = True
-        self.page.update()
-        self._append_terminal("about dialog opened")
+
+        spacer = ft.Container(width=8)
+        if is_user:
+            row_controls = [container_wrapper, spacer, avatar]
+        else:
+            row_controls = [avatar, spacer, container_wrapper]
+        self.chat_list.controls.append(
+            ft.Row(
+                row_controls,
+                alignment=align,
+            )
+        )
+        # 防止聊天列表无限增长
+        max_chat_items = 200
+        if len(self.chat_list.controls) > max_chat_items:
+            self.chat_list.controls = self.chat_list.controls[-max_chat_items:]
+        self.chat_list.scroll_to(offset=-1, duration=150)
+        self.chat_list.update()
+        return container_wrapper
     
     def _build_appbar(self) -> ft.AppBar:
         self.title_text = ft.Text("PRISM Agent", size=18, weight=ft.FontWeight.BOLD)
