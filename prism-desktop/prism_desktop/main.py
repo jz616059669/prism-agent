@@ -35,7 +35,7 @@ class PrismDesktop:
         self.page = page
         self.page.title = "PRISM Agent"
         self.page.theme_mode = ft.ThemeMode.DARK
-        self.page.padding = 12
+        self.page.padding = 14
         self.page.window_width = 1320
         self.page.window_height = 800
         self.page.theme = ft.Theme(color_scheme_seed="blue", use_material3=True)
@@ -427,9 +427,9 @@ class PrismDesktop:
         )
         self.input_count = ft.Text("0 字", size=11, color=ft.Colors.ON_SURFACE)
         self.input_field.on_change = lambda e: self._on_input_change()
-        self.send_btn = ft.IconButton(icon=ft.Icons.SEND_ROUNDED, tooltip="发送", bgcolor=ft.Colors.PRIMARY, color=ft.Colors.ON_PRIMARY)
+        self.send_btn = ft.IconButton(icon=ft.Icons.SEND_ROUNDED, tooltip="发送", bgcolor=ft.Colors.PRIMARY, icon_color=ft.Colors.ON_PRIMARY)
         self.send_btn.on_click = lambda e: self._send()
-        self.stop_btn = ft.IconButton(icon=ft.Icons.STOP_ROUNDED, tooltip="停止生成", visible=False, bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER)
+        self.stop_btn = ft.IconButton(icon=ft.Icons.STOP_ROUNDED, tooltip="停止生成", visible=False, bgcolor=ft.Colors.ERROR_CONTAINER, icon_color=ft.Colors.ON_ERROR_CONTAINER)
         self.stop_btn.on_click = lambda e: self._stop_send()
         self.input_field.on_submit = lambda e: self._send()
         clear_chat_btn = ft.TextButton("清屏", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6)))
@@ -438,14 +438,14 @@ class PrismDesktop:
         return ft.Column(
             [
                 ft.Text("对话", size=18, weight=ft.FontWeight.BOLD),
-                ft.Divider(height=4, color=ft.Colors.OUTLINE_VARIANT),
-                ft.Container(self.chat_list, expand=True, bgcolor=ft.Colors.SURFACE, border=ft.border.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=8, padding=8),
-                ft.Divider(height=4, color=ft.Colors.OUTLINE_VARIANT),
+                ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT),
+                ft.Container(self.chat_list, expand=True, bgcolor=ft.Colors.SURFACE_CONTAINER, border=ft.border.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=12, padding=12),
+                ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT),
                 ft.Container(
                     content=ft.Row([self.input_field, self.send_btn, self.stop_btn], spacing=8),
                     bgcolor=ft.Colors.SURFACE_CONTAINER,
                     border_radius=10,
-                    padding=ft.Padding(8, 4, 8, 4),
+                    padding=ft.Padding(10, 6, 10, 6),
                 ),
                 ft.Row([clear_chat_btn, self.input_count], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             ],
@@ -772,9 +772,9 @@ class PrismDesktop:
         )
         self.input_count = ft.Text("0 字", size=11, color=ft.Colors.ON_SURFACE)
         self.input_field.on_change = lambda e: self._on_input_change()
-        self.send_btn = ft.IconButton(icon=ft.Icons.SEND_ROUNDED, tooltip="发送", bgcolor=ft.Colors.PRIMARY, color=ft.Colors.ON_PRIMARY)
+        self.send_btn = ft.IconButton(icon=ft.Icons.SEND_ROUNDED, tooltip="发送", bgcolor=ft.Colors.PRIMARY, icon_color=ft.Colors.ON_PRIMARY)
         self.send_btn.on_click = lambda e: self._send()
-        self.stop_btn = ft.IconButton(icon=ft.Icons.STOP_ROUNDED, tooltip="停止生成", visible=False, bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER)
+        self.stop_btn = ft.IconButton(icon=ft.Icons.STOP_ROUNDED, tooltip="停止生成", visible=False, bgcolor=ft.Colors.ERROR_CONTAINER, icon_color=ft.Colors.ON_ERROR_CONTAINER)
         self.stop_btn.on_click = lambda e: self._stop_send()
         self.input_field.on_submit = lambda e: self._send()
         clear_chat_btn = ft.TextButton("清屏", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6)))
@@ -783,14 +783,14 @@ class PrismDesktop:
         return ft.Column(
             [
                 ft.Text("对话", size=18, weight=ft.FontWeight.BOLD),
-                ft.Divider(height=4, color=ft.Colors.OUTLINE_VARIANT),
-                ft.Container(self.chat_list, expand=True, bgcolor=ft.Colors.SURFACE, border=ft.border.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=8, padding=8),
-                ft.Divider(height=4, color=ft.Colors.OUTLINE_VARIANT),
+                ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT),
+                ft.Container(self.chat_list, expand=True, bgcolor=ft.Colors.SURFACE_CONTAINER, border=ft.border.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=12, padding=12),
+                ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT),
                 ft.Container(
                     content=ft.Row([self.input_field, self.send_btn, self.stop_btn], spacing=8),
                     bgcolor=ft.Colors.SURFACE_CONTAINER,
                     border_radius=10,
-                    padding=ft.Padding(8, 4, 8, 4),
+                    padding=ft.Padding(10, 6, 10, 6),
                 ),
                 ft.Row([clear_chat_btn, self.input_count], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             ],
