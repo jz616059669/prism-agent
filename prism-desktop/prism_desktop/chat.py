@@ -14,26 +14,16 @@ def _on_input_change(self, text):
 def _append(main_self, role, text, retry=False, retry_text="", placeholder=False):
     is_user = role == "你"
     align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
-    bg = ft.Colors.PRIMARY_CONTAINER if is_user else ft.Colors.SURFACE
     text_color = ft.Colors.ON_PRIMARY_CONTAINER if is_user else ft.Colors.ON_SURFACE
-    avatar = ft.Icon(ft.Icons.PERSON_ROUNDED if is_user else ft.Icons.SMART_TOY_ROUNDED, size=28, color=ft.Colors.ON_SURFACE)
-
-    content = ft.Text(text, selectable=True, color=text_color)
-    bubble = ft.Container(
-        content=ft.Column([content], tight=True),
-        bgcolor=bg,
-        padding=ft.padding.symmetric(horizontal=14, vertical=8),
-        border_radius=16,
-    )
-
-    row = ft.Row(
-        [avatar, bubble] if not is_user else [bubble, avatar],
-        alignment=align,
-        spacing=6,
-    )
 
     try:
-        main_self.chat_list.controls.append(row)
+        main_self.chat_list.controls.append(
+            ft.Row(
+                [ft.Text(text, selectable=True, color=text_color, expand=not is_user)],
+                alignment=align,
+                expand=True,
+            )
+        )
         main_self.chat_list.update()
     except Exception:
         pass
@@ -48,7 +38,7 @@ def _send(self, text=None):
         return
 
     _send_lock[id(self)] = True
-    # self.input_field.disabled = True  # keep input enabled during reply
+    # keep input enabled during reply
     self.send_btn.visible = False
     self.stop_btn.visible = True
     self._set_status("PRISM 正在思考...", ft.Colors.AMBER_400)
@@ -75,7 +65,6 @@ def _send(self, text=None):
         except Exception:
             pass
         self._set_status("就绪")
-        self.input_field.disabled = False
         self.send_btn.visible = True
         self.stop_btn.visible = False
         try:
