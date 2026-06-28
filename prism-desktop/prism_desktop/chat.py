@@ -195,7 +195,7 @@ def _send(self: PrismDesktop):
         placeholder.update()
     self._set_status("就绪")
     try:
-        self.input_field.focus()
+        self.page.update()
+        self.page.call_later(100, lambda: self.input_field.focus())
     except Exception:
         pass
-    self.page.update()
