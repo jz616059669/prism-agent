@@ -6,6 +6,9 @@ echo "  PRISM Desktop Linux 打包"
 echo "========================================"
 echo ""
 
+VERSION="1.0.1"
+OUTPUT_NAME="prism-desktop-${VERSION}-linux-amd64"
+
 # 检查依赖
 if ! command -v flet &> /dev/null; then
     echo "[安装] 正在安装 flet..."
@@ -31,8 +34,15 @@ flet build linux \
 
 echo "[2/3] 打包为 .tar.xz..."
 cd "$BUILD_DIR"
-tar -cJf prism-desktop-linux.tar.xz prism-desktop 2>/dev/null || \
-tar -czf prism-desktop-linux.tar.gz prism-desktop
+BIN_DIR=$(find . -maxdepth 1 -type d -name "PRISM*" | head -n 1)
+if [ -n "$BIN_DIR" ]; then
+    mv "$BIN_DIR" "$OUTPUT_NAME"
+    tar -cJf "${OUTPUT_NAME}.tar.xz" "$OUTPUT_NAME" 2>/dev/null || \
+    tar -czf "${OUTPUT_NAME}.tar.gz" "$OUTPUT_NAME"
+else
+    tar -cJf "${OUTPUT_NAME}.tar.xz" . 2>/dev/null || \
+    tar -czf "${OUTPUT_NAME}.tar.gz" .
+fi
 
 echo "[3/3] 完成"
 echo ""
@@ -40,5 +50,5 @@ echo "输出文件："
 ls -lh *.tar.* 2>/dev/null || ls -lh
 echo ""
 echo "安装方式："
-echo "  tar -xf prism-desktop-linux.tar.xz"
-echo "  ./prism-desktop/prism-desktop"
+echo "  tar -xf ${OUTPUT_NAME}.tar.xz"
+echo "  ./${OUTPUT_NAME}/prism-desktop"
