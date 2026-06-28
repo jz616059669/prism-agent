@@ -333,7 +333,8 @@ class PrismDesktop:
         sidebar_content.controls.extend([
             ft.Container(
                 content=ft.Column([
-                    ft.Text("模型配置", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Text("模型配置", size=11, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Container(height=6),
                     self.model_dropdown,
                     ft.Container(height=4),
                     self.provider_textfield,
@@ -351,7 +352,8 @@ class PrismDesktop:
             ft.Container(height=12),
             ft.Container(
                 content=ft.Column([
-                    ft.Text("浏览器控制", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Text("浏览器控制", size=11, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Container(height=6),
                     self.url_field,
                     ft.Row([browser_open_btn, browser_snapshot_btn, browser_close_btn], spacing=6, wrap=True),
                 ], tight=True, spacing=4),
@@ -362,7 +364,8 @@ class PrismDesktop:
             ft.Container(height=12),
             ft.Container(
                 content=ft.Column([
-                    ft.Text("MCP 控制", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Text("MCP 控制", size=11, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Container(height=6),
                     self.mcp_refresh_btn,
                     ft.Container(height=4),
                     ft.Text("已配置服务器", size=10, color=ft.Colors.ON_SURFACE),
@@ -375,7 +378,8 @@ class PrismDesktop:
             ft.Container(height=12),
             ft.Container(
                 content=ft.Column([
-                    ft.Text("Skills", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Text("Skills", size=11, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Container(height=6),
                     self.skill_refresh_btn,
                     self.skill_install_field,
                     ft.Container(height=4),
@@ -391,7 +395,8 @@ class PrismDesktop:
             ft.Container(height=12),
             ft.Container(
                 content=ft.Column([
-                    ft.Text("会话", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Text("会话", size=11, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Container(height=6),
                     ft.Row([self.session_name_field, self.session_save_btn], spacing=6),
                     ft.Container(height=4),
                     ft.Text("已保存会话", size=10, color=ft.Colors.ON_SURFACE),
@@ -404,7 +409,8 @@ class PrismDesktop:
             ft.Container(height=12),
             ft.Container(
                 content=ft.Column([
-                    ft.Text("状态", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Text("状态", size=11, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Container(height=6),
                     ft.Row([self.browser_status_icon, self.browser_status_text], spacing=8),
                     self.status_text,
                 ], tight=True, spacing=4),
@@ -678,7 +684,8 @@ class PrismDesktop:
         sidebar_content.controls.extend([
             ft.Container(
                 content=ft.Column([
-                    ft.Text("模型配置", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Text("模型配置", size=11, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Container(height=6),
                     self.model_dropdown,
                     ft.Container(height=4),
                     self.provider_textfield,
@@ -696,7 +703,8 @@ class PrismDesktop:
             ft.Container(height=12),
             ft.Container(
                 content=ft.Column([
-                    ft.Text("浏览器控制", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Text("浏览器控制", size=11, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Container(height=6),
                     self.url_field,
                     ft.Row([browser_open_btn, browser_snapshot_btn, browser_close_btn], spacing=6, wrap=True),
                 ], tight=True, spacing=4),
@@ -707,7 +715,8 @@ class PrismDesktop:
             ft.Container(height=12),
             ft.Container(
                 content=ft.Column([
-                    ft.Text("MCP 控制", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Text("MCP 控制", size=11, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Container(height=6),
                     self.mcp_refresh_btn,
                     ft.Container(height=4),
                     ft.Text("已配置服务器", size=10, color=ft.Colors.ON_SURFACE),
@@ -720,7 +729,8 @@ class PrismDesktop:
             ft.Container(height=12),
             ft.Container(
                 content=ft.Column([
-                    ft.Text("Skills", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Text("Skills", size=11, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Container(height=6),
                     self.skill_refresh_btn,
                     self.skill_install_field,
                     ft.Container(height=4),
@@ -736,7 +746,8 @@ class PrismDesktop:
             ft.Container(height=12),
             ft.Container(
                 content=ft.Column([
-                    ft.Text("会话", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Text("会话", size=11, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Container(height=6),
                     ft.Row([self.session_name_field, self.session_save_btn], spacing=6),
                     ft.Container(height=4),
                     ft.Text("已保存会话", size=10, color=ft.Colors.ON_SURFACE),
@@ -749,7 +760,8 @@ class PrismDesktop:
             ft.Container(height=12),
             ft.Container(
                 content=ft.Column([
-                    ft.Text("状态", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Text("状态", size=11, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Container(height=6),
                     ft.Row([self.browser_status_icon, self.browser_status_text], spacing=8),
                     self.status_text,
                 ], tight=True, spacing=4),
