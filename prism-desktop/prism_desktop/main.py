@@ -207,6 +207,8 @@ class PrismDesktop:
         self.theme_icon_btn.on_click = lambda e: self._cycle_theme()
         self.minimize_btn = ft.IconButton(icon=ft.Icons.MINIMIZE_ROUNDED, tooltip="最小化到托盘")
         self.minimize_btn.on_click = lambda e: self._minimize_to_tray()
+        self.about_btn = ft.IconButton(icon=ft.Icons.INFO_ROUNDED, tooltip="关于")
+        self.about_btn.on_click = lambda e: self._about(e)
         self.sidebar_toggle_btn = ft.IconButton(icon=ft.Icons.MENU_ROUNDED, tooltip="切换侧边栏")
         self.sidebar_toggle_btn.on_click = lambda e: self._toggle_sidebar()
         return ft.AppBar(
@@ -215,6 +217,7 @@ class PrismDesktop:
                 self.sidebar_toggle_btn,
                 self.theme_icon_btn,
                 self.minimize_btn,
+                self.about_btn,
             ],
         )
 
@@ -585,6 +588,8 @@ class PrismDesktop:
         self.theme_icon_btn.on_click = lambda e: self._cycle_theme()
         self.minimize_btn = ft.IconButton(icon=ft.Icons.MINIMIZE_ROUNDED, tooltip="最小化到托盘")
         self.minimize_btn.on_click = lambda e: self._minimize_to_tray()
+        self.about_btn = ft.IconButton(icon=ft.Icons.INFO_ROUNDED, tooltip="关于")
+        self.about_btn.on_click = lambda e: self._about(e)
         self.sidebar_toggle_btn = ft.IconButton(icon=ft.Icons.MENU_ROUNDED, tooltip="切换侧边栏")
         self.sidebar_toggle_btn.on_click = lambda e: self._toggle_sidebar()
         return ft.AppBar(
@@ -593,6 +598,7 @@ class PrismDesktop:
                 self.sidebar_toggle_btn,
                 self.theme_icon_btn,
                 self.minimize_btn,
+                self.about_btn,
             ],
         )
 
