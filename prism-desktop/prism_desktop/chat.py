@@ -78,11 +78,14 @@ def _append(
     ]
     if retry and retry_text:
         def _retry(_):
-            self.input_field.value = retry_text
-            self.input_field.disabled = False
-            self.input_field.focus()
-            self.input_field.update()
-            _send(self)
+            try:
+                self.input_field.value = retry_text
+                self.input_field.disabled = False
+                self.input_field.focus()
+                self.input_field.update()
+                _send(self)
+            except Exception:
+                pass
         actions.insert(2, ft.TextButton("重发", on_click=_retry))
 
     if placeholder:
@@ -164,66 +167,86 @@ def _on_input_change(self: PrismDesktop):
 
 
 def _send(self: PrismDesktop):
-    text = self.input_field.value.strip()
+    try:
+        text = self.input_field.value.strip()
+    except Exception as e:
+        self._append_terminal(f"send error read input: {e}")
+        return
+
     if not text:
         return
-    _append(self, "你", text)
-    self.input_field.value = ""
-    self.input_field.disabled = True
-    self.send_btn.visible = False
-    self.stop_btn.visible = True
-    self.input_field.update()
-    self.send_btn.update()
-    self.stop_btn.update()
-    self._set_status("PRISM 正在思考...", ft.Colors.AMBER_400)
-    placeholder = _append(self, "PRISM", "", placeholder=True)
-    full_reply = ""
-
-    def _on_chunk(chunk: str):
-        nonlocal full_reply
-        full_reply += chunk
-        placeholder.content.controls[1] = _markdown_to_ft(self, full_reply)
-        placeholder.update()
-        self.chat_list.scroll_to(offset=-1, duration=0)
-
-    def _do_chat():
-        nonlocal full_reply
-        try:
-            reply = self.agent.chat(text, on_stream=_on_chunk)
-        except Exception as e:
-            reply = f"Error: {e}"
-            self._append_terminal(f"chat error: {e}")
-
-        def _finish():
-            if not full_reply:
-                full_reply = reply or "(无回复)"
-                placeholder.content.controls[1] = _markdown_to_ft(self, full_reply)
-                placeholder.content.controls[0].color = ft.Colors.ON_SURFACE_VARIANT
-                placeholder.bgcolor = ft.Colors.SURFACE
-                placeholder.update()
-            self._set_status("就绪")
-            self.input_field.disabled = False
-            self.send_btn.visible = True
-            self.stop_btn.visible = False
-            self.send_btn.update()
-            self.stop_btn.update()
-            try:
-                self.input_field.focus()
-            except Exception:
-                pass
-            self.page.update()
-
-        try:
-            self.page.call_later(0, _finish)
-        except Exception:
-            _finish()
 
     try:
+        self._append_terminal(f">>> {text}")
+        _append(self, "你", text)
+        self.input_field.value = ""
+        self.input_field.disabled = True
+        self.send_btn.visible = False
+        self.stop_btn.visible = True
+        self.input_field.update()
+        self.send_btn.update()
+        self.stop_btn.update()
+        self._set_status("PRISM 正在思考...", ft.Colors.AMBER_400)
+        placeholder = _append(self, "PRISM", "", placeholder=True)
+        full_reply = ""
+
+        def _update_placeholder(container, txt: str, final: bool = False):
+            try:
+                container.content.controls[1] = _markdown_to_ft(self, txt)
+                if final:
+                    container.content.controls[0].color = ft.Colors.ON_SURFACE_VARIANT
+                    container.bgcolor = ft.Colors.SURFACE
+                container.update()
+                self.chat_list.scroll_to(offset=-1, duration=0)
+            except Exception as ex:
+                self._append_terminal(f"update placeholder error: {ex}")
+
+        def _on_chunk(chunk: str):
+            nonlocal full_reply
+            full_reply += chunk
+            try:
+                self.page.call_later(0, lambda c=placeholder, t=full_reply: _update_placeholder(c, t))
+            except Exception:
+                _update_placeholder(placeholder, full_reply)
+
+        def _do_chat():
+            reply = ""
+            try:
+                reply = self.agent.chat(text, on_stream=_on_chunk) or ""
+            except Exception as e:
+                reply = f"Error: {e}"
+                try:
+                    self.page.call_later(0, lambda: self._append_terminal(f"chat error: {e}"))
+                except Exception:
+                    self._append_terminal(f"chat error: {e}")
+
+            def _finish():
+                if not full_reply:
+                    full_reply = reply or "(无回复)"
+                    _update_placeholder(placeholder, full_reply, final=True)
+                self._set_status("就绪")
+                self.input_field.disabled = False
+                self.send_btn.visible = True
+                self.stop_btn.visible = False
+                self.send_btn.update()
+                self.stop_btn.update()
+                self._append_terminal(f"<<< {full_reply[:120]}")
+                try:
+                    self.input_field.focus()
+                except Exception:
+                    pass
+                self.page.update()
+
+            try:
+                self.page.call_later(0, _finish)
+            except Exception:
+                _finish()
+
         import threading
         t = threading.Thread(target=_do_chat, daemon=True)
         t.start()
     except Exception as e:
-        self._append_terminal(f"thread error: {e}")
+        self._append_terminal(f"send error: {e}")
         self.input_field.disabled = False
         self.send_btn.visible = True
         self.stop_btn.visible = False
