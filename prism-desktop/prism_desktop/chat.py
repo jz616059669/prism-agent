@@ -191,28 +191,13 @@ def _send(self: PrismDesktop):
         self.send_btn.update()
         self.stop_btn.update()
         self._set_status("PRISM 正在思考...", ft.Colors.AMBER_400)
-        placeholder = _append(self, "PRISM", "", placeholder=True)
+        self._append_terminal("DEBUG before chat")
         full_reply = ""
-
-        def _update_placeholder(container, txt: str, final: bool = False):
-            try:
-                container.content.controls[1] = _markdown_to_ft(self, txt)
-                if final:
-                    container.content.controls[0].color = ft.Colors.ON_SURFACE_VARIANT
-                    container.bgcolor = ft.Colors.SURFACE
-                container.update()
-                self.chat_list.scroll_to(offset=-1, duration=0)
-            except Exception as ex:
-                self._append_terminal(f"update placeholder error: {ex}")
 
         def _on_chunk(chunk: str):
             nonlocal full_reply
             full_reply += chunk
             self._append_terminal(f"DEBUG chunk={chunk!r} total={len(full_reply)}")
-            try:
-                self.page.call_later(0, lambda c=placeholder, t=full_reply: _update_placeholder(c, t))
-            except Exception:
-                _update_placeholder(placeholder, full_reply)
 
         def _do_chat():
             self._append_terminal("DEBUG _do_chat started")
@@ -224,28 +209,25 @@ def _send(self: PrismDesktop):
                 reply = f"Error: {e}"
                 self._append_terminal(f"chat error: {e}")
 
-            def _finish():
-                self._append_terminal("DEBUG _finish called")
-                if not full_reply:
-                    full_reply = reply or "(无回复)"
-                    _update_placeholder(placeholder, full_reply, final=True)
-                self._set_status("就绪")
-                self.input_field.disabled = False
-                self.send_btn.visible = True
-                self.stop_btn.visible = False
-                self.send_btn.update()
-                self.stop_btn.update()
-                self._append_terminal(f"<<< {full_reply[:120]}")
-                try:
-                    self.input_field.focus()
-                except Exception:
-                    pass
-                self.page.update()
-
+            self._append_terminal("DEBUG _finish called")
+            if not full_reply:
+                full_reply = reply or "(无回复)"
+            self._set_status("就绪")
+            self.input_field.disabled = False
+            self.send_btn.visible = True
+            self.stop_btn.visible = False
+            self._append(self, "PRISM", full_reply)
+            self._append_terminal(f"<<< {full_reply[:120]}")
+            self.send_btn.update()
+            self.stop_btn.update()
             try:
-                self.page.call_later(0, _finish)
+                self.input_field.focus()
             except Exception:
-                _finish()
+                pass
+            try:
+                self.page.update()
+            except Exception:
+                pass
 
         import threading
         t = threading.Thread(target=_do_chat, daemon=True)
