@@ -98,7 +98,7 @@ class MCPClient:
                     "params": {
                         "protocolVersion": "2024-11-05",
                         "capabilities": {},
-                        "clientInfo": {"name": "prism", "version": "0.2.6"},
+                        "clientInfo": {"name": "prism", "version": "1.0.1"},
                     },
                 }
                 request_str = json.dumps(init_request, ensure_ascii=False) + "\n"

@@ -255,7 +255,7 @@ class PrismDesktop:
     def _about(self, e):
         self.page.dialog = ft.AlertDialog(
             title=ft.Text("PRISM Agent"),
-            content=ft.Text("版本：0.2.6\n统一 AI Agent CLI + 桌面客户端"),
+            content=ft.Text("版本：1.0.1"),
             actions=[ft.TextButton("关闭", on_click=lambda e: self.page.close_dialog())],
         )
         self.page.dialog.open = True

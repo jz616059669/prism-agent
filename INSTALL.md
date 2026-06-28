@@ -3,7 +3,7 @@
 **统一 AI Agent CLI + 桌面客户端 — 整合 Hermes + Codex + OpenClaw 能力**
 
 - 仓库：https://github.com/jz616059669/prism-agent
-- 当前版本：v0.2.1
+- 当前版本：v1.0.1
 - 适用系统：Windows 10/11、macOS、Linux
 - Python：3.11+ 推荐
 
