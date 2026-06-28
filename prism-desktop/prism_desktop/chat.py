@@ -41,11 +41,6 @@ def _append(
     is_user = role == "你"
     align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
     bg = ft.Colors.PRIMARY_CONTAINER if is_user else ft.Colors.SURFACE
-    avatar = ft.Icon(
-        ft.Icons.PERSON_ROUNDED if is_user else ft.Icons.SMART_TOY_ROUNDED,
-        size=28,
-        color=ft.Colors.ON_SURFACE,
-    )
 
     def _copy(_):
         try:
@@ -130,19 +125,15 @@ def _append(
         bgcolor=bg,
         padding=10,
         border_radius=16,
-        expand=True,
+        width=max(300, int(self.page.width * 0.7)),
         on_long_press=_on_right_click,
     )
 
-    spacer = ft.Container(width=8)
-    if is_user:
-        row_controls = [container_wrapper, spacer, avatar]
-    else:
-        row_controls = [avatar, spacer, container_wrapper]
     self.chat_list.controls.append(
-        ft.Row(
-            row_controls,
+        ft.Column(
+            [container_wrapper],
             alignment=align,
+            horizontal_alignment=align,
         )
     )
     max_chat_items = 200
