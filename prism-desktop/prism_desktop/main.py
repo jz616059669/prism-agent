@@ -90,6 +90,7 @@ class PrismDesktop:
         self._bind_tray()
         self._maybe_show_setup_wizard()
         self._settings = self._load_settings()
+        self._apply_settings()
 
     def _maybe_show_setup_wizard(self):
         try:
