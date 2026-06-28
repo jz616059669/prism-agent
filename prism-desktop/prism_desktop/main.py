@@ -219,6 +219,8 @@ class PrismDesktop:
                 self.minimize_btn,
                 self.about_btn,
             ],
+            elevation=2,
+            bgcolor=ft.Colors.SURFACE,
         )
 
     def _toggle_sidebar(self):
@@ -329,46 +331,87 @@ class PrismDesktop:
 
         sidebar_content = self._sidebar_container.content
         sidebar_content.controls.extend([
-            ft.Text("模型配置", size=12, weight=ft.FontWeight.BOLD),
-            self.model_dropdown,
-            ft.Container(height=6),
-            self.provider_textfield,
-            ft.Container(height=6),
-            self.base_url_textfield,
-            ft.Container(height=6),
-            self.api_key_textfield,
-            ft.Container(height=6),
-            save_btn,
-            ft.Container(height=16),
-            ft.Text("浏览器控制", size=12, weight=ft.FontWeight.BOLD),
-            self.url_field,
-            browser_open_btn,
-            browser_snapshot_btn,
-            browser_close_btn,
-            ft.Container(height=16),
-            ft.Text("MCP 控制", size=12, weight=ft.FontWeight.BOLD),
-            self.mcp_refresh_btn,
-            ft.Container(height=6),
-            ft.Text("已配置服务器", size=11, color=ft.Colors.ON_SURFACE),
-            self.mcp_server_list,
-            ft.Container(height=16),
-            ft.Text("Skills", size=12, weight=ft.FontWeight.BOLD),
-            self.skill_refresh_btn,
-            self.skill_install_field,
-            self.skill_install_btn,
-            ft.Container(height=6),
-            ft.Text("可用 Skills", size=11, color=ft.Colors.ON_SURFACE),
-            self.skill_list,
-            ft.Container(height=16),
-            ft.Text("会话", size=12, weight=ft.FontWeight.BOLD),
-            ft.Row([self.session_name_field, self.session_save_btn], spacing=8),
-            ft.Container(height=6),
-            ft.Text("已保存会话", size=11, color=ft.Colors.ON_SURFACE),
-            self.session_list,
-            ft.Container(height=16),
-            ft.Text("状态", size=12, weight=ft.FontWeight.BOLD),
-            ft.Row([self.browser_status_icon, self.browser_status_text], spacing=8),
-            self.status_text,
+            ft.Container(
+                content=ft.Column([
+                    ft.Text("模型配置", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE_VARIANT),
+                    self.model_dropdown,
+                    ft.Container(height=4),
+                    self.provider_textfield,
+                    ft.Container(height=4),
+                    self.base_url_textfield,
+                    ft.Container(height=4),
+                    self.api_key_textfield,
+                    ft.Container(height=8),
+                    save_btn,
+                ], tight=True, spacing=4),
+                bgcolor=ft.Colors.SURFACE_VARIANT,
+                border_radius=10,
+                padding=10,
+            ),
+            ft.Container(height=10),
+            ft.Container(
+                content=ft.Column([
+                    ft.Text("浏览器控制", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE_VARIANT),
+                    self.url_field,
+                    ft.Row([browser_open_btn, browser_snapshot_btn, browser_close_btn], spacing=6, wrap=True),
+                ], tight=True, spacing=4),
+                bgcolor=ft.Colors.SURFACE_VARIANT,
+                border_radius=10,
+                padding=10,
+            ),
+            ft.Container(height=10),
+            ft.Container(
+                content=ft.Column([
+                    ft.Text("MCP 控制", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE_VARIANT),
+                    self.mcp_refresh_btn,
+                    ft.Container(height=4),
+                    ft.Text("已配置服务器", size=10, color=ft.Colors.ON_SURFACE),
+                    self.mcp_server_list,
+                ], tight=True, spacing=4),
+                bgcolor=ft.Colors.SURFACE_VARIANT,
+                border_radius=10,
+                padding=10,
+            ),
+            ft.Container(height=10),
+            ft.Container(
+                content=ft.Column([
+                    ft.Text("Skills", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE_VARIANT),
+                    self.skill_refresh_btn,
+                    self.skill_install_field,
+                    ft.Container(height=4),
+                    self.skill_install_btn,
+                    ft.Container(height=4),
+                    ft.Text("可用 Skills", size=10, color=ft.Colors.ON_SURFACE),
+                    self.skill_list,
+                ], tight=True, spacing=4),
+                bgcolor=ft.Colors.SURFACE_VARIANT,
+                border_radius=10,
+                padding=10,
+            ),
+            ft.Container(height=10),
+            ft.Container(
+                content=ft.Column([
+                    ft.Text("会话", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE_VARIANT),
+                    ft.Row([self.session_name_field, self.session_save_btn], spacing=6),
+                    ft.Container(height=4),
+                    ft.Text("已保存会话", size=10, color=ft.Colors.ON_SURFACE),
+                    self.session_list,
+                ], tight=True, spacing=4),
+                bgcolor=ft.Colors.SURFACE_VARIANT,
+                border_radius=10,
+                padding=10,
+            ),
+            ft.Container(height=10),
+            ft.Container(
+                content=ft.Column([
+                    ft.Text("状态", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE_VARIANT),
+                    ft.Row([self.browser_status_icon, self.browser_status_text], spacing=8),
+                    self.status_text,
+                ], tight=True, spacing=4),
+                bgcolor=ft.Colors.SURFACE_VARIANT,
+                border_radius=10,
+                padding=10,
+            ),
         ])
         return self._sidebar_container
 
@@ -398,7 +441,12 @@ class PrismDesktop:
                 ft.Divider(height=4, color=ft.Colors.OUTLINE_VARIANT),
                 ft.Container(self.chat_list, expand=True, bgcolor=ft.Colors.SURFACE, border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=8, padding=8),
                 ft.Divider(height=4, color=ft.Colors.OUTLINE_VARIANT),
-                ft.Row([self.input_field, self.send_btn, self.stop_btn], spacing=8, expand=True),
+                ft.Container(
+                    content=ft.Row([self.input_field, self.send_btn, self.stop_btn], spacing=8),
+                    bgcolor=ft.Colors.SURFACE_VARIANT,
+                    border_radius=10,
+                    padding=ft.padding.symmetric(horizontal=8, vertical=4),
+                ),
                 ft.Row([clear_chat_btn, self.input_count], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             ],
             expand=True,
@@ -471,77 +519,15 @@ class PrismDesktop:
         align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
         text_color = ft.Colors.ON_PRIMARY_CONTAINER if is_user else ft.Colors.ON_SURFACE
 
-        def _copy(_):
-            try:
-                self.page.set_clipboard(text)
-                self._set_status("已复制", ft.Colors.GREEN_400)
-            except Exception:
-                pass
-
-        def _copy_raw(_):
-            try:
-                self.page.set_clipboard(text)
-                self._set_status("已复制原文", ft.Colors.GREEN_400)
-            except Exception:
-                pass
-
-        def _delete(_):
-            try:
-                self.chat_list.controls.remove(message_row)
-                self.chat_list.update()
-                self._append_terminal("message deleted")
-            except Exception:
-                pass
-
         try:
             import markdown
             rendered = markdown.markdown(text, extensions=["fenced_code", "tables"])
         except Exception:
             rendered = text
 
-        actions = [
-            ft.Text(self._format_time(), size=9, color=ft.Colors.ON_SURFACE),
-            ft.TextButton("复制渲染", on_click=_copy),
-            ft.TextButton("复制原文", on_click=_copy_raw),
-            ft.TextButton("删除", on_click=_delete),
-        ]
-        if retry and retry_text:
-            def _retry(_):
-                self.input_field.value = retry_text
-                self.input_field.disabled = False
-                self.input_field.focus()
-                self.input_field.update()
-                self._send()
-            actions.insert(2, ft.TextButton("重发", on_click=_retry))
-
-        if placeholder:
-            actions = [ft.Text(self._format_time(), size=9, color=ft.Colors.ON_SURFACE)]
-
-        import re as _re
-        code_blocks = _re.findall(r'```(?:\w+)?\n(.*?)```', text, _re.DOTALL)
-        code_copy_buttons = []
-        for idx, block in enumerate(code_blocks):
-            def _copy_code(b=block, index=idx):
-                def handler(_):
-                    try:
-                        self.page.set_clipboard(b.strip())
-                        self._set_status(f"代码块 {index+1} 已复制", ft.Colors.GREEN_400)
-                    except Exception:
-                        pass
-                return handler
-            code_copy_buttons.append(
-                ft.TextButton(f"复制代码块 {idx+1}", on_click=_copy_code(), style=ft.ButtonStyle(padding=4))
-            )
-
-        action_row = ft.Row(actions, spacing=8)
-        if code_copy_buttons:
-            action_row.controls.extend(code_copy_buttons)
-
         message_content = ft.Column(
             [
-                ft.Text(role, size=11, color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
                 self._markdown_to_ft(rendered),
-                action_row,
             ],
             tight=True,
             spacing=4,
@@ -578,6 +564,8 @@ class PrismDesktop:
                 self.minimize_btn,
                 self.about_btn,
             ],
+            elevation=2,
+            bgcolor=ft.Colors.SURFACE,
         )
 
     def _toggle_sidebar(self):
@@ -688,46 +676,87 @@ class PrismDesktop:
 
         sidebar_content = self._sidebar_container.content
         sidebar_content.controls.extend([
-            ft.Text("模型配置", size=12, weight=ft.FontWeight.BOLD),
-            self.model_dropdown,
-            ft.Container(height=6),
-            self.provider_textfield,
-            ft.Container(height=6),
-            self.base_url_textfield,
-            ft.Container(height=6),
-            self.api_key_textfield,
-            ft.Container(height=6),
-            save_btn,
-            ft.Container(height=16),
-            ft.Text("浏览器控制", size=12, weight=ft.FontWeight.BOLD),
-            self.url_field,
-            browser_open_btn,
-            browser_snapshot_btn,
-            browser_close_btn,
-            ft.Container(height=16),
-            ft.Text("MCP 控制", size=12, weight=ft.FontWeight.BOLD),
-            self.mcp_refresh_btn,
-            ft.Container(height=6),
-            ft.Text("已配置服务器", size=11, color=ft.Colors.ON_SURFACE),
-            self.mcp_server_list,
-            ft.Container(height=16),
-            ft.Text("Skills", size=12, weight=ft.FontWeight.BOLD),
-            self.skill_refresh_btn,
-            self.skill_install_field,
-            self.skill_install_btn,
-            ft.Container(height=6),
-            ft.Text("可用 Skills", size=11, color=ft.Colors.ON_SURFACE),
-            self.skill_list,
-            ft.Container(height=16),
-            ft.Text("会话", size=12, weight=ft.FontWeight.BOLD),
-            ft.Row([self.session_name_field, self.session_save_btn], spacing=8),
-            ft.Container(height=6),
-            ft.Text("已保存会话", size=11, color=ft.Colors.ON_SURFACE),
-            self.session_list,
-            ft.Container(height=16),
-            ft.Text("状态", size=12, weight=ft.FontWeight.BOLD),
-            ft.Row([self.browser_status_icon, self.browser_status_text], spacing=8),
-            self.status_text,
+            ft.Container(
+                content=ft.Column([
+                    ft.Text("模型配置", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE_VARIANT),
+                    self.model_dropdown,
+                    ft.Container(height=4),
+                    self.provider_textfield,
+                    ft.Container(height=4),
+                    self.base_url_textfield,
+                    ft.Container(height=4),
+                    self.api_key_textfield,
+                    ft.Container(height=8),
+                    save_btn,
+                ], tight=True, spacing=4),
+                bgcolor=ft.Colors.SURFACE_VARIANT,
+                border_radius=10,
+                padding=10,
+            ),
+            ft.Container(height=10),
+            ft.Container(
+                content=ft.Column([
+                    ft.Text("浏览器控制", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE_VARIANT),
+                    self.url_field,
+                    ft.Row([browser_open_btn, browser_snapshot_btn, browser_close_btn], spacing=6, wrap=True),
+                ], tight=True, spacing=4),
+                bgcolor=ft.Colors.SURFACE_VARIANT,
+                border_radius=10,
+                padding=10,
+            ),
+            ft.Container(height=10),
+            ft.Container(
+                content=ft.Column([
+                    ft.Text("MCP 控制", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE_VARIANT),
+                    self.mcp_refresh_btn,
+                    ft.Container(height=4),
+                    ft.Text("已配置服务器", size=10, color=ft.Colors.ON_SURFACE),
+                    self.mcp_server_list,
+                ], tight=True, spacing=4),
+                bgcolor=ft.Colors.SURFACE_VARIANT,
+                border_radius=10,
+                padding=10,
+            ),
+            ft.Container(height=10),
+            ft.Container(
+                content=ft.Column([
+                    ft.Text("Skills", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE_VARIANT),
+                    self.skill_refresh_btn,
+                    self.skill_install_field,
+                    ft.Container(height=4),
+                    self.skill_install_btn,
+                    ft.Container(height=4),
+                    ft.Text("可用 Skills", size=10, color=ft.Colors.ON_SURFACE),
+                    self.skill_list,
+                ], tight=True, spacing=4),
+                bgcolor=ft.Colors.SURFACE_VARIANT,
+                border_radius=10,
+                padding=10,
+            ),
+            ft.Container(height=10),
+            ft.Container(
+                content=ft.Column([
+                    ft.Text("会话", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE_VARIANT),
+                    ft.Row([self.session_name_field, self.session_save_btn], spacing=6),
+                    ft.Container(height=4),
+                    ft.Text("已保存会话", size=10, color=ft.Colors.ON_SURFACE),
+                    self.session_list,
+                ], tight=True, spacing=4),
+                bgcolor=ft.Colors.SURFACE_VARIANT,
+                border_radius=10,
+                padding=10,
+            ),
+            ft.Container(height=10),
+            ft.Container(
+                content=ft.Column([
+                    ft.Text("状态", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE_VARIANT),
+                    ft.Row([self.browser_status_icon, self.browser_status_text], spacing=8),
+                    self.status_text,
+                ], tight=True, spacing=4),
+                bgcolor=ft.Colors.SURFACE_VARIANT,
+                border_radius=10,
+                padding=10,
+            ),
         ])
         return self._sidebar_container
 
@@ -757,7 +786,12 @@ class PrismDesktop:
                 ft.Divider(height=4, color=ft.Colors.OUTLINE_VARIANT),
                 ft.Container(self.chat_list, expand=True, bgcolor=ft.Colors.SURFACE, border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=8, padding=8),
                 ft.Divider(height=4, color=ft.Colors.OUTLINE_VARIANT),
-                ft.Row([self.input_field, self.send_btn, self.stop_btn], spacing=8, expand=True),
+                ft.Container(
+                    content=ft.Row([self.input_field, self.send_btn, self.stop_btn], spacing=8),
+                    bgcolor=ft.Colors.SURFACE_VARIANT,
+                    border_radius=10,
+                    padding=ft.padding.symmetric(horizontal=8, vertical=4),
+                ),
                 ft.Row([clear_chat_btn, self.input_count], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             ],
             expand=True,
@@ -830,77 +864,15 @@ class PrismDesktop:
         align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
         text_color = ft.Colors.ON_PRIMARY_CONTAINER if is_user else ft.Colors.ON_SURFACE
 
-        def _copy(_):
-            try:
-                self.page.set_clipboard(text)
-                self._set_status("已复制", ft.Colors.GREEN_400)
-            except Exception:
-                pass
-
-        def _copy_raw(_):
-            try:
-                self.page.set_clipboard(text)
-                self._set_status("已复制原文", ft.Colors.GREEN_400)
-            except Exception:
-                pass
-
-        def _delete(_):
-            try:
-                self.chat_list.controls.remove(message_row)
-                self.chat_list.update()
-                self._append_terminal("message deleted")
-            except Exception:
-                pass
-
         try:
             import markdown
             rendered = markdown.markdown(text, extensions=["fenced_code", "tables"])
         except Exception:
             rendered = text
 
-        actions = [
-            ft.Text(self._format_time(), size=9, color=ft.Colors.ON_SURFACE),
-            ft.TextButton("复制渲染", on_click=_copy),
-            ft.TextButton("复制原文", on_click=_copy_raw),
-            ft.TextButton("删除", on_click=_delete),
-        ]
-        if retry and retry_text:
-            def _retry(_):
-                self.input_field.value = retry_text
-                self.input_field.disabled = False
-                self.input_field.focus()
-                self.input_field.update()
-                self._send()
-            actions.insert(2, ft.TextButton("重发", on_click=_retry))
-
-        if placeholder:
-            actions = [ft.Text(self._format_time(), size=9, color=ft.Colors.ON_SURFACE)]
-
-        import re as _re
-        code_blocks = _re.findall(r'```(?:\w+)?\n(.*?)```', text, _re.DOTALL)
-        code_copy_buttons = []
-        for idx, block in enumerate(code_blocks):
-            def _copy_code(b=block, index=idx):
-                def handler(_):
-                    try:
-                        self.page.set_clipboard(b.strip())
-                        self._set_status(f"代码块 {index+1} 已复制", ft.Colors.GREEN_400)
-                    except Exception:
-                        pass
-                return handler
-            code_copy_buttons.append(
-                ft.TextButton(f"复制代码块 {idx+1}", on_click=_copy_code(), style=ft.ButtonStyle(padding=4))
-            )
-
-        action_row = ft.Row(actions, spacing=8)
-        if code_copy_buttons:
-            action_row.controls.extend(code_copy_buttons)
-
         message_content = ft.Column(
             [
-                ft.Text(role, size=11, color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
                 self._markdown_to_ft(rendered),
-                action_row,
             ],
             tight=True,
             spacing=4,
