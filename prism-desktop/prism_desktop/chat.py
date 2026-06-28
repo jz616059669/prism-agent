@@ -167,13 +167,17 @@ def _on_input_change(self: PrismDesktop):
 
 
 def _send(self: PrismDesktop):
+    self._append_terminal("DEBUG _send called")
     try:
         text = self.input_field.value.strip()
     except Exception as e:
         self._append_terminal(f"send error read input: {e}")
         return
 
+    self._append_terminal(f"DEBUG text={text!r}")
+
     if not text:
+        self._append_terminal("DEBUG empty text, returning")
         return
 
     try:
@@ -204,23 +208,24 @@ def _send(self: PrismDesktop):
         def _on_chunk(chunk: str):
             nonlocal full_reply
             full_reply += chunk
+            self._append_terminal(f"DEBUG chunk={chunk!r} total={len(full_reply)}")
             try:
                 self.page.call_later(0, lambda c=placeholder, t=full_reply: _update_placeholder(c, t))
             except Exception:
                 _update_placeholder(placeholder, full_reply)
 
         def _do_chat():
+            self._append_terminal("DEBUG _do_chat started")
             reply = ""
             try:
                 reply = self.agent.chat(text, on_stream=_on_chunk) or ""
+                self._append_terminal(f"DEBUG chat returned: {reply[:80]!r}")
             except Exception as e:
                 reply = f"Error: {e}"
-                try:
-                    self.page.call_later(0, lambda: self._append_terminal(f"chat error: {e}"))
-                except Exception:
-                    self._append_terminal(f"chat error: {e}")
+                self._append_terminal(f"chat error: {e}")
 
             def _finish():
+                self._append_terminal("DEBUG _finish called")
                 if not full_reply:
                     full_reply = reply or "(无回复)"
                     _update_placeholder(placeholder, full_reply, final=True)
@@ -245,6 +250,7 @@ def _send(self: PrismDesktop):
         import threading
         t = threading.Thread(target=_do_chat, daemon=True)
         t.start()
+        self._append_terminal(f"DEBUG thread started")
     except Exception as e:
         self._append_terminal(f"send error: {e}")
         self.input_field.disabled = False
