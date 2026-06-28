@@ -69,7 +69,29 @@ class OpenAIProvider(Provider):
                 'error': str(e),
                 'provider': self.name,
             }
-    
+
+    def stream_chat(self, messages: List[Dict], on_chunk, **kwargs) -> Dict[str, Any]:
+        """流式聊天请求，逐 chunk 回调"""
+        try:
+            stream = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                stream=True,
+                **kwargs
+            )
+            full_content = []
+            for chunk in stream:
+                delta = chunk.choices[0].delta if chunk.choices else None
+                content = delta.content if delta and delta.content else ''
+                if content:
+                    full_content.append(content)
+                    if on_chunk:
+                        on_chunk(content)
+            text = ''.join(full_content)
+            return {'success': True, 'content': text}
+        except Exception as e:
+            return {'success': False, 'error': str(e), 'provider': self.name}
+
     def is_available(self) -> bool:
         """检查API Key是否有效"""
         try:
@@ -158,7 +180,23 @@ class ProviderPool:
             'success': False,
             'error': last_error or '所有提供商均不可用，请检查网络与 API Key。',
         }
-    
+
+    def stream_chat(self, messages: List[Dict], on_chunk, **kwargs) -> Dict[str, Any]:
+        """流式请求，自动降级"""
+        self._load_from_config()
+        
+        if not self.providers:
+            return {'success': False, 'error': '未配置可用模型提供商。'}
+        
+        last_error = None
+        for provider in self.providers:
+            result = provider.stream_chat(messages, on_chunk, **kwargs)
+            if result.get('success'):
+                return result
+            last_error = result.get('error')
+        
+        return {'success': False, 'error': last_error or '所有提供商均不可用。'}
+
     def add_provider(self, provider: Provider):
         """添加提供商"""
         self.providers.append(provider)

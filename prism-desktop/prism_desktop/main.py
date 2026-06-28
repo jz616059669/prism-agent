@@ -747,10 +747,19 @@ class PrismDesktop:
         self.stop_btn.update()
         self._set_status("思考中...", ft.Colors.AMBER_400)
         self._append_terminal(f">>> {text}")
-        placeholder = self._append("PRISM", "正在生成回复...", placeholder=True)
+        placeholder = self._append("PRISM", "", placeholder=True)
+
+        streamed_text = []
+
+        def _on_chunk(chunk: str):
+            streamed_text.append(chunk)
+            current = ''.join(streamed_text)
+            # Update placeholder content in-place
+            placeholder.content.controls[1].value = self._markdown_to_ft(current)
+            placeholder.update()
 
         try:
-            reply = self.agent.chat(text)
+            reply = self.agent.chat(text, on_stream=_on_chunk)
         except Exception as e:
             reply = None
 
@@ -759,10 +768,11 @@ class PrismDesktop:
         self.send_btn.update()
         self.stop_btn.update()
 
-        if reply is None:
+        if reply is None or (isinstance(reply, str) and reply.startswith("Error:")):
             if placeholder in self.chat_list.controls:
                 self.chat_list.controls.remove(placeholder)
-            self._append("PRISM", "请求失败，请检查网络或配置。", retry=True, retry_text=text)
+            error_msg = reply if isinstance(reply, str) else "请求失败，请检查网络或配置。"
+            self._append("PRISM", error_msg, retry=True, retry_text=text)
             self._set_status("发送失败", ft.Colors.RED_400)
             self.input_field.disabled = False
             self.input_field.focus()
@@ -787,7 +797,7 @@ class PrismDesktop:
         self.send_btn.update()
         self.stop_btn.update()
         self._set_status("已停止", ft.Colors.RED_400)
-    
+
     def _browser_open(self):
         url = self.url_field.value.strip()
         if not url:

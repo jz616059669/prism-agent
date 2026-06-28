@@ -76,13 +76,10 @@ class Agent:
 - 安全第一，危险操作先确认
 """
     
-    def chat(self, user_message: str) -> str:
+    def chat(self, user_message: str, on_stream=None) -> str:
         """
         发送消息并获取回复
-        整合了：
-        - Hermes 的上下文管理
-        - Codex 的函数调用
-        - OpenClaw 的工具执行
+        on_stream: 可选回调，逐 token 接收文本
         """
         # 添加用户消息
         self.messages.append(Message(role="user", content=user_message))
@@ -93,8 +90,11 @@ class Agent:
             for m in self.messages
         ]
 
-        # 调用模型
-        result = provider_pool.chat(api_messages)
+        # 如果有流式回调，使用流式请求
+        if on_stream is not None:
+            result = provider_pool.stream_chat(api_messages, on_chunk=on_stream)
+        else:
+            result = provider_pool.chat(api_messages)
 
         if not result.get('success'):
             logger.warning("chat failed: %s", result.get('error'))
@@ -118,7 +118,7 @@ class Agent:
         self.messages.append(Message(role="assistant", content=assistant_content))
 
         return assistant_content
-    
+
     def execute_tool(self, tool_name: str, **kwargs) -> Dict[str, Any]:
         """
         执行工具
