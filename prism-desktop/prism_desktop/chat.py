@@ -169,7 +169,12 @@ def _send(self: PrismDesktop):
         return
     _append(self, "你", text)
     self.input_field.value = ""
+    self.input_field.disabled = True
+    self.send_btn.visible = False
+    self.stop_btn.visible = True
     self.input_field.update()
+    self.send_btn.update()
+    self.stop_btn.update()
     self._set_status("PRISM 正在思考...", ft.Colors.AMBER_400)
     placeholder = _append(self, "PRISM", "", placeholder=True)
     full_reply = ""
@@ -181,21 +186,47 @@ def _send(self: PrismDesktop):
         placeholder.update()
         self.chat_list.scroll_to(offset=-1, duration=0)
 
-    try:
-        reply = self.agent.chat(text, on_stream=_on_chunk)
-    except Exception as e:
-        reply = f"Error: {e}"
-        self._append_terminal(f"chat error: {e}")
+    def _do_chat():
+        nonlocal full_reply
+        try:
+            reply = self.agent.chat(text, on_stream=_on_chunk)
+        except Exception as e:
+            reply = f"Error: {e}"
+            self._append_terminal(f"chat error: {e}")
 
-    if not full_reply:
-        full_reply = reply or "(无回复)"
-        placeholder.content.controls[1] = _markdown_to_ft(self, full_reply)
-        placeholder.content.controls[0].color = ft.Colors.ON_SURFACE_VARIANT
-        placeholder.bgcolor = ft.Colors.SURFACE
-        placeholder.update()
-    self._set_status("就绪")
+        def _finish():
+            if not full_reply:
+                full_reply = reply or "(无回复)"
+                placeholder.content.controls[1] = _markdown_to_ft(self, full_reply)
+                placeholder.content.controls[0].color = ft.Colors.ON_SURFACE_VARIANT
+                placeholder.bgcolor = ft.Colors.SURFACE
+                placeholder.update()
+            self._set_status("就绪")
+            self.input_field.disabled = False
+            self.send_btn.visible = True
+            self.stop_btn.visible = False
+            self.send_btn.update()
+            self.stop_btn.update()
+            try:
+                self.input_field.focus()
+            except Exception:
+                pass
+            self.page.update()
+
+        try:
+            self.page.call_later(0, _finish)
+        except Exception:
+            _finish()
+
     try:
-        self.page.update()
-        self.page.call_later(100, lambda: self.input_field.focus())
-    except Exception:
-        pass
+        import threading
+        t = threading.Thread(target=_do_chat, daemon=True)
+        t.start()
+    except Exception as e:
+        self._append_terminal(f"thread error: {e}")
+        self.input_field.disabled = False
+        self.send_btn.visible = True
+        self.stop_btn.visible = False
+        self.input_field.update()
+        self.send_btn.update()
+        self.stop_btn.update()
