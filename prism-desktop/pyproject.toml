@@ -7,6 +7,7 @@ dependencies = [
     "flet>=0.24.0",
     "markdown>=3.5",
     "prism-agent @ file:///C:/Users/zd/prism",
+    "pystray>=0.19.5",
 ]
 
 [project.optional-dependencies]

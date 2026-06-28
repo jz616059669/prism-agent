@@ -154,6 +154,15 @@ def _show_message_menu(self: PrismDesktop, e, target, message_text: str):
     pass
 
 
+def _on_input_change(self: PrismDesktop):
+    try:
+        text = self.input_field.value or ""
+        self.input_count.value = f"{len(text)} 字"
+        self.input_count.update()
+    except Exception:
+        pass
+
+
 def _send(self: PrismDesktop):
     text = self.input_field.value.strip()
     if not text:

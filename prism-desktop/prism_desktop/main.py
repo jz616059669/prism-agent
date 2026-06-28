@@ -65,13 +65,13 @@ class PrismDesktop:
         self.base_url_textfield = ft.TextField(label="Base URL", value=prism_config.get("model.base_url", "https://api.stepfun.com/step_plan/v1") or "https://api.stepfun.com/step_plan/v1", width=260)
         self.api_key_textfield = ft.TextField(label="API Key", password=True, can_reveal_password=True, value=prism_config.get("model.api_key", "") or "", width=260)
 
-        self._build_ui()
         self._format_time = lambda: chat_ui._format_time(self)
         self._markdown_to_ft = lambda text: chat_ui._markdown_to_ft(self, text)
         self._append = lambda *args, **kwargs: chat_ui._append(self, *args, **kwargs)
         self._clear_chat = lambda: chat_ui._clear_chat(self)
         self._show_message_menu = lambda e, target, message_text: chat_ui._show_message_menu(self, e, target, message_text)
         self._send = lambda: chat_ui._send(self)
+        self._on_input_change = lambda: chat_ui._on_input_change(self)
         self._load_settings = lambda: settings_ui._load_settings(self)
         self._save_settings = lambda: settings_ui._save_settings(self)
         self._apply_settings = lambda: settings_ui._apply_settings(self)
@@ -87,6 +87,7 @@ class PrismDesktop:
         self._about = lambda e: system_ui._about(self, e)
         self._open_github_releases = lambda e: system_ui._open_github_releases(self, e)
 
+        self._build_ui()
         self._bind_context_menu()
         self._bind_tray()
         self._maybe_show_setup_wizard()
