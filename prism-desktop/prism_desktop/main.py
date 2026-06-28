@@ -469,9 +469,7 @@ class PrismDesktop:
     def _append(self, role: str, text: str, retry: bool = False, retry_text: str = "", placeholder: bool = False):
         is_user = role == "你"
         align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
-        bg = ft.Colors.PRIMARY_CONTAINER if is_user else ft.Colors.SURFACE
         text_color = ft.Colors.ON_PRIMARY_CONTAINER if is_user else ft.Colors.ON_SURFACE
-        avatar = ft.Icon(ft.Icons.PERSON_ROUNDED if is_user else ft.Icons.SMART_TOY_ROUNDED, size=28, color=ft.Colors.ON_SURFACE)
 
         def _copy(_):
             try:
@@ -489,15 +487,9 @@ class PrismDesktop:
 
         def _delete(_):
             try:
-                self.chat_list.controls.remove(container_wrapper)
+                self.chat_list.controls.remove(message_row)
                 self.chat_list.update()
                 self._append_terminal("message deleted")
-            except Exception:
-                pass
-
-        def _on_right_click(e):
-            try:
-                self._show_message_menu(e, container_wrapper, text)
             except Exception:
                 pass
 
@@ -525,8 +517,8 @@ class PrismDesktop:
         if placeholder:
             actions = [ft.Text(self._format_time(), size=9, color=ft.Colors.ON_SURFACE)]
 
-        import re
-        code_blocks = re.findall(r'```(?:\w+)?\n(.*?)```', text, re.DOTALL)
+        import re as _re
+        code_blocks = _re.findall(r'```(?:\w+)?\n(.*?)```', text, _re.DOTALL)
         code_copy_buttons = []
         for idx, block in enumerate(code_blocks):
             def _copy_code(b=block, index=idx):
@@ -545,43 +537,29 @@ class PrismDesktop:
         if code_copy_buttons:
             action_row.controls.extend(code_copy_buttons)
 
-        content = ft.Column(
+        message_content = ft.Column(
             [
                 ft.Text(role, size=11, color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
                 self._markdown_to_ft(rendered),
                 action_row,
             ],
             tight=True,
+            spacing=4,
         )
 
-        container_wrapper = ft.Container(
-            content=content,
-            bgcolor=bg,
-            padding=10,
-            border_radius=16,
+        message_row = ft.Row(
+            [message_content],
+            alignment=align,
             expand=True,
-            on_long_press=_on_right_click,
         )
 
-        spacer = ft.Container(width=8)
-        if is_user:
-            row_controls = [container_wrapper, spacer, avatar]
-        else:
-            row_controls = [avatar, spacer, container_wrapper]
-        self.chat_list.controls.append(
-            ft.Row(
-                row_controls,
-                alignment=align,
-            )
-        )
-        # 防止聊天列表无限增长
+        self.chat_list.controls.append(message_row)
         max_chat_items = 200
         if len(self.chat_list.controls) > max_chat_items:
             self.chat_list.controls = self.chat_list.controls[-max_chat_items:]
         self.chat_list.scroll_to(offset=-1, duration=150)
         self.chat_list.update()
-        return container_wrapper
-    
+        return message_row
     def _build_appbar(self) -> ft.AppBar:
         self.title_text = ft.Text("PRISM Agent", size=18, weight=ft.FontWeight.BOLD)
         self.theme_icon_btn = ft.IconButton(icon=ft.Icons.SETTINGS, tooltip="切换主题")
@@ -850,9 +828,7 @@ class PrismDesktop:
     def _append(self, role: str, text: str, retry: bool = False, retry_text: str = "", placeholder: bool = False):
         is_user = role == "你"
         align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
-        bg = ft.Colors.PRIMARY_CONTAINER if is_user else ft.Colors.SURFACE
         text_color = ft.Colors.ON_PRIMARY_CONTAINER if is_user else ft.Colors.ON_SURFACE
-        avatar = ft.Icon(ft.Icons.PERSON_ROUNDED if is_user else ft.Icons.SMART_TOY_ROUNDED, size=28, color=ft.Colors.ON_SURFACE)
 
         def _copy(_):
             try:
@@ -870,15 +846,9 @@ class PrismDesktop:
 
         def _delete(_):
             try:
-                self.chat_list.controls.remove(container_wrapper)
+                self.chat_list.controls.remove(message_row)
                 self.chat_list.update()
                 self._append_terminal("message deleted")
-            except Exception:
-                pass
-
-        def _on_right_click(e):
-            try:
-                self._show_message_menu(e, container_wrapper, text)
             except Exception:
                 pass
 
@@ -906,8 +876,8 @@ class PrismDesktop:
         if placeholder:
             actions = [ft.Text(self._format_time(), size=9, color=ft.Colors.ON_SURFACE)]
 
-        import re
-        code_blocks = re.findall(r'```(?:\w+)?\n(.*?)```', text, re.DOTALL)
+        import re as _re
+        code_blocks = _re.findall(r'```(?:\w+)?\n(.*?)```', text, _re.DOTALL)
         code_copy_buttons = []
         for idx, block in enumerate(code_blocks):
             def _copy_code(b=block, index=idx):
@@ -926,43 +896,29 @@ class PrismDesktop:
         if code_copy_buttons:
             action_row.controls.extend(code_copy_buttons)
 
-        content = ft.Column(
+        message_content = ft.Column(
             [
                 ft.Text(role, size=11, color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
                 self._markdown_to_ft(rendered),
                 action_row,
             ],
             tight=True,
+            spacing=4,
         )
 
-        container_wrapper = ft.Container(
-            content=content,
-            bgcolor=bg,
-            padding=10,
-            border_radius=16,
+        message_row = ft.Row(
+            [message_content],
+            alignment=align,
             expand=True,
-            on_long_press=_on_right_click,
         )
 
-        spacer = ft.Container(width=8)
-        if is_user:
-            row_controls = [container_wrapper, spacer, avatar]
-        else:
-            row_controls = [avatar, spacer, container_wrapper]
-        self.chat_list.controls.append(
-            ft.Row(
-                row_controls,
-                alignment=align,
-            )
-        )
-        # 防止聊天列表无限增长
+        self.chat_list.controls.append(message_row)
         max_chat_items = 200
         if len(self.chat_list.controls) > max_chat_items:
             self.chat_list.controls = self.chat_list.controls[-max_chat_items:]
         self.chat_list.scroll_to(offset=-1, duration=150)
         self.chat_list.update()
-        return container_wrapper
-    
+        return message_row
     def _format_time(self) -> str:
         return datetime.now().strftime("%m-%d %H:%M")
     

@@ -38,7 +38,6 @@ def _send(self, text=None):
         return
 
     _send_lock[id(self)] = True
-    # keep input enabled during reply
     self.send_btn.visible = False
     self.stop_btn.visible = True
     self._set_status("PRISM 正在思考...", ft.Colors.AMBER_400)
