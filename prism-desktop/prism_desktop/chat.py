@@ -194,5 +194,8 @@ def _send(self: PrismDesktop):
         placeholder.bgcolor = ft.Colors.SURFACE
         placeholder.update()
     self._set_status("就绪")
-    self.input_field.focus()
-    self.input_field.update()
+    try:
+        self.input_field.focus()
+    except Exception:
+        pass
+    self.page.update()
