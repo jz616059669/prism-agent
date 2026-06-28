@@ -765,7 +765,8 @@ class PrismDesktop:
         try:
             reply = self.agent.chat(text, on_stream=_on_chunk)
         except Exception as e:
-            reply = None
+            reply = f"Error: {e}"
+            self._append_terminal(f"chat error: {e}")
 
         self.send_btn.visible = True
         self.stop_btn.visible = False
