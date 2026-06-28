@@ -43,9 +43,9 @@ class PrismDesktop:
         self._settings = {}
         
         self.status_text = ft.Text("就绪", size=11, color=ft.Colors.RED_400)
-        self.browser_status_icon = ft.Icon(ft.Icons.LANGUAGE_ROUNDED, size=16, color=ft.Colors.RED_400)
-        self.browser_status_text = ft.Text("未连接", size=11, color=ft.Colors.RED_400)
-        
+        self.browser_status_icon = ft.Icon(ft.Icons.LANGUAGE_ROUNDED, size=16, color=ft.Colors.ON_SURFACE_VARIANT)
+        self.browser_status_text = ft.Text("就绪", size=11, color=ft.Colors.ON_SURFACE_VARIANT)
+        self.browser_connected = None
         self.messages = []
         self.agent = create_agent()
         self.browser_connected = False
