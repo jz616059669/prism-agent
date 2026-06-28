@@ -576,6 +576,8 @@ class PrismDesktop:
             min_lines=1,
             max_lines=6,
             shift_enter=True,
+            border_radius=10,
+            focused_border_color=ft.Colors.PRIMARY,
         )
         self.input_count = ft.Text("0 字", size=11, color=ft.Colors.ON_SURFACE)
         self.input_field.on_change = lambda e: self._on_input_change()
@@ -625,6 +627,7 @@ class PrismDesktop:
             min_lines=1,
             max_lines=3,
             shift_enter=True,
+            border_radius=8,
         )
         terminal_run_btn = ft.IconButton(icon=ft.Icons.PLAY_ARROW_ROUNDED, tooltip="执行命令", icon_color=ft.Colors.ON_SURFACE_VARIANT)
         terminal_run_btn.on_click = lambda e: self._run_terminal_command()
@@ -1104,6 +1107,8 @@ class PrismDesktop:
             min_lines=1,
             max_lines=6,
             shift_enter=True,
+            border_radius=10,
+            focused_border_color=ft.Colors.PRIMARY,
         )
         self.input_count = ft.Text("0 字", size=11, color=ft.Colors.ON_SURFACE)
         self.input_field.on_change = lambda e: self._on_input_change()
@@ -1153,6 +1158,7 @@ class PrismDesktop:
             min_lines=1,
             max_lines=3,
             shift_enter=True,
+            border_radius=8,
         )
         terminal_run_btn = ft.IconButton(icon=ft.Icons.PLAY_ARROW_ROUNDED, tooltip="执行命令", icon_color=ft.Colors.ON_SURFACE_VARIANT)
         terminal_run_btn.on_click = lambda e: self._run_terminal_command()
