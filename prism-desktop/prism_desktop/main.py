@@ -64,6 +64,7 @@ class PrismDesktop:
         self.api_key_textfield = ft.TextField(label="API Key", password=True, can_reveal_password=True, value=prism_config.get("model.api_key", "") or "", width=260)
 
         self._build_ui()
+
         self._format_time = lambda: chat_ui._format_time(self)
         self._markdown_to_ft = lambda text: chat_ui._markdown_to_ft(self, text)
         self._append = lambda *args, **kwargs: chat_ui._append(self, *args, **kwargs)
@@ -85,7 +86,6 @@ class PrismDesktop:
         self._about = lambda e: system_ui._about(self, e)
         self._open_github_releases = lambda e: system_ui._open_github_releases(self, e)
 
-        self._apply_settings()
         self._bind_context_menu()
         self._bind_tray()
         self._maybe_show_setup_wizard()
