@@ -134,6 +134,11 @@ class PrismDesktop:
                 "window_width": int(self.page.window_width or 1320),
                 "window_height": int(self.page.window_height or 800),
                 "theme_mode": self.page.theme_mode.value if hasattr(self.page.theme_mode, "value") else str(self.page.theme_mode),
+                "theme_seed": self.page.theme.color_scheme_seed if self.page.theme else "blue",
+                "model_default": self.model_dropdown.value,
+                "model_provider": (self.provider_textfield.value or "").strip(),
+                "model_base_url": (self.base_url_textfield.value or "").strip(),
+                "model_api_key": self.api_key_textfield.value or "",
             }
             if hasattr(self, "_sidebar_container"):
                 payload["sidebar_width"] = int(self._sidebar_container.width or 280)
@@ -159,6 +164,29 @@ class PrismDesktop:
                 self._chat_container.width = int(self._settings.get("chat_width"))
             if hasattr(self, "_right_container") and isinstance(self._settings.get("right_width"), int):
                 self._right_container.width = int(self._settings.get("right_width"))
+            theme_name = self._settings.get("theme_mode")
+            if isinstance(theme_name, str):
+                theme_mode_map = {
+                    "dark": ft.ThemeMode.DARK,
+                    "light": ft.ThemeMode.LIGHT,
+                    "system": ft.ThemeMode.SYSTEM,
+                }
+                self.page.theme_mode = theme_mode_map.get(theme_name.lower(), ft.ThemeMode.DARK)
+            theme_seed = self._settings.get("theme_seed")
+            if isinstance(theme_seed, str) and theme_seed:
+                self.page.theme = ft.Theme(color_scheme_seed=theme_seed)
+            model_default = self._settings.get("model_default")
+            if isinstance(model_default, str) and model_default and hasattr(self, "model_dropdown"):
+                self.model_dropdown.value = model_default
+            model_provider = self._settings.get("model_provider")
+            if isinstance(model_provider, str) and model_provider and hasattr(self, "provider_textfield"):
+                self.provider_textfield.value = model_provider
+            model_base_url = self._settings.get("model_base_url")
+            if isinstance(model_base_url, str) and model_base_url and hasattr(self, "base_url_textfield"):
+                self.base_url_textfield.value = model_base_url
+            model_api_key = self._settings.get("model_api_key")
+            if isinstance(model_api_key, str) and model_api_key and hasattr(self, "api_key_textfield"):
+                self.api_key_textfield.value = model_api_key
         except Exception:
             pass
 
