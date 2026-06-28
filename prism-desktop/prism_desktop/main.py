@@ -38,6 +38,10 @@ class PrismDesktop:
         self._settings_path = Path.home() / ".prism" / "desktop_settings.json"
         self._settings = self._load_settings()
         
+        self.status_text = ft.Text("就绪", size=11, color=ft.Colors.RED_400)
+        self.browser_status_icon = ft.Icon(ft.Icons.LANGUAGE_ROUNDED, size=16, color=ft.Colors.RED_400)
+        self.browser_status_text = ft.Text("未连接", size=11, color=ft.Colors.RED_400)
+        
         self.messages = []
         self.agent = create_agent()
         self.browser_connected = False
@@ -164,11 +168,6 @@ class PrismDesktop:
 
     def _bind_tray(self) -> None:
         try:
-            if hasattr(self.page.window, "prevent_close"):
-                self.page.window.prevent_close = True
-            self.page.on_window_event = lambda e: (
-                self._save_settings() if getattr(e, "data", None) != "close" else None
-            )
             try:
                 import threading
                 import pystray
@@ -351,13 +350,14 @@ class PrismDesktop:
             ),
             width=280,
             padding=16,
-            bgcolor=ft.Colors.SURFACE_VARIANT,
+            bgcolor=ft.Colors.SURFACE,
             border_radius=12,
         )
 
         save_btn = ft.ElevatedButton("保存配置", icon=ft.Icons.SAVE_ROUNDED, width=260)
         save_btn.on_click = lambda e: self._save_config()
 
+        self.url_field = ft.TextField(hint_text="输入网址...", width=260)
         browser_open_btn = ft.ElevatedButton("打开网页", icon=ft.Icons.LANGUAGE_ROUNDED, width=260)
         browser_open_btn.on_click = lambda e: self._browser_open()
         browser_snapshot_btn = ft.ElevatedButton("读取页面快照", icon=ft.Icons.ARTICLE_ROUNDED, width=260)
@@ -383,7 +383,7 @@ class PrismDesktop:
         self.session_save_btn = ft.ElevatedButton("保存会话", icon=ft.Icons.BOOKMARK_ROUNDED, width=120)
         self.session_save_btn.on_click = lambda e: self._save_session()
         self.session_list = ft.Column(spacing=4, tight=True)
-        self._session_empty_text = ft.Text("暂无保存的会话", size=11, color=ft.Colors.ON_SURFACE_VARIANT)
+        self._session_empty_text = ft.Text("暂无保存的会话", size=11, color=ft.Colors.ON_SURFACE)
 
         sidebar_content = self._sidebar_container.content
         sidebar_content.controls.extend([
@@ -407,7 +407,7 @@ class PrismDesktop:
             ft.Text("MCP 控制", size=12, weight=ft.FontWeight.BOLD),
             self.mcp_refresh_btn,
             ft.Container(height=6),
-            ft.Text("已配置服务器", size=11, color=ft.Colors.ON_SURFACE_VARIANT),
+            ft.Text("已配置服务器", size=11, color=ft.Colors.ON_SURFACE),
             self.mcp_server_list,
             ft.Container(height=16),
             ft.Text("Skills", size=12, weight=ft.FontWeight.BOLD),
@@ -415,13 +415,13 @@ class PrismDesktop:
             self.skill_install_field,
             self.skill_install_btn,
             ft.Container(height=6),
-            ft.Text("可用 Skills", size=11, color=ft.Colors.ON_SURFACE_VARIANT),
+            ft.Text("可用 Skills", size=11, color=ft.Colors.ON_SURFACE),
             self.skill_list,
             ft.Container(height=16),
             ft.Text("会话", size=12, weight=ft.FontWeight.BOLD),
             ft.Row([self.session_name_field, self.session_save_btn], spacing=8),
             ft.Container(height=6),
-            ft.Text("已保存会话", size=11, color=ft.Colors.ON_SURFACE_VARIANT),
+            ft.Text("已保存会话", size=11, color=ft.Colors.ON_SURFACE),
             self.session_list,
             ft.Container(height=16),
             ft.Text("状态", size=12, weight=ft.FontWeight.BOLD),
@@ -440,7 +440,7 @@ class PrismDesktop:
             max_lines=6,
             shift_enter=True,
         )
-        self.input_count = ft.Text("0 字", size=11, color=ft.Colors.ON_SURFACE_VARIANT)
+        self.input_count = ft.Text("0 字", size=11, color=ft.Colors.ON_SURFACE)
         self.input_field.on_change = lambda e: self._on_input_change()
         self.send_btn = ft.IconButton(icon=ft.Icons.SEND_ROUNDED, tooltip="发送")
         self.send_btn.on_click = lambda e: self._send()
@@ -454,7 +454,7 @@ class PrismDesktop:
             [
                 ft.Text("对话", size=18, weight=ft.FontWeight.BOLD),
                 ft.Divider(height=8),
-                ft.Container(self.chat_list, expand=True, border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=12, padding=12),
+                ft.Container(self.chat_list, expand=True, border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), bottom=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), right=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)), border_radius=12, padding=12),
                 ft.Divider(height=8),
                 ft.Row([self.input_field, self.send_btn, self.stop_btn], spacing=8),
                 ft.Row([clear_chat_btn, self.input_count], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
@@ -486,7 +486,7 @@ class PrismDesktop:
             [
                 ft.Row([self.terminal_input, terminal_run_btn], spacing=8),
                 ft.Row([clear_terminal_btn], alignment=ft.MainAxisAlignment.END),
-                ft.Container(self.terminal_list, expand=True, border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=12, padding=12, bgcolor=ft.Colors.SURFACE),
+                ft.Container(self.terminal_list, expand=True, border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), bottom=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), right=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)), border_radius=12, padding=12, bgcolor=ft.Colors.SURFACE),
             ],
             expand=True,
             spacing=8,
@@ -494,18 +494,25 @@ class PrismDesktop:
         mcp_tab = ft.Column(
             [
                 ft.Row([clear_mcp_btn], alignment=ft.MainAxisAlignment.END),
-                ft.Container(self.mcp_list, expand=True, border=ft.border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=12, padding=12, bgcolor=ft.Colors.SURFACE),
+                ft.Container(self.mcp_list, expand=True, border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), bottom=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), right=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)), border_radius=12, padding=12, bgcolor=ft.Colors.SURFACE),
             ],
             expand=True,
             spacing=8,
         )
-        self.right_tabs = ft.Tabs(
-            selected_index=0,
-            animation_duration=200,
-            tabs=[
-                ft.Tab(text="终端", content=terminal_tab),
-                ft.Tab(text="MCP", content=mcp_tab),
+        self._right_terminal_tab = terminal_tab
+        self._right_mcp_tab = mcp_tab
+        self._right_tab_content = ft.Column(
+            [
+                terminal_tab,
+                mcp_tab,
             ],
+            expand=True,
+        )
+        self.right_tabs = ft.Tabs(
+            content=self._right_tab_content,
+            length=400,
+            selected_index=0,
+            on_change=lambda e: None,
             expand=True,
         )
         return ft.Column(
@@ -520,9 +527,9 @@ class PrismDesktop:
     def _append(self, role: str, text: str, retry: bool = False, retry_text: str = "", placeholder: bool = False):
         is_user = role == "你"
         align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
-        bg = ft.Colors.PRIMARY_CONTAINER if is_user else ft.Colors.SURFACE_VARIANT
-        text_color = ft.Colors.ON_PRIMARY_CONTAINER if is_user else ft.Colors.ON_SURFACE_VARIANT
-        avatar = ft.Icon(ft.Icons.PERSON_ROUNDED if is_user else ft.Icons.SMART_TOY_ROUNDED, size=28, color=ft.Colors.ON_SURFACE_VARIANT)
+        bg = ft.Colors.PRIMARY_CONTAINER if is_user else ft.Colors.SURFACE
+        text_color = ft.Colors.ON_PRIMARY_CONTAINER if is_user else ft.Colors.ON_SURFACE
+        avatar = ft.Icon(ft.Icons.PERSON_ROUNDED if is_user else ft.Icons.SMART_TOY_ROUNDED, size=28, color=ft.Colors.ON_SURFACE)
 
         def _copy(_):
             try:
@@ -559,7 +566,7 @@ class PrismDesktop:
             rendered = text
 
         actions = [
-            ft.Text(self._format_time(), size=9, color=ft.Colors.ON_SURFACE_VARIANT),
+            ft.Text(self._format_time(), size=9, color=ft.Colors.ON_SURFACE),
             ft.TextButton("复制渲染", on_click=_copy),
             ft.TextButton("复制原文", on_click=_copy_raw),
             ft.TextButton("删除", on_click=_delete),
@@ -574,7 +581,7 @@ class PrismDesktop:
             actions.insert(2, ft.TextButton("重发", on_click=_retry))
 
         if placeholder:
-            actions = [ft.Text(self._format_time(), size=9, color=ft.Colors.ON_SURFACE_VARIANT)]
+            actions = [ft.Text(self._format_time(), size=9, color=ft.Colors.ON_SURFACE)]
 
         import re
         code_blocks = re.findall(r'```(?:\w+)?\n(.*?)```', text, re.DOTALL)
@@ -598,7 +605,7 @@ class PrismDesktop:
 
         content = ft.Column(
             [
-                ft.Text(role, size=11, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.BOLD),
+                ft.Text(role, size=11, color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.BOLD),
                 self._markdown_to_ft(rendered),
                 action_row,
             ],
@@ -611,7 +618,7 @@ class PrismDesktop:
             padding=10,
             border_radius=16,
             expand=True,
-            on_secondary_tap=_on_right_click,
+            on_long_press=_on_right_click,
         )
 
         spacer = ft.Container(width=8)
@@ -677,7 +684,7 @@ class PrismDesktop:
             self._terminal_lines = self._terminal_lines[-300:]
         self.terminal_list.controls.clear()
         is_error = any(k in text.lower() for k in ["error", "err", "失败", "异常", "fail", "traceback", "error"])
-        color = ft.Colors.RED_400 if is_error else ft.Colors.ON_SURFACE_VARIANT
+        color = ft.Colors.RED_400 if is_error else ft.Colors.ON_SURFACE
         for line in self._terminal_lines[-80:]:
             self.terminal_list.controls.append(
                 ft.Text(line, size=12, color=color, selectable=True)
@@ -691,7 +698,7 @@ class PrismDesktop:
         self.mcp_list.controls.clear()
         for line in self._mcp_logs[-80:]:
             self.mcp_list.controls.append(
-                ft.Text(line, size=12, color=ft.Colors.ON_SURFACE_VARIANT, selectable=True)
+                ft.Text(line, size=12, color=ft.Colors.ON_SURFACE, selectable=True)
             )
         self.mcp_list.update()
     
@@ -859,7 +866,7 @@ class PrismDesktop:
             raw = []
         if not raw:
             self.mcp_server_list.controls.append(
-                ft.Text("未配置 MCP 服务器", size=12, color=ft.Colors.ON_SURFACE_VARIANT)
+                ft.Text("未配置 MCP 服务器", size=12, color=ft.Colors.ON_SURFACE)
             )
         else:
             for idx, server in enumerate(raw):
@@ -872,7 +879,7 @@ class PrismDesktop:
                 row = ft.Row(
                     [
                         ft.Text(name, size=12, expand=True),
-                        ft.Text(status, size=11, color=ft.Colors.ON_SURFACE_VARIANT),
+                        ft.Text(status, size=11, color=ft.Colors.ON_SURFACE),
                         start_btn,
                         log_btn,
                     ]
@@ -909,7 +916,7 @@ class PrismDesktop:
         self._skill_list_cache = items
         if not items:
             self.skill_list.controls.append(
-                ft.Text("暂无可用 Skills", size=12, color=ft.Colors.ON_SURFACE_VARIANT)
+                ft.Text("暂无可用 Skills", size=12, color=ft.Colors.ON_SURFACE)
             )
         else:
             for skill in items:
@@ -927,7 +934,7 @@ class PrismDesktop:
                     ft.Row(
                         [
                             ft.Text(name, size=12, expand=True),
-                            ft.Text(status, size=11, color=ft.Colors.ON_SURFACE_VARIANT),
+                            ft.Text(status, size=11, color=ft.Colors.ON_SURFACE),
                             toggle,
                             run_btn,
                         ]
@@ -935,11 +942,11 @@ class PrismDesktop:
                 )
                 if desc:
                     self.skill_list.controls.append(
-                        ft.Text(desc, size=11, color=ft.Colors.ON_SURFACE_VARIANT)
+                        ft.Text(desc, size=11, color=ft.Colors.ON_SURFACE)
                     )
                 if trigger_text:
                     self.skill_list.controls.append(
-                        ft.Text(f"触发词：{trigger_text}", size=10, color=ft.Colors.ON_SURFACE_VARIANT)
+                        ft.Text(f"触发词：{trigger_text}", size=10, color=ft.Colors.ON_SURFACE)
                     )
         self.skill_list.update()
         self._append_mcp(f"已刷新 Skills：{len(items)} 个")

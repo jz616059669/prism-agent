@@ -41,7 +41,7 @@ class OpenAIProvider(Provider):
                 f"请执行 `pip install openai httpx` 或 `uv add openai httpx`。"
             ) from exc
         self.client = OpenAI(
-            base_url=f"{base_url}/chat/completions",
+            base_url=base_url,
             api_key=api_key,
             http_client=httpx.Client(timeout=120),
         )
