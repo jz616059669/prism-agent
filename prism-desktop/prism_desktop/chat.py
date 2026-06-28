@@ -197,7 +197,6 @@ def _send(self: PrismDesktop):
         def _on_chunk(chunk: str):
             nonlocal full_reply
             full_reply += chunk
-            self._append_terminal(f"DEBUG chunk={chunk!r} total={len(full_reply)}")
 
         def _do_chat():
             self._append_terminal("DEBUG _do_chat started")
