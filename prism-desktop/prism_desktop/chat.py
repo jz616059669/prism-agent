@@ -5,6 +5,7 @@ from prism.agent import create_agent
 
 _agent = create_agent()
 _send_lock = {}
+_streaming_indicator = None
 
 
 def _on_input_change(self, text):
@@ -15,11 +16,31 @@ def _append(main_self, role, text, retry=False, retry_text="", placeholder=False
     is_user = role == "你"
     align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
     text_color = ft.Colors.ON_PRIMARY_CONTAINER if is_user else ft.Colors.ON_SURFACE
+    import datetime
+    timestamp = datetime.datetime.now().strftime("%H:%M")
 
     try:
+        if is_user:
+            content_widget = ft.Column(
+                [
+                    ft.Text(text, selectable=True, color=text_color, size=14),
+                    ft.Text(timestamp, size=10, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.END),
+                ],
+                spacing=2,
+                horizontal_alignment=ft.CrossAxisAlignment.END,
+            )
+        else:
+            content_widget = ft.Column(
+                [
+                    ft.Text(text, selectable=True, color=text_color, size=14),
+                    ft.Text(timestamp, size=10, color=ft.Colors.ON_SURFACE_VARIANT),
+                ],
+                spacing=2,
+                horizontal_alignment=ft.CrossAxisAlignment.START,
+            )
         main_self.chat_list.controls.append(
             ft.Row(
-                [ft.Text(text, selectable=True, color=text_color, expand=not is_user)],
+                [content_widget],
                 alignment=align,
                 expand=True,
             )
@@ -27,6 +48,30 @@ def _append(main_self, role, text, retry=False, retry_text="", placeholder=False
         main_self.chat_list.update()
     except Exception:
         pass
+
+
+def _show_streaming_indicator(main_self):
+    global _streaming_indicator
+    try:
+        _streaming_indicator = ft.Row(
+            [ft.Text("PRISM 正在输入...", size=12, color=ft.Colors.ON_SURFACE_VARIANT, italic=True)],
+            alignment=ft.MainAxisAlignment.START,
+        )
+        main_self.chat_list.controls.append(_streaming_indicator)
+        main_self.chat_list.update()
+    except Exception:
+        pass
+
+
+def _hide_streaming_indicator(main_self):
+    global _streaming_indicator
+    try:
+        if _streaming_indicator and _streaming_indicator in main_self.chat_list.controls:
+            main_self.chat_list.controls.remove(_streaming_indicator)
+            main_self.chat_list.update()
+    except Exception:
+        pass
+    _streaming_indicator = None
 
 
 def _send(self, text=None):
@@ -58,6 +103,7 @@ def _send(self, text=None):
         if watchdog["timer"]:
             watchdog["timer"].cancel()
             watchdog["timer"] = None
+        _hide_streaming_indicator(self)
         display = reply_text if reply_text is not None else (full_reply or "(无回复)")
         try:
             self._append("PRISM", display)
@@ -73,6 +119,7 @@ def _send(self, text=None):
         _send_lock[id(self)] = False
 
     def _do_chat():
+        _show_streaming_indicator(self)
         reply = ""
         try:
             reply = _agent.chat(text, on_stream=_on_chunk) or ""
@@ -85,6 +132,7 @@ def _send(self, text=None):
 
     def _watchdog():
         if _send_lock.get(id(self)):
+            _hide_streaming_indicator(self)
             _finish("请求超时（60秒），请检查网络或稍后重试。")
 
     watchdog["timer"] = threading.Timer(60, _watchdog)
