@@ -513,7 +513,6 @@ class PrismDesktop:
         )
         return ft.Column(
             [
-                ft.Text("终端 / MCP", size=14, weight=ft.FontWeight.BOLD),
                 self.right_tabs,
             ],
             expand=True,
@@ -864,7 +863,6 @@ class PrismDesktop:
         )
         return ft.Column(
             [
-                ft.Text("终端 / MCP", size=14, weight=ft.FontWeight.BOLD),
                 self.right_tabs,
             ],
             expand=True,
