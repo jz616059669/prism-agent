@@ -40,10 +40,6 @@ class PrismDesktop:
         self.page.window_height = 800
         self.page.theme = ft.Theme(color_scheme_seed="blue")
         
-        # 持久化设置
-        self._settings_path = Path.home() / ".prism" / "desktop_settings.json"
-        self._settings = self._load_settings()
-        
         self.status_text = ft.Text("就绪", size=11, color=ft.Colors.RED_400)
         self.browser_status_icon = ft.Icon(ft.Icons.LANGUAGE_ROUNDED, size=16, color=ft.Colors.RED_400)
         self.browser_status_text = ft.Text("未连接", size=11, color=ft.Colors.RED_400)
@@ -93,6 +89,7 @@ class PrismDesktop:
         self._bind_context_menu()
         self._bind_tray()
         self._maybe_show_setup_wizard()
+        self._settings = self._load_settings()
 
     def _maybe_show_setup_wizard(self):
         try:
