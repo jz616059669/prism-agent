@@ -92,6 +92,23 @@ class PrismDesktop:
         self._bind_tray()
         self._maybe_show_setup_wizard()
         self._settings = self._load_settings()
+        # Load model preset on startup
+        presets = (self._settings.get("model_presets") or {})
+        current_preset = self._settings.get("model_preset_name", "")
+        if current_preset and current_preset in presets:
+            p = presets[current_preset]
+            if p.get("model"):
+                if hasattr(self, "model_dropdown") and self.model_dropdown:
+                    self.model_dropdown.value = p["model"]
+            if p.get("provider"):
+                if hasattr(self, "provider_textfield") and self.provider_textfield:
+                    self.provider_textfield.value = p["provider"]
+            if p.get("base_url"):
+                if hasattr(self, "base_url_textfield") and self.base_url_textfield:
+                    self.base_url_textfield.value = p["base_url"]
+            if p.get("api_key"):
+                if hasattr(self, "api_key_textfield") and self.api_key_textfield:
+                    self.api_key_textfield.value = p["api_key"]
         self._apply_settings()
 
     def _maybe_show_setup_wizard(self):
@@ -281,6 +298,122 @@ class PrismDesktop:
             )
         )
     
+    def _open_preset_manager(self):
+        presets = (self._settings.get("model_presets") or {})
+        preset_names = list(presets.keys())
+        current_preset = self._settings.get("model_preset_name", "")
+
+        def on_dismiss(e):
+            pass
+
+        def save_as_preset(e):
+            name = preset_name_field.value.strip()
+            if not name:
+                return
+            presets[name] = {
+                "model": self.model_dropdown.value,
+                "provider": self.provider_textfield.value,
+                "base_url": (self.base_url_textfield.value or "").strip(),
+                "api_key": self.api_key_textfield.value,
+            }
+            self._settings["model_presets"] = presets
+            self._settings["model_preset_name"] = name
+            self._save_settings()
+            preset_dlg.open = False
+            self.page.update()
+            self._refresh_preset_dropdown()
+            self._set_status(f"预设已保存：{name}")
+
+        preset_name_field = ft.TextField(hint_text="新预设名称", width=260, border_radius=8)
+
+        preset_buttons = []
+        for name in preset_names:
+            is_active = name == current_preset
+
+            def apply_preset(e, n=name):
+                p = presets.get(n, {})
+                if p.get("model"):
+                    self.model_dropdown.value = p["model"]
+                if p.get("provider"):
+                    self.provider_textfield.value = p["provider"]
+                if p.get("base_url"):
+                    self.base_url_textfield.value = p["base_url"]
+                if p.get("api_key"):
+                    self.api_key_textfield.value = p["api_key"]
+                self._settings["model_preset_name"] = n
+                self._save_settings()
+                self._set_status(f"已切换预设：{n}")
+                preset_dlg.open = False
+                self.page.update()
+
+            def delete_preset(e, n=name):
+                if n in presets:
+                    del presets[n]
+                    self._settings["model_presets"] = presets
+                    if current_preset == n:
+                        self._settings.pop("model_preset_name", None)
+                    self._save_settings()
+                    preset_dlg.open = False
+                    self.page.update()
+                    self._refresh_preset_dropdown()
+                    self._set_status(f"预设已删除：{n}")
+
+            preset_buttons.append(
+                ft.Row([
+                    ft.Text(n, expand=True, color=ft.Colors.PRIMARY if is_active else ft.Colors.ON_SURFACE),
+                    ft.IconButton(ft.Icons.CHECK_CIRCLE_ROUNDED if is_active else ft.Icons.RADIO_BUTTON_UNCHECKED_ROUNDED, tooltip="应用", icon_color=ft.Colors.PRIMARY if is_active else ft.Colors.ON_SURFACE_VARIANT, on_click=apply_preset),
+                    ft.IconButton(ft.Icons.DELETE_ROUNDED, tooltip="删除", icon_color=ft.Colors.ERROR, on_click=delete_preset),
+                ], spacing=6, tight=True)
+            )
+
+        preset_dlg = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("预设管理"),
+            content=ft.Column([
+                ft.Text("保存当前配置为新预设：", size=12, color=ft.Colors.ON_SURFACE_VARIANT),
+                ft.Row([preset_name_field, ft.IconButton(ft.Icons.ADD_ROUNDED, tooltip="保存", icon_color=ft.Colors.PRIMARY, on_click=save_as_preset)], spacing=8, tight=True),
+                ft.Container(height=8),
+                ft.Text("已有预设：", size=12, color=ft.Colors.ON_SURFACE_VARIANT),
+                ft.Column(preset_buttons, spacing=4, tight=True, scroll=ft.ScrollMode.AUTO),
+            ], tight=True, spacing=4, height=400, width=300),
+            actions=[ft.TextButton("关闭", on_click=lambda e: setattr(preset_dlg, 'open', False) or self.page.update())],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        self.page.dialog = preset_dlg
+        preset_dlg.open = True
+        self.page.update()
+
+    def _refresh_preset_dropdown(self):
+        presets = (self._settings.get("model_presets") or {})
+        preset_names = list(presets.keys())
+        current = self._settings.get("model_preset_name", "")
+        if hasattr(self, "model_dropdown"):
+            self.model_dropdown.options = [ft.dropdown.Option(n) for n in preset_names] if preset_names else []
+            if current and current in preset_names:
+                self.model_dropdown.value = current
+            elif preset_names:
+                self.model_dropdown.value = preset_names[0]
+            else:
+                self.model_dropdown.value = ""
+            self.model_dropdown.update()
+
+    def _save_preset(self):
+        name = self.model_dropdown.value
+        if not name:
+            self._set_status("请先选择或输入预设名称", ft.Colors.RED_400)
+            return
+        presets = (self._settings.get("model_presets") or {})
+        presets[name] = {
+            "model": self.model_dropdown.value,
+            "provider": self.provider_textfield.value,
+            "base_url": (self.base_url_textfield.value or "").strip(),
+            "api_key": self.api_key_textfield.value,
+        }
+        self._settings["model_presets"] = presets
+        self._settings["model_preset_name"] = name
+        self._save_settings()
+        self._set_status(f"预设已保存：{name}")
+
     def _build_sidebar(self) -> ft.Container:
         self._sidebar_container = ft.Container(
             content=ft.Column(
@@ -335,7 +468,11 @@ class PrismDesktop:
                 content=ft.Column([
                     ft.Text("模型配置", size=11, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
                     ft.Container(height=6),
-                    self.model_dropdown,
+                    # Preset selector
+                    ft.Row([
+                        self.model_dropdown,
+                        ft.IconButton(icon=ft.Icons.BOOKMARK_ROUNDED, tooltip="保存为预设", icon_color=ft.Colors.ON_SURFACE_VARIANT, on_click=lambda e: self._save_preset()),
+                    ], spacing=6, tight=True),
                     ft.Container(height=4),
                     self.provider_textfield,
                     ft.Container(height=4),
@@ -343,7 +480,10 @@ class PrismDesktop:
                     ft.Container(height=4),
                     self.api_key_textfield,
                     ft.Container(height=8),
-                    save_btn,
+                    ft.Row([
+                        save_btn,
+                        ft.TextButton("预设管理", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6)), on_click=lambda e: self._open_preset_manager()),
+                    ], spacing=8, tight=True),
                 ], tight=True, spacing=4),
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
@@ -451,7 +591,7 @@ class PrismDesktop:
                         self.chat_list,
                         ft.Container(
                             content=self._chat_placeholder,
-                            alignment=ft.alignment.center,
+                            alignment=ft.Alignment(0, 0),
                             expand=True,
                         ),
                     ],
@@ -679,6 +819,122 @@ class PrismDesktop:
             )
         )
     
+    def _open_preset_manager(self):
+        presets = (self._settings.get("model_presets") or {})
+        preset_names = list(presets.keys())
+        current_preset = self._settings.get("model_preset_name", "")
+
+        def on_dismiss(e):
+            pass
+
+        def save_as_preset(e):
+            name = preset_name_field.value.strip()
+            if not name:
+                return
+            presets[name] = {
+                "model": self.model_dropdown.value,
+                "provider": self.provider_textfield.value,
+                "base_url": (self.base_url_textfield.value or "").strip(),
+                "api_key": self.api_key_textfield.value,
+            }
+            self._settings["model_presets"] = presets
+            self._settings["model_preset_name"] = name
+            self._save_settings()
+            preset_dlg.open = False
+            self.page.update()
+            self._refresh_preset_dropdown()
+            self._set_status(f"预设已保存：{name}")
+
+        preset_name_field = ft.TextField(hint_text="新预设名称", width=260, border_radius=8)
+
+        preset_buttons = []
+        for name in preset_names:
+            is_active = name == current_preset
+
+            def apply_preset(e, n=name):
+                p = presets.get(n, {})
+                if p.get("model"):
+                    self.model_dropdown.value = p["model"]
+                if p.get("provider"):
+                    self.provider_textfield.value = p["provider"]
+                if p.get("base_url"):
+                    self.base_url_textfield.value = p["base_url"]
+                if p.get("api_key"):
+                    self.api_key_textfield.value = p["api_key"]
+                self._settings["model_preset_name"] = n
+                self._save_settings()
+                self._set_status(f"已切换预设：{n}")
+                preset_dlg.open = False
+                self.page.update()
+
+            def delete_preset(e, n=name):
+                if n in presets:
+                    del presets[n]
+                    self._settings["model_presets"] = presets
+                    if current_preset == n:
+                        self._settings.pop("model_preset_name", None)
+                    self._save_settings()
+                    preset_dlg.open = False
+                    self.page.update()
+                    self._refresh_preset_dropdown()
+                    self._set_status(f"预设已删除：{n}")
+
+            preset_buttons.append(
+                ft.Row([
+                    ft.Text(n, expand=True, color=ft.Colors.PRIMARY if is_active else ft.Colors.ON_SURFACE),
+                    ft.IconButton(ft.Icons.CHECK_CIRCLE_ROUNDED if is_active else ft.Icons.RADIO_BUTTON_UNCHECKED_ROUNDED, tooltip="应用", icon_color=ft.Colors.PRIMARY if is_active else ft.Colors.ON_SURFACE_VARIANT, on_click=apply_preset),
+                    ft.IconButton(ft.Icons.DELETE_ROUNDED, tooltip="删除", icon_color=ft.Colors.ERROR, on_click=delete_preset),
+                ], spacing=6, tight=True)
+            )
+
+        preset_dlg = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("预设管理"),
+            content=ft.Column([
+                ft.Text("保存当前配置为新预设：", size=12, color=ft.Colors.ON_SURFACE_VARIANT),
+                ft.Row([preset_name_field, ft.IconButton(ft.Icons.ADD_ROUNDED, tooltip="保存", icon_color=ft.Colors.PRIMARY, on_click=save_as_preset)], spacing=8, tight=True),
+                ft.Container(height=8),
+                ft.Text("已有预设：", size=12, color=ft.Colors.ON_SURFACE_VARIANT),
+                ft.Column(preset_buttons, spacing=4, tight=True, scroll=ft.ScrollMode.AUTO),
+            ], tight=True, spacing=4, height=400, width=300),
+            actions=[ft.TextButton("关闭", on_click=lambda e: setattr(preset_dlg, 'open', False) or self.page.update())],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        self.page.dialog = preset_dlg
+        preset_dlg.open = True
+        self.page.update()
+
+    def _refresh_preset_dropdown(self):
+        presets = (self._settings.get("model_presets") or {})
+        preset_names = list(presets.keys())
+        current = self._settings.get("model_preset_name", "")
+        if hasattr(self, "model_dropdown"):
+            self.model_dropdown.options = [ft.dropdown.Option(n) for n in preset_names] if preset_names else []
+            if current and current in preset_names:
+                self.model_dropdown.value = current
+            elif preset_names:
+                self.model_dropdown.value = preset_names[0]
+            else:
+                self.model_dropdown.value = ""
+            self.model_dropdown.update()
+
+    def _save_preset(self):
+        name = self.model_dropdown.value
+        if not name:
+            self._set_status("请先选择或输入预设名称", ft.Colors.RED_400)
+            return
+        presets = (self._settings.get("model_presets") or {})
+        presets[name] = {
+            "model": self.model_dropdown.value,
+            "provider": self.provider_textfield.value,
+            "base_url": (self.base_url_textfield.value or "").strip(),
+            "api_key": self.api_key_textfield.value,
+        }
+        self._settings["model_presets"] = presets
+        self._settings["model_preset_name"] = name
+        self._save_settings()
+        self._set_status(f"预设已保存：{name}")
+
     def _build_sidebar(self) -> ft.Container:
         self._sidebar_container = ft.Container(
             content=ft.Column(
@@ -733,7 +989,11 @@ class PrismDesktop:
                 content=ft.Column([
                     ft.Text("模型配置", size=11, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
                     ft.Container(height=6),
-                    self.model_dropdown,
+                    # Preset selector
+                    ft.Row([
+                        self.model_dropdown,
+                        ft.IconButton(icon=ft.Icons.BOOKMARK_ROUNDED, tooltip="保存为预设", icon_color=ft.Colors.ON_SURFACE_VARIANT, on_click=lambda e: self._save_preset()),
+                    ], spacing=6, tight=True),
                     ft.Container(height=4),
                     self.provider_textfield,
                     ft.Container(height=4),
@@ -741,7 +1001,10 @@ class PrismDesktop:
                     ft.Container(height=4),
                     self.api_key_textfield,
                     ft.Container(height=8),
-                    save_btn,
+                    ft.Row([
+                        save_btn,
+                        ft.TextButton("预设管理", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6)), on_click=lambda e: self._open_preset_manager()),
+                    ], spacing=8, tight=True),
                 ], tight=True, spacing=4),
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
@@ -849,7 +1112,7 @@ class PrismDesktop:
                         self.chat_list,
                         ft.Container(
                             content=self._chat_placeholder,
-                            alignment=ft.alignment.center,
+                            alignment=ft.Alignment(0, 0),
                             expand=True,
                         ),
                     ],
