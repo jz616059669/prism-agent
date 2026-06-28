@@ -30,21 +30,37 @@ def _append(main_self, role, text, retry=False, retry_text="", placeholder=False
                 horizontal_alignment=ft.CrossAxisAlignment.END,
             )
         else:
+            is_error = text.startswith("Error:") or text.startswith("请求超时")
             content_widget = ft.Column(
                 [
-                    ft.Text(text, selectable=True, color=text_color, size=14),
+                    ft.Text(text, selectable=True, color=ft.Colors.ERROR if is_error else text_color, size=14),
                     ft.Text(timestamp, size=10, color=ft.Colors.ON_SURFACE_VARIANT),
                 ],
                 spacing=2,
                 horizontal_alignment=ft.CrossAxisAlignment.START,
             )
-        main_self.chat_list.controls.append(
-            ft.Row(
-                [content_widget],
-                alignment=align,
+        message_row = ft.Row(
+            [content_widget],
+            alignment=align,
+            expand=True,
+        )
+        main_self.chat_list.controls.append(message_row)
+        
+        # Add retry button for error messages
+        if not is_user and is_error and retry_text:
+            retry_btn = ft.TextButton(
+                "重试",
+                icon=ft.Icons.REFRESH_ROUNDED,
+                style=ft.ButtonStyle(color=ft.Colors.ERROR),
+                on_click=lambda e, t=retry_text: main_self._send(t),
+            )
+            retry_row = ft.Row(
+                [retry_btn],
+                alignment=ft.MainAxisAlignment.START,
                 expand=True,
             )
-        )
+            main_self.chat_list.controls.append(retry_row)
+        
         main_self.chat_list.update()
     except Exception:
         pass
@@ -99,14 +115,15 @@ def _send(self, text=None):
         nonlocal full_reply
         full_reply += chunk
 
-    def _finish(reply_text=None):
+    def _finish(reply_text=None, retry_text=""):
         if watchdog["timer"]:
             watchdog["timer"].cancel()
             watchdog["timer"] = None
         _hide_streaming_indicator(self)
         display = reply_text if reply_text is not None else (full_reply or "(无回复)")
+        is_error = display.startswith("Error:") or display.startswith("请求超时")
         try:
-            self._append("PRISM", display)
+            self._append("PRISM", display, retry_text=retry_text if is_error else "")
         except Exception:
             pass
         self._set_status("就绪")
@@ -126,9 +143,9 @@ def _send(self, text=None):
         except Exception as e:
             reply = f"Error: {e}"
         try:
-            self.page.call_later(0, lambda: _finish(reply))
+            self.page.call_later(0, lambda r=reply: _finish(r, retry_text=text))
         except Exception:
-            _finish(reply)
+            _finish(reply, retry_text=text)
 
     def _watchdog():
         if _send_lock.get(id(self)):

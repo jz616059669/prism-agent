@@ -441,11 +441,23 @@ class PrismDesktop:
         clear_chat_btn = ft.TextButton("清屏", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6)))
         clear_chat_btn.on_click = lambda e: self._clear_chat()
         
+        self._chat_placeholder = ft.Text("输入消息开始对话", size=13, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.CENTER)
         return ft.Column(
             [
                 ft.Text("对话", size=18, weight=ft.FontWeight.BOLD),
                 ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT),
-                ft.Container(self.chat_list, expand=True, bgcolor=ft.Colors.SURFACE_CONTAINER, border=ft.border.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=12, padding=12),
+                ft.Stack(
+                    [
+                        self.chat_list,
+                        ft.Container(
+                            content=self._chat_placeholder,
+                            alignment=ft.alignment.center,
+                            expand=True,
+                        ),
+                    ],
+                    expand=True,
+                ),
+
                 ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT),
                 ft.Container(
                     content=ft.Row([self.input_field, self.send_btn, self.stop_btn], spacing=8),
@@ -520,31 +532,67 @@ class PrismDesktop:
         )
     
     def _append(self, role: str, text: str, retry: bool = False, retry_text: str = "", placeholder: bool = False):
+        if hasattr(self, "_chat_placeholder") and self._chat_placeholder and self._chat_placeholder in self.chat_list.controls:
+            self.chat_list.controls.remove(self._chat_placeholder)
         is_user = role == "你"
         align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
         text_color = ft.Colors.ON_PRIMARY_CONTAINER if is_user else ft.Colors.ON_SURFACE
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%H:%M")
 
         try:
             import markdown
-            rendered = markdown.markdown(text, extensions=["fenced_code", "tables"])
+            rendered = markdown.markdown(text, extensions=["fenced_code", "tables", "nl2br"])
         except Exception:
             rendered = text
 
-        message_content = ft.Column(
-            [
-                self._markdown_to_ft(rendered),
-            ],
-            tight=True,
-            spacing=4,
-        )
+        is_error = not is_user and (text.startswith("Error:") or text.startswith("请求超时") or text.startswith("失败"))
+        display_color = ft.Colors.ERROR if is_error else text_color
+
+        if is_user:
+            content_widget = ft.Column(
+                [
+                    self._markdown_to_ft(rendered),
+                    ft.Text(timestamp, size=10, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.END),
+                ],
+                tight=True,
+                spacing=2,
+                horizontal_alignment=ft.CrossAxisAlignment.END,
+            )
+        else:
+            content_widget = ft.Column(
+                [
+                    self._markdown_to_ft(rendered),
+                    ft.Text(timestamp, size=10, color=ft.Colors.ON_SURFACE_VARIANT),
+                ],
+                tight=True,
+                spacing=2,
+                horizontal_alignment=ft.CrossAxisAlignment.START,
+            )
 
         message_row = ft.Row(
-            [message_content],
+            [content_widget],
             alignment=align,
             expand=True,
         )
 
         self.chat_list.controls.append(message_row)
+        
+        # Retry button for error messages
+        if is_error and retry_text:
+            retry_btn = ft.TextButton(
+                "重试",
+                icon=ft.Icons.REFRESH_ROUNDED,
+                style=ft.ButtonStyle(color=ft.Colors.ERROR),
+                on_click=lambda e, t=retry_text: self._send(t),
+            )
+            retry_row = ft.Row(
+                [retry_btn],
+                alignment=ft.MainAxisAlignment.START,
+                expand=True,
+            )
+            self.chat_list.controls.append(retry_row)
+        
         max_chat_items = 200
         if len(self.chat_list.controls) > max_chat_items:
             self.chat_list.controls = self.chat_list.controls[-max_chat_items:]
@@ -791,11 +839,23 @@ class PrismDesktop:
         clear_chat_btn = ft.TextButton("清屏", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6)))
         clear_chat_btn.on_click = lambda e: self._clear_chat()
         
+        self._chat_placeholder = ft.Text("输入消息开始对话", size=13, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.CENTER)
         return ft.Column(
             [
                 ft.Text("对话", size=18, weight=ft.FontWeight.BOLD),
                 ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT),
-                ft.Container(self.chat_list, expand=True, bgcolor=ft.Colors.SURFACE_CONTAINER, border=ft.border.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=12, padding=12),
+                ft.Stack(
+                    [
+                        self.chat_list,
+                        ft.Container(
+                            content=self._chat_placeholder,
+                            alignment=ft.alignment.center,
+                            expand=True,
+                        ),
+                    ],
+                    expand=True,
+                ),
+
                 ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT),
                 ft.Container(
                     content=ft.Row([self.input_field, self.send_btn, self.stop_btn], spacing=8),
@@ -870,31 +930,67 @@ class PrismDesktop:
         )
     
     def _append(self, role: str, text: str, retry: bool = False, retry_text: str = "", placeholder: bool = False):
+        if hasattr(self, "_chat_placeholder") and self._chat_placeholder and self._chat_placeholder in self.chat_list.controls:
+            self.chat_list.controls.remove(self._chat_placeholder)
         is_user = role == "你"
         align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
         text_color = ft.Colors.ON_PRIMARY_CONTAINER if is_user else ft.Colors.ON_SURFACE
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%H:%M")
 
         try:
             import markdown
-            rendered = markdown.markdown(text, extensions=["fenced_code", "tables"])
+            rendered = markdown.markdown(text, extensions=["fenced_code", "tables", "nl2br"])
         except Exception:
             rendered = text
 
-        message_content = ft.Column(
-            [
-                self._markdown_to_ft(rendered),
-            ],
-            tight=True,
-            spacing=4,
-        )
+        is_error = not is_user and (text.startswith("Error:") or text.startswith("请求超时") or text.startswith("失败"))
+        display_color = ft.Colors.ERROR if is_error else text_color
+
+        if is_user:
+            content_widget = ft.Column(
+                [
+                    self._markdown_to_ft(rendered),
+                    ft.Text(timestamp, size=10, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.END),
+                ],
+                tight=True,
+                spacing=2,
+                horizontal_alignment=ft.CrossAxisAlignment.END,
+            )
+        else:
+            content_widget = ft.Column(
+                [
+                    self._markdown_to_ft(rendered),
+                    ft.Text(timestamp, size=10, color=ft.Colors.ON_SURFACE_VARIANT),
+                ],
+                tight=True,
+                spacing=2,
+                horizontal_alignment=ft.CrossAxisAlignment.START,
+            )
 
         message_row = ft.Row(
-            [message_content],
+            [content_widget],
             alignment=align,
             expand=True,
         )
 
         self.chat_list.controls.append(message_row)
+        
+        # Retry button for error messages
+        if is_error and retry_text:
+            retry_btn = ft.TextButton(
+                "重试",
+                icon=ft.Icons.REFRESH_ROUNDED,
+                style=ft.ButtonStyle(color=ft.Colors.ERROR),
+                on_click=lambda e, t=retry_text: self._send(t),
+            )
+            retry_row = ft.Row(
+                [retry_btn],
+                alignment=ft.MainAxisAlignment.START,
+                expand=True,
+            )
+            self.chat_list.controls.append(retry_row)
+        
         max_chat_items = 200
         if len(self.chat_list.controls) > max_chat_items:
             self.chat_list.controls = self.chat_list.controls[-max_chat_items:]
@@ -915,7 +1011,10 @@ class PrismDesktop:
     
     def _clear_chat(self):
         self.chat_list.controls.clear()
+        if hasattr(self, "_chat_placeholder") and self._chat_placeholder:
+            self.chat_list.controls.append(self._chat_placeholder)
         self.chat_list.update()
+        self._update_input_count()
     
     def _show_message_menu(self, e, target, message_text: str):
         def _copy_msg(_):
