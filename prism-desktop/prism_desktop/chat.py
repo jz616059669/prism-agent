@@ -21,9 +21,15 @@ def _append(main_self, role, text, retry=False, retry_text="", placeholder=False
 
     try:
         if is_user:
+            bubble = ft.Container(
+                content=ft.Text(text, selectable=True, color=text_color, size=14),
+                bgcolor=ft.Colors.PRIMARY_CONTAINER,
+                border_radius=14,
+                padding=ft.Padding(10, 8, 10, 8),
+            )
             content_widget = ft.Column(
                 [
-                    ft.Text(text, selectable=True, color=text_color, size=14),
+                    bubble,
                     ft.Text(timestamp, size=10, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.END),
                 ],
                 spacing=2,
@@ -31,9 +37,17 @@ def _append(main_self, role, text, retry=False, retry_text="", placeholder=False
             )
         else:
             is_error = text.startswith("Error:") or text.startswith("请求超时")
+            bg = ft.Colors.ERROR_CONTAINER if is_error else ft.Colors.SURFACE_CONTAINER
+            text_c = ft.Colors.ON_ERROR_CONTAINER if is_error else text_color
+            bubble = ft.Container(
+                content=ft.Text(text, selectable=True, color=text_c, size=14),
+                bgcolor=bg,
+                border_radius=14,
+                padding=ft.Padding(10, 8, 10, 8),
+            )
             content_widget = ft.Column(
                 [
-                    ft.Text(text, selectable=True, color=ft.Colors.ERROR if is_error else text_color, size=14),
+                    bubble,
                     ft.Text(timestamp, size=10, color=ft.Colors.ON_SURFACE_VARIANT),
                 ],
                 spacing=2,

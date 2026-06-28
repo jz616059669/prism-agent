@@ -456,6 +456,8 @@ class PrismDesktop:
         self.skill_list = ft.Column(spacing=4, tight=True)
 
         # 会话
+        self.session_new_btn = ft.IconButton(icon=ft.Icons.ADD_ROUNDED, tooltip="新建对话", icon_color=ft.Colors.ON_SURFACE_VARIANT)
+        self.session_new_btn.on_click = lambda e: self._new_session()
         self.session_name_field = ft.TextField(hint_text="会话名称", width=200, border_radius=8)
         self.session_save_btn = ft.Button("保存会话", icon=ft.Icons.BOOKMARK_ROUNDED, width=120, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding(12, 10, 12, 10)))
         self.session_save_btn.on_click = lambda e: self._save_session()
@@ -600,7 +602,7 @@ class PrismDesktop:
 
                 ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT),
                 ft.Container(
-                    content=ft.Row([self.input_field, self.send_btn, self.stop_btn], spacing=8),
+                    content=ft.Row([self.input_field, self.send_btn, self.stop_btn], spacing=8, expand=True),
                     bgcolor=ft.Colors.SURFACE_CONTAINER,
                     border_radius=10,
                     padding=ft.Padding(10, 6, 10, 6),
@@ -977,6 +979,8 @@ class PrismDesktop:
         self.skill_list = ft.Column(spacing=4, tight=True)
 
         # 会话
+        self.session_new_btn = ft.IconButton(icon=ft.Icons.ADD_ROUNDED, tooltip="新建对话", icon_color=ft.Colors.ON_SURFACE_VARIANT)
+        self.session_new_btn.on_click = lambda e: self._new_session()
         self.session_name_field = ft.TextField(hint_text="会话名称", width=200, border_radius=8)
         self.session_save_btn = ft.Button("保存会话", icon=ft.Icons.BOOKMARK_ROUNDED, width=120, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding(12, 10, 12, 10)))
         self.session_save_btn.on_click = lambda e: self._save_session()
@@ -1121,7 +1125,7 @@ class PrismDesktop:
 
                 ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT),
                 ft.Container(
-                    content=ft.Row([self.input_field, self.send_btn, self.stop_btn], spacing=8),
+                    content=ft.Row([self.input_field, self.send_btn, self.stop_btn], spacing=8, expand=True),
                     bgcolor=ft.Colors.SURFACE_CONTAINER,
                     border_radius=10,
                     padding=ft.Padding(10, 6, 10, 6),
@@ -1640,30 +1644,76 @@ class PrismDesktop:
         self.session_name_field.update()
         self._refresh_sessions()
 
+    def _new_session(self):
+        self._current_session_name = None
+        self.chat_list.controls.clear()
+        if hasattr(self, "_chat_placeholder") and self._chat_placeholder:
+            self.chat_list.controls.append(self._chat_placeholder)
+        self.chat_list.update()
+        self.input_field.value = ""
+        self.input_field.focus()
+        self._update_input_count()
+        self._set_status("新对话")
+        self._append_terminal("new session")
+
+    def _new_session(self):
+        self._current_session_name = None
+        self.chat_list.controls.clear()
+        if hasattr(self, "_chat_placeholder") and self._chat_placeholder:
+            self.chat_list.controls.append(self._chat_placeholder)
+        self.chat_list.update()
+        self.input_field.value = ""
+        self.input_field.focus()
+        self._update_input_count()
+        self._set_status("新对话")
+        self._append_terminal("new session")
+
     def _refresh_sessions(self):
         self.session_list.controls.clear()
         try:
             names = self.agent.list_sessions()
         except Exception:
             names = []
+        # Sort: pinned first, then alphabetical
+        pinned = self._settings.get("pinned_sessions", {}) or {}
+        names = sorted(names, key=lambda n: (not pinned.get(n, False), n))
+        # Sort: pinned first, then alphabetical
+        pinned = self._settings.get("pinned_sessions", {}) or {}
+        names = sorted(names, key=lambda n: (not pinned.get(n, False), n))
         if not names:
             self.session_list.controls.append(self._session_empty_text)
         else:
             for name in names:
                 is_current = name == self._current_session_name
+                # Pin button
+                pin_btn = ft.IconButton(
+                    icon=ft.Icons.PUSH_PIN_ROUNDED if self._settings.get("pinned_sessions", {}).get(name) else ft.Icons.PUSH_PIN_OUTLINE_ROUNDED,
+                    tooltip="置顶" if self._settings.get("pinned_sessions", {}).get(name) else "取消置顶",
+                    icon_color=ft.Colors.ON_SURFACE_VARIANT,
+                    width=32,
+                    height=32,
+                )
+                pin_btn.on_click = lambda e, n=name: self._toggle_pin_session(n)
+
+                # Rename button
+                rename_btn = ft.IconButton(icon=ft.Icons.EDIT_OUTLINE, tooltip="重命名", icon_color=ft.Colors.ON_SURFACE_VARIANT, width=32, height=32)
+                rename_btn.on_click = lambda e, n=name: self._rename_session(n)
+
                 load_btn = ft.Button(
                     name,
-                    width=200,
+                    expand=True,
                     style=ft.ButtonStyle(
                         bgcolor=ft.Colors.PRIMARY_CONTAINER if is_current else None,
                         color=ft.Colors.ON_PRIMARY_CONTAINER if is_current else None,
+                        shape=ft.RoundedRectangleBorder(radius=6),
+                        padding=ft.Padding(10, 8, 10, 8),
                     ),
                 )
                 load_btn.on_click = lambda e, n=name: self._load_session(n)
-                del_btn = ft.IconButton(icon=ft.Icons.DELETE_OUTLINE, tooltip="删除会话")
+                del_btn = ft.IconButton(icon=ft.Icons.DELETE_OUTLINE, tooltip="删除会话", icon_color=ft.Colors.ERROR, width=32, height=32)
                 del_btn.on_click = lambda e, n=name: self._delete_session(n)
                 self.session_list.controls.append(
-                    ft.Row([load_btn, del_btn], spacing=6)
+                    ft.Row([pin_btn, load_btn, rename_btn, del_btn], spacing=4, tight=True)
                 )
         self.session_list.update()
 
@@ -1678,6 +1728,48 @@ class PrismDesktop:
             self._append_terminal(f"session delete error: {e}")
             self._set_status("删除异常", ft.Colors.RED_400)
         self._refresh_sessions()
+
+    def _toggle_pin_session(self, name: str):
+        pinned = self._settings.get("pinned_sessions", {}) or {}
+        pinned[name] = not pinned.get(name, False)
+        self._settings["pinned_sessions"] = pinned
+        self._save_settings()
+        self._refresh_sessions()
+
+    def _rename_session(self, name: str):
+        def on_submit(e):
+            new_name = (rename_field.value or "").strip()
+            if not new_name:
+                self._set_status("名称不能为空", ft.Colors.RED_400)
+                return
+            if new_name != name:
+                try:
+                    ok = self.agent.rename_session(name, new_name)
+                    if ok:
+                        if self._current_session_name == name:
+                            self._current_session_name = new_name
+                        self._refresh_sessions()
+                        self._set_status(f"已重命名为: {new_name}")
+                    else:
+                        self._set_status("重命名失败", ft.Colors.RED_400)
+                except Exception as e:
+                    self._set_status(f"重命名异常: {e}", ft.Colors.RED_400)
+            dialog.open = False
+            self.page.update()
+
+        rename_field = ft.TextField(value=name, label="新会话名称", border_radius=8, autofocus=True)
+        rename_field.on_submit = on_submit
+        dialog = ft.AlertDialog(
+            title=ft.Text("重命名会话"),
+            content=rename_field,
+            actions=[
+                ft.TextButton("取消", on_click=lambda e: (setattr(dialog, "open", False), self.page.update())),
+                ft.TextButton("确定", on_click=on_submit),
+            ],
+        )
+        self.page.dialog = dialog
+        dialog.open = True
+        self.page.update()
 
     def _load_session(self, name: str):
         try:
