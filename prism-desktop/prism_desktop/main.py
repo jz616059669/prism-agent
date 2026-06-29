@@ -741,8 +741,8 @@ class PrismDesktop:
         terminal_run_btn = ft.IconButton(icon=ft.Icons.PLAY_ARROW_ROUNDED, tooltip="执行命令", icon_color=ft.Colors.PRIMARY, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.PRIMARY)))
         terminal_run_btn.on_click = lambda e: self._run_terminal_command()
         self.terminal_input.on_submit = lambda e: self._run_terminal_command()
-        self.terminal_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO, padding=ft.Padding(4, 0, 4, 0))
-        self.mcp_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO, padding=ft.Padding(4, 0, 4, 0))
+        self.terminal_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO, padding=ft.Padding(6, 4, 6, 4))
+        self.mcp_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO, padding=ft.Padding(6, 4, 6, 4))
         
         clear_terminal_btn = ft.TextButton("清空终端", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED, animate_scale=ft.Animation(180, ft.AnimationCurve.EASE_IN_OUT))
         clear_terminal_btn.on_click = lambda e: self._clear_terminal()
@@ -760,7 +760,7 @@ class PrismDesktop:
         )
         mcp_tab = ft.Column(
             [
-                ft.Text("MCP", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                ft.Text("MCP", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, opacity=0.9),
                 ft.Row([clear_mcp_btn], alignment=ft.MainAxisAlignment.END),
                 ft.Container(self.mcp_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=14, padding=ft.Padding(12, 8, 12, 8), bgcolor=ft.Colors.SURFACE, shadow=ft.BoxShadow(blur_radius=4, color=ft.Colors.with_opacity(0.04, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 1))),
             ],
