@@ -298,7 +298,7 @@ class PrismDesktop:
         self._clock_text = ft.Text(datetime.now().strftime("%H:%M:%S"), size=12, color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.W_500)
         self.page.appbar = self._build_appbar()
         self._chat_container = ft.Container(self._build_chat(), expand=True)
-        self._right_container = ft.Container(self._build_right_panel(), expand=True)
+        self._right_container = ft.Container(self._build_right_panel(), expand=True, border=ft.Border(left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)))
         sidebar = self._build_sidebar()
         if str(self._settings.get("sidebar_collapsed", "false")).lower() == "true":
             sidebar.visible = False
