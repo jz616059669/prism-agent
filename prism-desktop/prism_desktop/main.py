@@ -77,7 +77,6 @@ class PrismDesktop:
         self._clear_chat = lambda: chat_ui._clear_chat(self)
         self._show_message_menu = lambda e, target, message_text: chat_ui._show_message_menu(self, e, target, message_text)
         self._send = lambda: chat_ui._send(self)
-        self._on_input_change = lambda: chat_ui._on_input_change(self)
         self._load_settings = lambda: settings_ui._load_settings(self)
         self._save_settings = lambda: settings_ui._save_settings(self)
         self._apply_settings = lambda: settings_ui._apply_settings(self)
@@ -618,12 +617,24 @@ class PrismDesktop:
         self.send_btn = ft.IconButton(icon=ft.Icons.SEND_ROUNDED, tooltip="发送", bgcolor=ft.Colors.PRIMARY, icon_color=ft.Colors.ON_PRIMARY, scale=1.0, disabled=True, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)))
         self.send_btn.on_click = lambda e: self._send()
         self.input_field.on_change = lambda e: self._on_input_change()
-        accent = self._input_accent
-        self.input_field.on_focus = lambda e: (setattr(self.send_btn, 'scale', 1.1), self.send_btn.update(), setattr(accent, 'bgcolor', ft.Colors.PRIMARY), accent.update())
-        self.input_field.on_blur = lambda e: (setattr(self.send_btn, 'scale', 1.0), self.send_btn.update(), setattr(accent, 'bgcolor', ft.Colors.TRANSPARENT), accent.update())
         self.stop_btn = ft.IconButton(icon=ft.Icons.STOP_ROUNDED, tooltip="停止生成", visible=False, bgcolor=ft.Colors.ERROR_CONTAINER, icon_color=ft.Colors.ON_ERROR_CONTAINER)
         self.stop_btn.on_click = lambda e: self._stop_send()
         self.input_field.on_submit = lambda e: self._send()
+        def _on_input_change():
+            try:
+                if hasattr(self, "input_count") and self.input_count:
+                    count = len(self.input_field.value or "")
+                    self.input_count.value = f"{count} 字"
+                    if count > 1000:
+                        self.input_count.color = ft.Colors.ERROR
+                    elif count > 500:
+                        self.input_count.color = ft.Colors.AMBER_400
+                    else:
+                        self.input_count.color = ft.Colors.ON_SURFACE
+                    self.input_count.update()
+            except Exception:
+                pass
+        self._on_input_change = _on_input_change
         clear_chat_btn = ft.TextButton("清屏", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED)
         clear_chat_btn.on_click = lambda e: self._clear_chat()
         
@@ -1196,12 +1207,24 @@ class PrismDesktop:
         self.send_btn = ft.IconButton(icon=ft.Icons.SEND_ROUNDED, tooltip="发送", bgcolor=ft.Colors.PRIMARY, icon_color=ft.Colors.ON_PRIMARY, scale=1.0, disabled=True, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)))
         self.send_btn.on_click = lambda e: self._send()
         self.input_field.on_change = lambda e: self._on_input_change()
-        accent = self._input_accent
-        self.input_field.on_focus = lambda e: (setattr(self.send_btn, 'scale', 1.1), self.send_btn.update(), setattr(accent, 'bgcolor', ft.Colors.PRIMARY), accent.update())
-        self.input_field.on_blur = lambda e: (setattr(self.send_btn, 'scale', 1.0), self.send_btn.update(), setattr(accent, 'bgcolor', ft.Colors.TRANSPARENT), accent.update())
         self.stop_btn = ft.IconButton(icon=ft.Icons.STOP_ROUNDED, tooltip="停止生成", visible=False, bgcolor=ft.Colors.ERROR_CONTAINER, icon_color=ft.Colors.ON_ERROR_CONTAINER)
         self.stop_btn.on_click = lambda e: self._stop_send()
         self.input_field.on_submit = lambda e: self._send()
+        def _on_input_change():
+            try:
+                if hasattr(self, "input_count") and self.input_count:
+                    count = len(self.input_field.value or "")
+                    self.input_count.value = f"{count} 字"
+                    if count > 1000:
+                        self.input_count.color = ft.Colors.ERROR
+                    elif count > 500:
+                        self.input_count.color = ft.Colors.AMBER_400
+                    else:
+                        self.input_count.color = ft.Colors.ON_SURFACE
+                    self.input_count.update()
+            except Exception:
+                pass
+        self._on_input_change = _on_input_change
         clear_chat_btn = ft.TextButton("清屏", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED)
         clear_chat_btn.on_click = lambda e: self._clear_chat()
         

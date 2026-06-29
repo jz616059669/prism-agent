@@ -71,7 +71,6 @@ class PrismDesktop:
         self._clear_chat = lambda: chat_ui._clear_chat(self)
         self._show_message_menu = lambda e, target, message_text: chat_ui._show_message_menu(self, e, target, message_text)
         self._send = lambda: chat_ui._send(self)
-        self._on_input_change = lambda: chat_ui._on_input_change(self)
         self._load_settings = lambda: settings_ui._load_settings(self)
         self._save_settings = lambda: settings_ui._save_settings(self)
         self._apply_settings = lambda: settings_ui._apply_settings(self)
