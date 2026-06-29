@@ -444,7 +444,7 @@ class PrismDesktop:
             content=ft.Column(
                 [
                     ft.Text("PRISM", size=22, weight=ft.FontWeight.BOLD),
-                    ft.Divider(height=12, color=ft.Colors.TRANSPARENT),
+                    ft.Container(height=6),
                     ft.Text("v1.0.1", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.7),
                 ],
                 tight=True,
@@ -500,7 +500,7 @@ class PrismDesktop:
             ft.Container(
                 content=ft.Column([
                     ft.Text("模型配置", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
-                    ft.Container(height=8),
+                    ft.Container(height=10),
                     # Preset selector
                     ft.Row([
                         self.model_dropdown,
