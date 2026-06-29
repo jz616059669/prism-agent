@@ -760,6 +760,9 @@ class PrismDesktop:
             on_change=lambda e: None,
             expand=True,
             animation_duration=200,
+            indicator_color=ft.Colors.PRIMARY,
+            label_color=ft.Colors.ON_SURFACE_VARIANT,
+            selected_label_color=ft.Colors.PRIMARY,
         )
         return ft.Column(
             [
@@ -885,8 +888,8 @@ class PrismDesktop:
                     icon=ft.Icons.PUSH_PIN_ROUNDED if self._settings.get("pinned_sessions", {}).get(name) else ft.Icons.PUSH_PIN_OUTLINE_ROUNDED,
                     tooltip="置顶" if self._settings.get("pinned_sessions", {}).get(name) else "取消置顶",
                     icon_color=ft.Colors.ON_SURFACE_VARIANT,
-                    width=32,
-                    height=32,
+                    width=36,
+                    height=36,
                 )
                 pin_btn.on_click = lambda e, n=name: self._toggle_pin_session(n)
 
@@ -900,15 +903,15 @@ class PrismDesktop:
                     style=ft.ButtonStyle(
                         bgcolor=ft.Colors.PRIMARY_CONTAINER if is_current else None,
                         color=ft.Colors.ON_PRIMARY_CONTAINER if is_current else None,
-                        shape=ft.RoundedRectangleBorder(radius=6),
-                        padding=ft.Padding(10, 8, 10, 8),
+                        shape=ft.RoundedRectangleBorder(radius=8),
+                        padding=ft.Padding(12, 10, 12, 10),
                     ),
                 )
                 load_btn.on_click = lambda e, n=name: self._load_session(n)
                 del_btn = ft.IconButton(icon=ft.Icons.DELETE_OUTLINE, tooltip="删除会话", icon_color=ft.Colors.ERROR, width=32, height=32)
                 del_btn.on_click = lambda e, n=name: self._delete_session(n)
                 self.session_list.controls.append(
-                    ft.Row([pin_btn, load_btn, rename_btn, del_btn], spacing=4, tight=True)
+                    ft.Row([pin_btn, load_btn, rename_btn, del_btn], spacing=6, tight=True)
                 )
         self.session_list.update()
 
@@ -1003,7 +1006,7 @@ class PrismDesktop:
             color = ft.Colors.GREEN_400
         elif 'info' in text.lower() or '信息' in text:
             color = ft.Colors.BLUE_400
-        self.terminal_list.controls.append(ft.Text(text, size=12, color=color, selectable=True))
+        self.terminal_list.controls.append(ft.Text(text, size=12, color=color, selectable=True, font_family="Consolas, Monaco, monospace"))
         self.terminal_list.update()
 
     def _append_mcp(self, text: str):
@@ -1012,7 +1015,7 @@ class PrismDesktop:
             self._mcp_logs = self._mcp_logs[-200:]
         self.mcp_list.controls.clear()
         for line in self._mcp_logs[-80:]:
-            self.mcp_list.controls.append(ft.Text(line, size=12, color=ft.Colors.ON_SURFACE, selectable=True))
+            self.mcp_list.controls.append(ft.Text(line, size=12, color=ft.Colors.ON_SURFACE, selectable=True, font_family="Consolas, Monaco, monospace"))
         self.mcp_list.update()
 
     def _clear_terminal(self):
