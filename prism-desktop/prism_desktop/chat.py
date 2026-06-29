@@ -27,6 +27,7 @@ def _append(main_self, role, text, retry=False, retry_text="", placeholder=False
                 border_radius=14,
                 padding=ft.Padding(10, 8, 10, 8),
                 shadow=ft.BoxShadow(blur_radius=4, spread_radius=0, color=ft.Colors.with_opacity(0.15, ft.Colors.PRIMARY)),
+                ink=True,
             )
             content_widget = ft.Column(
                 [
@@ -46,6 +47,7 @@ def _append(main_self, role, text, retry=False, retry_text="", placeholder=False
                 border_radius=14,
                 padding=ft.Padding(10, 8, 10, 8),
                 shadow=ft.BoxShadow(blur_radius=3, spread_radius=0, color=ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE)),
+                ink=True,
             )
             content_widget = ft.Column(
                 [
