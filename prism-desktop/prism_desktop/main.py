@@ -686,7 +686,6 @@ class PrismDesktop:
                     border_radius=14,
                     padding=ft.Padding(10, 8, 10, 8),
                     border=ft.Border(bottom=ft.border.BorderSide(2.5, ft.Colors.PRIMARY)),
-                    shadow=ft.BoxShadow(blur_radius=16, spread_radius=0, color=ft.Colors.with_opacity(0.3, ft.Colors.ON_SURFACE)),
                 ),
                 ft.Container(
                     height=2,
@@ -712,7 +711,6 @@ class PrismDesktop:
             focused_border_width=2,
             border_color=ft.Colors.OUTLINE_VARIANT,
             suffix=ft.IconButton(icon=ft.Icons.CLEAR_ROUNDED, tooltip="清空", icon_size=16, icon_color=ft.Colors.ON_SURFACE_VARIANT, on_click=lambda e: self.terminal_input.clear()),
-            shadow=ft.BoxShadow(blur_radius=4, color=ft.Colors.with_opacity(0.06, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 1)),
         )
         terminal_run_btn = ft.IconButton(icon=ft.Icons.PLAY_ARROW_ROUNDED, tooltip="执行命令", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE)))
         terminal_run_btn.on_click = lambda e: self._run_terminal_command()
