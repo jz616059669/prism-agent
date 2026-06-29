@@ -591,6 +591,7 @@ class PrismDesktop:
             focused_border_color=ft.Colors.PRIMARY,
             focused_border_width=2,
             border_color=ft.Colors.OUTLINE_VARIANT,
+            suffix=ft.IconButton(icon=ft.Icons.CLEAR_ROUNDED, tooltip="清空", icon_color=ft.Colors.ON_SURFACE_VARIANT, on_click=lambda e: self.input_field.clear()),
         )
         self.input_count = ft.Text("0 字", size=11, color=ft.Colors.ON_SURFACE)
         self.input_field.on_change = lambda e: self._on_input_change()
@@ -1138,6 +1139,7 @@ class PrismDesktop:
             focused_border_color=ft.Colors.PRIMARY,
             focused_border_width=2,
             border_color=ft.Colors.OUTLINE_VARIANT,
+            suffix=ft.IconButton(icon=ft.Icons.CLEAR_ROUNDED, tooltip="清空", icon_color=ft.Colors.ON_SURFACE_VARIANT, on_click=lambda e: self.input_field.clear()),
         )
         self.input_count = ft.Text("0 字", size=11, color=ft.Colors.ON_SURFACE)
         self.input_field.on_change = lambda e: self._on_input_change()
