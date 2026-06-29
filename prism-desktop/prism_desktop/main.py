@@ -602,7 +602,7 @@ class PrismDesktop:
             ft.Container(height=12),
             ft.Container(
                 content=ft.Column([
-                    ft.Text("会话", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Text("会话", size=13, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
                     ft.Icon(ft.Icons.CHAT, size=14, color=ft.Colors.PRIMARY),
                     ft.Container(height=12),
                     ft.Row([self.session_name_field, self.session_save_btn], spacing=6),
