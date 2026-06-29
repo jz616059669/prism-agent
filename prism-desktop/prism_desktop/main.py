@@ -521,7 +521,6 @@ class PrismDesktop:
                 border_radius=10,
                 padding=10,
                                 shadow=ft.BoxShadow(blur_radius=8, spread_radius=0, color=ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE)),
-                on_hover=lambda e: setattr(card, 'bgcolor', ft.Colors.SURFACE_CONTAINER_HIGH_CONTAINER) if e.data == 'true' else setattr(card, 'bgcolor', ft.Colors.SURFACE_CONTAINER) or card.update(),
             ),
             ft.Container(height=12),
             ft.Container(
@@ -536,7 +535,6 @@ class PrismDesktop:
                 padding=10,
                 border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
                 shadow=ft.BoxShadow(blur_radius=8, spread_radius=0, color=ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE)),
-                on_hover=lambda e: setattr(card, 'bgcolor', ft.Colors.SURFACE_CONTAINER_HIGH_CONTAINER) if e.data == 'true' else setattr(card, 'bgcolor', ft.Colors.SURFACE_CONTAINER) or card.update(),
             ),
             ft.Container(height=12),
             ft.Container(
@@ -1101,7 +1099,6 @@ class PrismDesktop:
                 border_radius=10,
                 padding=10,
                                 shadow=ft.BoxShadow(blur_radius=8, spread_radius=0, color=ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE)),
-                on_hover=lambda e: setattr(card, 'bgcolor', ft.Colors.SURFACE_CONTAINER_HIGH_CONTAINER) if e.data == 'true' else setattr(card, 'bgcolor', ft.Colors.SURFACE_CONTAINER) or card.update(),
             ),
             ft.Container(height=12),
             ft.Container(
@@ -1116,7 +1113,6 @@ class PrismDesktop:
                 padding=10,
                 border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
                 shadow=ft.BoxShadow(blur_radius=8, spread_radius=0, color=ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE)),
-                on_hover=lambda e: setattr(card, 'bgcolor', ft.Colors.SURFACE_CONTAINER_HIGH_CONTAINER) if e.data == 'true' else setattr(card, 'bgcolor', ft.Colors.SURFACE_CONTAINER) or card.update(),
             ),
             ft.Container(height=12),
             ft.Container(
