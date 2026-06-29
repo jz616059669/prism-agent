@@ -259,10 +259,9 @@ class PrismDesktop:
     def _toggle_sidebar(self):
         if not hasattr(self, "_sidebar_container"):
             return
-        visible = self._sidebar_container.visible
-        self._sidebar_container.visible = not visible
-        width = 0 if visible else 300
-        self._sidebar_container.width = 300 if not visible else 0
+        was_visible = self._sidebar_container.visible
+        self._sidebar_container.visible = not was_visible
+        self._sidebar_container.width = 0 if was_visible else 300
         self._sidebar_container.animate = ft.Animation(300, ft.AnimationCurve.EASE_IN_OUT)
         self._sidebar_container.update()
         self._settings["sidebar_collapsed"] = not visible
@@ -636,7 +635,7 @@ class PrismDesktop:
         )
         self.input_count = ft.Text("0 字", size=12, color=ft.Colors.ON_SURFACE_VARIANT)
         self.input_field.on_change = lambda e: self._on_input_change()
-        self.send_btn = ft.IconButton(icon=ft.Icons.SEND_ROUNDED, tooltip="发送", bgcolor=ft.Colors.PRIMARY, icon_color=ft.Colors.ON_PRIMARY, scale=1.0, disabled=True, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), elevation=2, shadow_color=ft.Colors.with_opacity(0.25, ft.Colors.PRIMARY)), animate_scale=ft.Animation(150, ft.AnimationCurve.EASE_IN_OUT))
+        self.send_btn = ft.IconButton(icon=ft.Icons.SEND_ROUNDED, tooltip="发送", bgcolor=ft.Colors.PRIMARY, icon_color=ft.Colors.ON_PRIMARY, scale=1.0, disabled=True, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), elevation=3, shadow_color=ft.Colors.with_opacity(0.3, ft.Colors.PRIMARY)), animate_scale=ft.Animation(150, ft.AnimationCurve.EASE_IN_OUT))
         def _on_send_click(e):
             self.send_btn.scale = 0.92
             self.send_btn.update()
@@ -680,6 +679,7 @@ class PrismDesktop:
             [
                 ft.Text("对话", size=20, weight=ft.FontWeight.BOLD),
                 ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT),
+                ft.Container(height=8),
                 ft.Stack(
                     [
                         self.chat_list,
@@ -703,7 +703,7 @@ class PrismDesktop:
                     height=2,
                     bgcolor=ft.Colors.TRANSPARENT,
                 ),
-                ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT),
+                ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.3),
                 ft.Row([clear_chat_btn, self.input_count], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                 ft.Container(height=4),
                 ft.Text("Enter 发送 / Shift+Enter 换行", size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.8),
@@ -805,7 +805,7 @@ class PrismDesktop:
             content_widget = ft.Column(
                 [
                     self._markdown_to_ft(rendered),
-                    ft.Text(timestamp, size=11, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.END),
+                    ft.Text(timestamp, size=11, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.END, opacity=0.9),
                 ],
                 tight=True,
                 spacing=3,
