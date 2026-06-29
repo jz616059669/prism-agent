@@ -149,18 +149,21 @@ class PrismDesktop:
                 self._set_status(f"保存失败：{e}", ft.Colors.RED_400)
 
         self.page.dialog = ft.AlertDialog(
-            title=ft.Text("首次运行配置向导"),
+            title=ft.Text("首次运行配置向导", size=16, weight=ft.FontWeight.BOLD),
             content=ft.Column(
                 [
-                    ft.Text("请先填写模型配置，否则无法正常对话。"),
+                    ft.Text("请先填写模型配置，否则无法正常对话。", size=13, color=ft.Colors.ON_SURFACE_VARIANT),
+                    ft.Container(height=8),
                     wizard_provider,
+                    ft.Container(height=6),
                     wizard_key,
+                    ft.Container(height=6),
                     wizard_model,
                 ],
                 tight=True,
-                spacing=12,
+                spacing=0,
             ),
-            actions=[ft.TextButton("保存", on_click=_save)],
+            actions=[ft.TextButton("保存", on_click=_save, style=ft.ButtonStyle(bgcolor=ft.Colors.PRIMARY, color=ft.Colors.ON_PRIMARY, shape=ft.RoundedRectangleBorder(radius=12)))],
         )
         self.page.dialog.open = True
         self.page.update()
@@ -293,7 +296,7 @@ class PrismDesktop:
             pass
 
     def _build_ui(self):
-        self._clock_text = ft.Text(datetime.now().strftime("%H:%M:%S"), size=12, color=ft.Colors.ON_SURFACE_VARIANT)
+        self._clock_text = ft.Text(datetime.now().strftime("%H:%M:%S"), size=12, color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.W_500)
         self.page.appbar = self._build_appbar()
         self._chat_container = ft.Container(self._build_chat(), expand=True)
         self._right_container = ft.Container(self._build_right_panel(), expand=True)
@@ -493,7 +496,16 @@ class PrismDesktop:
         self.session_save_btn = ft.Button("保存会话", icon=ft.Icons.BOOKMARK_ROUNDED, width=120, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(12, 10, 12, 10)))
         self.session_save_btn.on_click = lambda e: self._save_session()
         self.session_list = ft.Column(spacing=4, tight=True)
-        self._session_empty_text = ft.Text("暂无保存的会话", size=12, color=ft.Colors.ON_SURFACE_VARIANT)
+        self._session_empty_state = ft.Column(
+            [
+                ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=28, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.4),
+                ft.Container(height=6),
+                ft.Text("暂无保存的会话", size=12, color=ft.Colors.ON_SURFACE_VARIANT),
+            ],
+            alignment=ft.MainAxisAlignment.CENTER,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            tight=True,
+        )
 
         sidebar_content = self._sidebar_container.content
         sidebar_content.controls.extend([
@@ -621,7 +633,6 @@ class PrismDesktop:
             focused_border_width=2,
             border_color=ft.Colors.OUTLINE_VARIANT,
             suffix=ft.IconButton(icon=ft.Icons.CLEAR_ROUNDED, tooltip="清空", icon_color=ft.Colors.ON_SURFACE_VARIANT, on_click=lambda e: self.input_field.clear()),
-            shadow=ft.BoxShadow(blur_radius=4, color=ft.Colors.with_opacity(0.06, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 1)),
         )
         self.input_count = ft.Text("0 字", size=12, color=ft.Colors.ON_SURFACE_VARIANT)
         self.input_field.on_change = lambda e: self._on_input_change()
@@ -694,6 +705,7 @@ class PrismDesktop:
                 ),
                 ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT),
                 ft.Row([clear_chat_btn, self.input_count], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                ft.Container(height=4),
                 ft.Text("Enter 发送 / Shift+Enter 换行", size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.8),
             ],
             expand=True,
@@ -736,7 +748,7 @@ class PrismDesktop:
         mcp_tab = ft.Column(
             [
                 ft.Row([clear_mcp_btn], alignment=ft.MainAxisAlignment.END),
-                ft.Container(self.mcp_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=14, padding=ft.Padding(12, 8, 12, 8), bgcolor=ft.Colors.SURFACE),
+                ft.Container(self.mcp_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=14, padding=ft.Padding(12, 8, 12, 8), bgcolor=ft.Colors.SURFACE, shadow=ft.BoxShadow(blur_radius=4, color=ft.Colors.with_opacity(0.04, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 1))),
             ],
             expand=True,
             spacing=10,
@@ -803,8 +815,8 @@ class PrismDesktop:
                 content=content_widget,
                 bgcolor=ft.Colors.PRIMARY_CONTAINER,
                 border_radius=16,
-                padding=ft.Padding(14, 10, 14, 10),
-                shadow=ft.BoxShadow(blur_radius=6, color=ft.Colors.with_opacity(0.1, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 2)),
+                padding=ft.Padding(14, 12, 14, 12),
+                shadow=ft.BoxShadow(blur_radius=8, color=ft.Colors.with_opacity(0.12, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 2)),
             )
         else:
             content_widget = ft.Column(
@@ -821,8 +833,8 @@ class PrismDesktop:
                 content=content_widget,
                 bgcolor=bubble_bg,
                 border_radius=16,
-                padding=ft.Padding(14, 10, 14, 10),
-                shadow=ft.BoxShadow(blur_radius=6, color=ft.Colors.with_opacity(0.08, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 1)),
+                padding=ft.Padding(14, 12, 14, 12),
+                shadow=ft.BoxShadow(blur_radius=8, color=ft.Colors.with_opacity(0.1, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 1)),
             )
 
         message_row = ft.Row(
@@ -838,7 +850,7 @@ class PrismDesktop:
             retry_btn = ft.TextButton(
                 "重试",
                 icon=ft.Icons.REFRESH_ROUNDED,
-                style=ft.ButtonStyle(color=ft.Colors.ERROR),
+                style=ft.ButtonStyle(color=ft.Colors.ERROR, shape=ft.RoundedRectangleBorder(radius=10)),
                 on_click=lambda e, t=retry_text: self._send(t),
             )
             retry_row = ft.Row(
@@ -878,7 +890,7 @@ class PrismDesktop:
         pinned = self._settings.get("pinned_sessions", {}) or {}
         names = sorted(names, key=lambda n: (not pinned.get(n, False), n))
         if not names:
-            self.session_list.controls.append(self._session_empty_text)
+            self.session_list.controls.append(self._session_empty_state)
         else:
             for name in names:
                 is_current = name == self._current_session_name
