@@ -42,6 +42,11 @@ class PrismDesktop:
         
         self._settings = {}
         
+        self._status_icon = ft.Container(
+            width=8, height=8,
+            bgcolor=ft.Colors.GREEN_400,
+            border_radius=4,
+        )
         self.status_text = ft.Text("就绪", size=11, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_500)
         self._input_accent = None
         self.browser_status_icon = ft.Icon(ft.Icons.LANGUAGE_ROUNDED, size=16, color=ft.Colors.ON_SURFACE_VARIANT)
