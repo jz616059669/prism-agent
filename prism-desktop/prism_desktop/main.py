@@ -393,13 +393,15 @@ class PrismDesktop:
         preset_dlg = ft.AlertDialog(
             modal=True,
             title=ft.Text("预设管理"),
+            bgcolor=ft.Colors.SURFACE,
+            shadow=ft.BoxShadow(blur_radius=16, spread_radius=0, color=ft.Colors.with_opacity(0.2, ft.Colors.BLACK), offset=ft.Offset(0, 4)),
             content=ft.Column([
                 ft.Text("保存当前配置为新预设：", size=12, color=ft.Colors.ON_SURFACE_VARIANT),
                 ft.Row([preset_name_field, ft.IconButton(ft.Icons.ADD_ROUNDED, tooltip="保存", icon_color=ft.Colors.PRIMARY, on_click=save_as_preset)], spacing=8, tight=True),
                 ft.Container(height=8),
                 ft.Text("已有预设：", size=12, color=ft.Colors.ON_SURFACE_VARIANT),
-                ft.Column(preset_buttons, spacing=4, tight=True, scroll=ft.ScrollMode.AUTO),
-            ], tight=True, spacing=4, height=400, width=300),
+                ft.Column(preset_buttons, spacing=6, tight=True, scroll=ft.ScrollMode.AUTO),
+            ], tight=True, spacing=6, height=420, width=320),
             actions=[ft.TextButton("关闭", on_click=lambda e: setattr(preset_dlg, 'open', False) or self.page.update())],
             actions_alignment=ft.MainAxisAlignment.END,
         )
