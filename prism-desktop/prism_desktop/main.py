@@ -1356,10 +1356,11 @@ class PrismDesktop:
         self.page.dialog = ft.AlertDialog(
             title=ft.Text("消息操作"),
             content=ft.Column([
-                ft.TextButton("复制", on_click=_copy_msg),
-                ft.TextButton("删除", on_click=_del_msg),
-            ], tight=True),
-            actions=[ft.TextButton("取消", on_click=_close)],
+                ft.TextButton("复制", on_click=_copy_msg, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8))),
+                ft.TextButton("删除", on_click=_del_msg, style=ft.ButtonStyle(color=ft.Colors.ERROR, shape=ft.RoundedRectangleBorder(radius=8))),
+            ], tight=True, spacing=4),
+            actions=[ft.TextButton("取消", on_click=_close, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8)))],
+            shape=ft.RoundedRectangleBorder(radius=12),
         )
         self.page.dialog.open = True
         self.page.update()
