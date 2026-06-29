@@ -751,7 +751,7 @@ class PrismDesktop:
                 ft.Container(self.mcp_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=14, padding=ft.Padding(12, 8, 12, 8), bgcolor=ft.Colors.SURFACE, shadow=ft.BoxShadow(blur_radius=4, color=ft.Colors.with_opacity(0.04, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 1))),
             ],
             expand=True,
-            spacing=10,
+            spacing=8,
         )
         self._right_terminal_tab = terminal_tab
         self._right_mcp_tab = mcp_tab
