@@ -580,7 +580,7 @@ class PrismDesktop:
                 content=ft.Column([
                     ft.Text("状态", size=11, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
                     ft.Container(height=6),
-                    ft.Row([self.browser_status_icon, self.browser_status_text], spacing=8),
+                    ft.Row([self.browser_status_icon, self.browser_status_text], spacing=8, alignment=ft.MainAxisAlignment.START),
                     ft.Row([self.status_text, ft.Container(expand=True), self._clock_text], spacing=8),
                 ], tight=True, spacing=4),
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
@@ -1149,7 +1149,7 @@ class PrismDesktop:
                 content=ft.Column([
                     ft.Text("状态", size=11, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
                     ft.Container(height=6),
-                    ft.Row([self.browser_status_icon, self.browser_status_text], spacing=8),
+                    ft.Row([self.browser_status_icon, self.browser_status_text], spacing=8, alignment=ft.MainAxisAlignment.START),
                     ft.Row([self.status_text, ft.Container(expand=True), self._clock_text], spacing=8),
                 ], tight=True, spacing=4),
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
