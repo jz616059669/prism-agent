@@ -98,6 +98,13 @@ def _append(
         self.chat_list.controls = self.chat_list.controls[-max_chat_items:]
     self.chat_list.scroll_to(offset=-1, duration=150)
     self.chat_list.update()
+    if placeholder:
+        return ft.Container(
+            content=message_row,
+            bgcolor=ft.Colors.SURFACE_CONTAINER,
+            border_radius=16,
+            padding=ft.Padding(12, 10, 12, 10),
+        )
     return message_row
 
 
@@ -148,9 +155,9 @@ def _send(self, retry_text: str = ""):
         reply = self.agent.chat(text) or "(无回复)"
     except Exception as e:
         reply = f"Error: {e}"
-    placeholder.content.controls[1] = _markdown_to_ft(self, reply)
-    placeholder.content.controls[0].color = ft.Colors.ON_SURFACE_VARIANT
-    placeholder.bgcolor = ft.Colors.SURFACE
+    placeholder.content.controls[0].controls[1] = _markdown_to_ft(self, reply)
+    placeholder.content.controls[0].controls[0].color = ft.Colors.ON_SURFACE_VARIANT
+    placeholder.bgcolor = ft.Colors.SURFACE_CONTAINER
     placeholder.update()
     self.chat_list.scroll_to(offset=-1, duration=0)
     self.input_field.disabled = False
