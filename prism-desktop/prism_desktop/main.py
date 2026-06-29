@@ -1404,6 +1404,19 @@ class PrismDesktop:
         self.status_text.value = text
         self.status_text.color = color
         self.status_text.update()
+        # Auto-clear status after 3 seconds
+        try:
+            import threading
+            def _clear():
+                import time
+                time.sleep(3)
+                if self.status_text.value == text:
+                    self.status_text.value = 就绪
+                    self.status_text.color = ft.Colors.GREEN_400
+                    self.status_text.update()
+            threading.Thread(target=_clear, daemon=True).start()
+        except Exception:
+            pass
 
     def _update_clock(self):
         try:
