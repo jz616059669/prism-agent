@@ -240,7 +240,7 @@ class PrismDesktop:
         self.theme_icon_btn.on_click = lambda e: self._cycle_theme()
         self.minimize_btn = ft.IconButton(icon=ft.Icons.MINIMIZE_ROUNDED, tooltip="最小化到托盘", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)))
         self.minimize_btn.on_click = lambda e: self._minimize_to_tray()
-        self.about_btn = ft.IconButton(icon=ft.Icons.INFO_ROUNDED, tooltip="关于", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)))
+        self.about_btn = ft.IconButton(icon=ft.Icons.INFO, tooltip="关于", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)))
         self.about_btn.on_click = lambda e: self._about(e)
         self.sidebar_toggle_btn = ft.IconButton(icon=ft.Icons.MENU_ROUNDED, tooltip="切换侧边栏", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)))
         self.sidebar_toggle_btn.on_click = lambda e: self._toggle_sidebar()
@@ -543,9 +543,8 @@ class PrismDesktop:
             ft.Container(height=12),
             ft.Container(
                 content=ft.Column([
-                    ft.Text("浏览器控制", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
-                    ft.Icon(ft.Icons.LANGUAGE_ROUNDED, size=14, color=ft.Colors.PRIMARY),
-                    ft.Container(height=8),
+                    ft.Row([ft.Text("浏览器控制", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), ft.Icon(ft.Icons.LANGUAGE_ROUNDED, size=14, color=ft.Colors.PRIMARY)], spacing=8, tight=True),
+                    ft.Container(height=6),
                     self.url_field,
                     ft.Column([
                         browser_open_btn,
@@ -562,8 +561,7 @@ class PrismDesktop:
             ft.Container(height=12),
             ft.Container(
                 content=ft.Column([
-                    ft.Text("MCP 控制", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
-                    ft.Icon(ft.Icons.EXTENSION_ROUNDED, size=14, color=ft.Colors.PRIMARY),
+                    ft.Row([ft.Text("MCP 控制", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), ft.Icon(ft.Icons.EXTENSION_ROUNDED, size=14, color=ft.Colors.PRIMARY)], spacing=8, tight=True),
                     ft.Container(height=8),
                     self.mcp_refresh_btn,
                     ft.Container(height=6),
@@ -580,7 +578,7 @@ class PrismDesktop:
             ft.Container(
                 content=ft.Column([
                     ft.Text("Skills", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
-                    ft.Icon(ft.Icons.PLUG_ROUNDED, size=14, color=ft.Colors.PRIMARY),
+                    ft.Icon(ft.Icons.EXTENSION, size=14, color=ft.Colors.PRIMARY),
                     ft.Container(height=8),
                     self.skill_refresh_btn,
                     self.skill_install_field,
@@ -600,7 +598,7 @@ class PrismDesktop:
             ft.Container(
                 content=ft.Column([
                     ft.Text("会话", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
-                    ft.Icon(ft.Icons.CHAT_ROUNDED, size=14, color=ft.Colors.PRIMARY),
+                    ft.Icon(ft.Icons.CHAT, size=14, color=ft.Colors.PRIMARY),
                     ft.Container(height=8),
                     ft.Row([self.session_name_field, self.session_save_btn], spacing=6),
                     ft.Container(height=6),
@@ -618,7 +616,7 @@ class PrismDesktop:
             ft.Container(
                 content=ft.Column([
                     ft.Text("状态", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
-                    ft.Icon(ft.Icons.INFO_ROUNDED, size=14, color=ft.Colors.PRIMARY),
+                    ft.Icon(ft.Icons.INFO, size=14, color=ft.Colors.PRIMARY),
                     ft.Container(height=8),
                     ft.Row([self.browser_status_icon, self.browser_status_text], spacing=8, alignment=ft.MainAxisAlignment.START),
                     ft.Row([self.status_text, ft.Container(expand=True), self._clock_text], spacing=8),
