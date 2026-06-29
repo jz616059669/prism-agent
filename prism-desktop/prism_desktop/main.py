@@ -562,7 +562,6 @@ class PrismDesktop:
                 border_radius=34,
                 padding=12,
                 border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.6, ft.Colors.OUTLINE_VARIANT))),
-                shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE)),
             ),
             ft.Container(height=10),
             ft.Container(
