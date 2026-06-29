@@ -902,7 +902,7 @@ class PrismDesktop:
                 pin_btn.on_click = lambda e, n=name: self._toggle_pin_session(n)
 
                 # Rename button
-                rename_btn = ft.IconButton(icon=ft.Icons.EDIT_OUTLINE, tooltip="重命名", icon_color=ft.Colors.ON_SURFACE_VARIANT, width=32, height=32)
+                rename_btn = ft.IconButton(icon=ft.Icons.EDIT_OUTLINE, tooltip="重命名", icon_color=ft.Colors.ON_SURFACE_VARIANT, width=36, height=36)
                 rename_btn.on_click = lambda e, n=name: self._rename_session(n)
 
                 load_btn = ft.Button(
@@ -916,7 +916,7 @@ class PrismDesktop:
                     ),
                 )
                 load_btn.on_click = lambda e, n=name: self._load_session(n)
-                del_btn = ft.IconButton(icon=ft.Icons.DELETE_OUTLINE, tooltip="删除会话", icon_color=ft.Colors.ERROR, width=32, height=32)
+                del_btn = ft.IconButton(icon=ft.Icons.DELETE_OUTLINE, tooltip="删除会话", icon_color=ft.Colors.ERROR, width=36, height=36)
                 del_btn.on_click = lambda e, n=name: self._delete_session(n)
                 self.session_list.controls.append(
                     ft.Row([pin_btn, load_btn, rename_btn, del_btn], spacing=6, tight=True)
