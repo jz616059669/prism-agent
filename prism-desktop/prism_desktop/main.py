@@ -704,7 +704,6 @@ class PrismDesktop:
                             content=self._chat_placeholder,
                             alignment=ft.Alignment(0, 0),
                             expand=True,
-                            animate_opacity=ft.Animation(300, ft.AnimationCurve.EASE_IN_OUT),
                         ),
                     ],
                     expand=True,
