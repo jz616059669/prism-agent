@@ -96,7 +96,7 @@ def _append(
     max_chat_items = 500
     if len(self.chat_list.controls) > max_chat_items:
         self.chat_list.controls = self.chat_list.controls[-max_chat_items:]
-    self.chat_list.scroll_to(offset=-1, duration=150)
+    # scroll_to removed for Flet 0.85.3 compatibility
     self.chat_list.update()
     if placeholder:
         return ft.Container(
@@ -155,11 +155,11 @@ def _send(self, retry_text: str = ""):
         reply = self.agent.chat(text) or "(无回复)"
     except Exception as e:
         reply = f"Error: {e}"
-    placeholder.content.controls[0].controls[1] = _markdown_to_ft(self, reply)
-    placeholder.content.controls[0].controls[0].color = ft.Colors.ON_SURFACE_VARIANT
-    placeholder.bgcolor = ft.Colors.SURFACE_CONTAINER
+    placeholder.controls[0].content.controls[1] = _markdown_to_ft(self, reply)
+    placeholder.controls[0].content.controls[0].color = ft.Colors.ON_SURFACE_VARIANT
+    placeholder.controls[0].bgcolor = ft.Colors.SURFACE_CONTAINER
     placeholder.update()
-    self.chat_list.scroll_to(offset=-1, duration=0)
+    # scroll_to removed for Flet 0.85.3 compatibility
     self.input_field.disabled = False
     self.send_btn.visible = True
     self.stop_btn.visible = False
@@ -910,7 +910,7 @@ class PrismDesktop:
         max_chat_items = 500
         if len(self.chat_list.controls) > max_chat_items:
             self.chat_list.controls = self.chat_list.controls[-max_chat_items:]
-        self.chat_list.scroll_to(offset=-1, duration=200)
+        # scroll_to removed for Flet 0.85.3 compatibility
         self.chat_list.update()
         return message_row
     def _build_appbar(self) -> ft.AppBar:
@@ -1459,7 +1459,7 @@ class PrismDesktop:
         max_chat_items = 500
         if len(self.chat_list.controls) > max_chat_items:
             self.chat_list.controls = self.chat_list.controls[-max_chat_items:]
-        self.chat_list.scroll_to(offset=-1, duration=200)
+        # scroll_to removed for Flet 0.85.3 compatibility
         self.chat_list.update()
         return message_row
     def _format_time(self) -> str:

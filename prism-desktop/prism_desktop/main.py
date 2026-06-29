@@ -841,7 +841,7 @@ class PrismDesktop:
         max_chat_items = 500
         if len(self.chat_list.controls) > max_chat_items:
             self.chat_list.controls = self.chat_list.controls[-max_chat_items:]
-        self.chat_list.scroll_to(offset=-1, duration=150)
+        # scroll_to removed for Flet 0.85.3 compatibility
         self.chat_list.update()
         return message_row
 
