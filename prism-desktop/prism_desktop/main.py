@@ -295,7 +295,7 @@ class PrismDesktop:
             pass
 
     def _build_ui(self):
-        self._clock_text = ft.Text(datetime.now().strftime("%H:%M:%S"), size=12, color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.W_500)
+        self._clock_text = ft.Text(datetime.now().strftime("%H:%M:%S"), size=11, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_500)
         self.page.appbar = self._build_appbar()
         self._chat_container = ft.Container(self._build_chat(), expand=True)
         self._right_container = ft.Container(self._build_right_panel(), expand=True, border=ft.Border(left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)))
@@ -679,7 +679,7 @@ class PrismDesktop:
         
         self._chat_placeholder = ft.Column(
             [
-                ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.6, scale=1.0),
+                ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.6),
                 ft.Container(height=16),
                 ft.Text("输入消息开始对话", size=14, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.CENTER, opacity=0.8),
             ],
@@ -780,8 +780,6 @@ class PrismDesktop:
             spacing=0,
         )
         self.right_tabs = ft.Tabs(
-            length=320,
-            content=self._right_tab_content,
             selected_index=0,
             on_change=lambda e: None,
             expand=True,
