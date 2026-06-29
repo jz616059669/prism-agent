@@ -543,7 +543,7 @@ class PrismDesktop:
             ft.Container(height=12),
             ft.Container(
                 content=ft.Column([
-                    ft.Row([ft.Text("浏览器控制", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), ft.Icon(ft.Icons.LANGUAGE_ROUNDED, size=14, color=ft.Colors.PRIMARY)], spacing=8, tight=True),
+                    ft.Row([ft.Icon(ft.Icons.LANGUAGE_ROUNDED, size=14, color=ft.Colors.PRIMARY), ft.Text("浏览器控制", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE)], spacing=8, tight=True),
                     ft.Container(height=6),
                     self.url_field,
                     ft.Column([
@@ -561,7 +561,7 @@ class PrismDesktop:
             ft.Container(height=12),
             ft.Container(
                 content=ft.Column([
-                    ft.Row([ft.Text("MCP 控制", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), ft.Icon(ft.Icons.EXTENSION_ROUNDED, size=14, color=ft.Colors.PRIMARY)], spacing=8, tight=True),
+                    ft.Row([ft.Icon(ft.Icons.EXTENSION_ROUNDED, size=14, color=ft.Colors.PRIMARY), ft.Text("MCP 控制", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE)], spacing=8, tight=True),
                     ft.Container(height=12),
                     self.mcp_refresh_btn,
                     ft.Container(height=6),
