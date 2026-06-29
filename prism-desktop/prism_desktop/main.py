@@ -249,7 +249,7 @@ class PrismDesktop:
                 self.minimize_btn,
                 self.about_btn,
             ],
-            elevation=4,
+            elevation=6,
             bgcolor=ft.Colors.SURFACE,
         )
 
@@ -520,7 +520,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=14,
                 padding=12,
-                shadow=ft.BoxShadow(blur_radius=8, spread_radius=0, color=ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE)),
+                shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)),
             ),
             ft.Container(height=12),
             ft.Container(
@@ -534,7 +534,7 @@ class PrismDesktop:
                 border_radius=14,
                 padding=10,
                 border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
-                shadow=ft.BoxShadow(blur_radius=8, spread_radius=0, color=ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE)),
+                shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)),
             ),
             ft.Container(height=12),
             ft.Container(
@@ -549,7 +549,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=14,
                 padding=12,
-                shadow=ft.BoxShadow(blur_radius=8, spread_radius=0, color=ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE)),
+                shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)),
             ),
             ft.Container(height=12),
             ft.Container(
@@ -567,7 +567,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=14,
                 padding=12,
-                shadow=ft.BoxShadow(blur_radius=8, spread_radius=0, color=ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE)),
+                shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)),
                 border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
             ),
             ft.Container(height=12),
@@ -584,7 +584,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=14,
                 padding=12,
-                shadow=ft.BoxShadow(blur_radius=8, spread_radius=0, color=ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE)),
+                shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)),
             ),
             ft.Container(height=12),
             ft.Container(
@@ -597,7 +597,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=14,
                 padding=12,
-                shadow=ft.BoxShadow(blur_radius=8, spread_radius=0, color=ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE)),
+                shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)),
             ),
         ])
         return self._sidebar_container
@@ -681,7 +681,7 @@ class PrismDesktop:
                     border_radius=14,
                     padding=ft.Padding(10, 8, 10, 8),
                     border=ft.Border(bottom=ft.border.BorderSide(2.5, ft.Colors.PRIMARY)),
-                    shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.2, ft.Colors.ON_SURFACE)),
+                    shadow=ft.BoxShadow(blur_radius=14, spread_radius=0, color=ft.Colors.with_opacity(0.25, ft.Colors.ON_SURFACE)),
                 ),
                 ft.Container(
                     height=2,
@@ -724,7 +724,7 @@ class PrismDesktop:
             [
                 ft.Row([self.terminal_input, terminal_run_btn], spacing=8),
                 ft.Row([clear_terminal_btn], alignment=ft.MainAxisAlignment.END),
-                ft.Container(self.terminal_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=14, padding=ft.Padding(12, 8, 12, 8), bgcolor=ft.Colors.SURFACE),
+                ft.Container(self.terminal_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=14, padding=ft.Padding(12, 8, 12, 8), bgcolor=ft.Colors.SURFACE, shadow=ft.BoxShadow(blur_radius=4, color=ft.Colors.with_opacity(0.04, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 1))),
             ],
             expand=True,
             spacing=8,
