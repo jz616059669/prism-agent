@@ -445,7 +445,7 @@ class PrismDesktop:
         self._sidebar_container = ft.Container(
             content=ft.Column(
                 [
-                    ft.Text("PRISM", size=22, weight=ft.FontWeight.BOLD),
+                    ft.Text("PRISM", size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
                     ft.Container(height=6),
                     ft.Text("v1.0.1", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.7),
                 ],
@@ -533,7 +533,7 @@ class PrismDesktop:
                 border_radius=14,
                 padding=12,
                 shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE)),
-                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE))),
+                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.06, ft.Colors.ON_SURFACE))),
             ),
             ft.Container(height=12),
             ft.Container(
@@ -546,7 +546,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=14,
                 padding=10,
-                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
+                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.6, ft.Colors.OUTLINE_VARIANT))),
                 shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE)),
             ),
             ft.Container(height=12),
@@ -563,7 +563,7 @@ class PrismDesktop:
                 border_radius=14,
                 padding=12,
                 shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE)),
-                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE))),
+                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.06, ft.Colors.ON_SURFACE))),
             ),
             ft.Container(height=12),
             ft.Container(
@@ -582,7 +582,7 @@ class PrismDesktop:
                 border_radius=14,
                 padding=12,
                 shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE)),
-                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
+                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.6, ft.Colors.OUTLINE_VARIANT))),
             ),
             ft.Container(height=12),
             ft.Container(
@@ -599,7 +599,7 @@ class PrismDesktop:
                 border_radius=14,
                 padding=12,
                 shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE)),
-                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE))),
+                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.06, ft.Colors.ON_SURFACE))),
             ),
             ft.Container(height=12),
             ft.Container(
@@ -613,7 +613,7 @@ class PrismDesktop:
                 border_radius=14,
                 padding=12,
                 shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE)),
-                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE))),
+                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.06, ft.Colors.ON_SURFACE))),
             ),
         ])
         return self._sidebar_container
@@ -644,7 +644,7 @@ class PrismDesktop:
             self._send()
         self.send_btn.on_click = _on_send_click
         self.send_btn.on_hover = lambda e: (self.send_btn.update() if not self.send_btn.disabled else None)
-        self.stop_btn = ft.IconButton(icon=ft.Icons.STOP_ROUNDED, tooltip="停止生成", visible=False, bgcolor=ft.Colors.ERROR_CONTAINER, icon_color=ft.Colors.ON_ERROR_CONTAINER, animate_scale=ft.Animation(180, ft.AnimationCurve.EASE_IN_OUT))
+        self.stop_btn = ft.IconButton(icon=ft.Icons.STOP_ROUNDED, tooltip="停止生成", visible=False, bgcolor=ft.Colors.ERROR, icon_color=ft.Colors.ON_ERROR, animate_scale=ft.Animation(180, ft.AnimationCurve.EASE_IN_OUT))
         self.stop_btn.on_click = lambda e: self._stop_send()
         self.input_field.on_submit = lambda e: self._send()
         def _on_input_change():
@@ -667,7 +667,7 @@ class PrismDesktop:
         
         self._chat_placeholder = ft.Column(
             [
-                ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.6, scale=1.0),
+                ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.6),
                 ft.Container(height=16),
                 ft.Text("输入消息开始对话", size=14, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.CENTER, opacity=0.8),
             ],
@@ -678,7 +678,7 @@ class PrismDesktop:
         return ft.Column(
             [
                 ft.Text("对话", size=20, weight=ft.FontWeight.BOLD),
-                ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT),
+                ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT, opacity=0.6),
                 ft.Container(height=8),
                 ft.Stack(
                     [
@@ -691,7 +691,7 @@ class PrismDesktop:
                     ],
                     expand=True,
                 ),
-                ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT),
+                ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT, opacity=0.6),
                 ft.Container(
                     content=ft.Row([self.input_field, self.send_btn, self.stop_btn], spacing=10, expand=True),
                     bgcolor=ft.Colors.SURFACE_CONTAINER,
@@ -813,7 +813,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.PRIMARY_CONTAINER,
                 border_radius=16,
                 padding=ft.Padding(14, 12, 14, 12),
-                shadow=ft.BoxShadow(blur_radius=8, color=ft.Colors.with_opacity(0.12, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 2)),
+                shadow=ft.BoxShadow(blur_radius=8, color=ft.Colors.with_opacity(0.15, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 2)),
             )
         else:
             content_widget = ft.Column(
@@ -831,7 +831,7 @@ class PrismDesktop:
                 bgcolor=bubble_bg,
                 border_radius=16,
                 padding=ft.Padding(14, 12, 14, 12),
-                shadow=ft.BoxShadow(blur_radius=8, color=ft.Colors.with_opacity(0.1, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 1)),
+                shadow=ft.BoxShadow(blur_radius=8, color=ft.Colors.with_opacity(0.12, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 1)),
             )
 
         message_row = ft.Row(
