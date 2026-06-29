@@ -235,7 +235,7 @@ class PrismDesktop:
 
 
     def _build_appbar(self) -> ft.AppBar:
-        self.title_text = ft.Text("PRISM Agent", size=20, weight=ft.FontWeight.BOLD)
+        self.title_text = ft.Text("PRISM Agent", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE)
         self.theme_icon_btn = ft.IconButton(icon=ft.Icons.SETTINGS_ROUNDED, tooltip="切换主题", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)))
         self.theme_icon_btn.on_click = lambda e: self._cycle_theme()
         self.minimize_btn = ft.IconButton(icon=ft.Icons.MINIMIZE_ROUNDED, tooltip="最小化到托盘", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)))
@@ -442,7 +442,7 @@ class PrismDesktop:
         self._set_status(f"预设已保存：{name}")
 
     def _build_sidebar(self) -> ft.Container:
-        self._sidebar_container = ft.Container(
+        self._sidebar_container = ft.Container(animate=ft.Animation(300, ft.AnimationCurve.EASE_IN_OUT),
             content=ft.Column(
                 [
                     ft.Text("PRISM", size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
@@ -494,7 +494,7 @@ class PrismDesktop:
         self.session_name_field = ft.TextField(hint_text="会话名称", width=200, border_radius=14)
         self.session_save_btn = ft.Button("保存会话", icon=ft.Icons.BOOKMARK_ROUNDED, width=120, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(12, 10, 12, 10), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), animate_scale=ft.Animation(180, ft.AnimationCurve.EASE_IN_OUT))
         self.session_save_btn.on_click = lambda e: self._save_session()
-        self.session_list = ft.Column(spacing=4, tight=True)
+        self.session_list = ft.Column(spacing=4, tight=True, scroll=ft.ScrollMode.AUTO)
         self._session_empty_state = ft.Container(
             content=ft.Column(
                 [
@@ -786,7 +786,7 @@ class PrismDesktop:
                 self.right_tabs,
             ],
             expand=True,
-            spacing=10,
+            spacing=8,
         )
     
     def _append(self, role: str, text: str, retry: bool = False, retry_text: str = "", placeholder: bool = False):
