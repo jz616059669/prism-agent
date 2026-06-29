@@ -61,7 +61,7 @@ def _bind_tray(self):
             self._tray_icon = pystray.Icon("prism", image, "PRISM", menu)
             self._tray_icon.run_detached()
     except Exception as e:
-        self._append_terminal(f"tray init failed: {e}")
+        print(f"tray init skipped: {e}")
 
 
 def _bind_context_menu(self) -> None:
