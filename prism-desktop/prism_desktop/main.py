@@ -506,7 +506,7 @@ class PrismDesktop:
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 tight=True,
             ),
-            padding=ft.Padding(16, 8, 16, 8),
+            padding=ft.Padding(16, 12, 16, 12),
             border_radius=12,
             bgcolor=ft.Colors.with_opacity(0.6, ft.Colors.SURFACE_CONTAINER),
         )
@@ -760,6 +760,7 @@ class PrismDesktop:
         )
         mcp_tab = ft.Column(
             [
+                ft.Text("MCP", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
                 ft.Row([clear_mcp_btn], alignment=ft.MainAxisAlignment.END),
                 ft.Container(self.mcp_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=14, padding=ft.Padding(12, 8, 12, 8), bgcolor=ft.Colors.SURFACE, shadow=ft.BoxShadow(blur_radius=4, color=ft.Colors.with_opacity(0.04, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 1))),
             ],
