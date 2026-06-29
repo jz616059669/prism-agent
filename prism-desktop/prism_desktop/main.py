@@ -433,6 +433,11 @@ class PrismDesktop:
             ),
             width=280,
             padding=16,
+            gradient=ft.LinearGradient(
+                colors=[ft.Colors.SURFACE, ft.Colors.SURFACE_CONTAINER],
+                begin=ft.Alignment(0, -1),
+                end=ft.Alignment(0, 1),
+            ),
             bgcolor=ft.Colors.SURFACE,
             border_radius=12,
         )
@@ -975,6 +980,11 @@ class PrismDesktop:
             ),
             width=280,
             padding=16,
+            gradient=ft.LinearGradient(
+                colors=[ft.Colors.SURFACE, ft.Colors.SURFACE_CONTAINER],
+                begin=ft.Alignment(0, -1),
+                end=ft.Alignment(0, 1),
+            ),
             bgcolor=ft.Colors.SURFACE,
             border_radius=12,
         )
