@@ -613,8 +613,9 @@ class PrismDesktop:
         self.send_btn = ft.IconButton(icon=ft.Icons.SEND_ROUNDED, tooltip="发送", bgcolor=ft.Colors.PRIMARY, icon_color=ft.Colors.ON_PRIMARY, animate_scale=True, scale=1.0, disabled=True, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), ink=True)
         self.send_btn.on_click = lambda e: self._send()
         self.input_field.on_change = lambda e: self._on_input_change()
-        self.input_field.on_focus = lambda e: (setattr(self.send_btn, 'scale', 1.1), self.send_btn.update(), setattr(self._input_accent, 'bgcolor', ft.Colors.PRIMARY), self._input_accent.update())
-        self.input_field.on_blur = lambda e: (setattr(self.send_btn, 'scale', 1.0), self.send_btn.update(), setattr(self._input_accent, 'bgcolor', ft.Colors.TRANSPARENT), self._input_accent.update())
+        accent = self._input_accent
+        self.input_field.on_focus = lambda e: (setattr(self.send_btn, 'scale', 1.1), self.send_btn.update(), setattr(accent, 'bgcolor', ft.Colors.PRIMARY), accent.update())
+        self.input_field.on_blur = lambda e: (setattr(self.send_btn, 'scale', 1.0), self.send_btn.update(), setattr(accent, 'bgcolor', ft.Colors.TRANSPARENT), accent.update())
         self.stop_btn = ft.IconButton(icon=ft.Icons.STOP_ROUNDED, tooltip="停止生成", visible=False, bgcolor=ft.Colors.ERROR_CONTAINER, icon_color=ft.Colors.ON_ERROR_CONTAINER, ink=True)
         self.stop_btn.on_click = lambda e: self._stop_send()
         self.input_field.on_submit = lambda e: self._send()
@@ -1189,8 +1190,9 @@ class PrismDesktop:
         self.send_btn = ft.IconButton(icon=ft.Icons.SEND_ROUNDED, tooltip="发送", bgcolor=ft.Colors.PRIMARY, icon_color=ft.Colors.ON_PRIMARY, animate_scale=True, scale=1.0, disabled=True, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), ink=True)
         self.send_btn.on_click = lambda e: self._send()
         self.input_field.on_change = lambda e: self._on_input_change()
-        self.input_field.on_focus = lambda e: (setattr(self.send_btn, 'scale', 1.1), self.send_btn.update(), setattr(self._input_accent, 'bgcolor', ft.Colors.PRIMARY), self._input_accent.update())
-        self.input_field.on_blur = lambda e: (setattr(self.send_btn, 'scale', 1.0), self.send_btn.update(), setattr(self._input_accent, 'bgcolor', ft.Colors.TRANSPARENT), self._input_accent.update())
+        accent = self._input_accent
+        self.input_field.on_focus = lambda e: (setattr(self.send_btn, 'scale', 1.1), self.send_btn.update(), setattr(accent, 'bgcolor', ft.Colors.PRIMARY), accent.update())
+        self.input_field.on_blur = lambda e: (setattr(self.send_btn, 'scale', 1.0), self.send_btn.update(), setattr(accent, 'bgcolor', ft.Colors.TRANSPARENT), accent.update())
         self.stop_btn = ft.IconButton(icon=ft.Icons.STOP_ROUNDED, tooltip="停止生成", visible=False, bgcolor=ft.Colors.ERROR_CONTAINER, icon_color=ft.Colors.ON_ERROR_CONTAINER, ink=True)
         self.stop_btn.on_click = lambda e: self._stop_send()
         self.input_field.on_submit = lambda e: self._send()
