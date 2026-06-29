@@ -447,7 +447,7 @@ class PrismDesktop:
                 [
                     ft.Text("PRISM", size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
                     ft.Container(height=6),
-                    ft.Text("v1.0.1", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.7),
+                    ft.Text("v1.0.1", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.8),
                 ],
                 tight=True,
                 spacing=6,
@@ -618,8 +618,8 @@ class PrismDesktop:
                     ft.Text("状态", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
                     ft.Icon(ft.Icons.INFO, size=14, color=ft.Colors.PRIMARY),
                     ft.Container(height=8),
-                    ft.Row([self.browser_status_icon, self.browser_status_text], spacing=8, alignment=ft.MainAxisAlignment.START),
-                    ft.Row([self.status_text, ft.Container(expand=True), self._clock_text], spacing=8),
+                    ft.Row([self.browser_status_icon, self.browser_status_text], spacing=10, alignment=ft.MainAxisAlignment.START),
+                    ft.Row([self.status_text, ft.Container(expand=True), self._clock_text], spacing=10),
                 ], tight=True, spacing=6),
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=14,
@@ -679,7 +679,7 @@ class PrismDesktop:
         
         self._chat_placeholder = ft.Column(
             [
-                ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.6),
+                ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.6, scale=1.0),
                 ft.Container(height=16),
                 ft.Text("输入消息开始对话", size=14, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.CENTER, opacity=0.8),
             ],
