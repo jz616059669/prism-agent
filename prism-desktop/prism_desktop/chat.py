@@ -57,8 +57,12 @@ def _append(main_self, role, text, retry=False, retry_text="", placeholder=False
             [content_widget],
             alignment=align,
             expand=True,
+            opacity=0,
+            animate_opacity=ft.Animation(200, ft.AnimationCurve.EASE_IN_OUT),
         )
         main_self.chat_list.controls.append(message_row)
+        message_row.opacity = 1
+        message_row.update()
         
         # Add retry button for error messages
         if not is_user and is_error and retry_text:
@@ -72,8 +76,12 @@ def _append(main_self, role, text, retry=False, retry_text="", placeholder=False
                 [retry_btn],
                 alignment=ft.MainAxisAlignment.START,
                 expand=True,
+                opacity=0,
+                animate_opacity=ft.Animation(200, ft.AnimationCurve.EASE_IN_OUT),
             )
             main_self.chat_list.controls.append(retry_row)
+            retry_row.opacity = 1
+            retry_row.update()
         
         main_self.chat_list.update()
     except Exception:
