@@ -1372,13 +1372,18 @@ class PrismDesktop:
         self._terminal_lines.append(text)
         if len(self._terminal_lines) > 300:
             self._terminal_lines = self._terminal_lines[-300:]
-        self.terminal_list.controls.append(
-            ft.Text(text, size=12, color=ft.Colors.ON_SURFACE, selectable=True)
-        )
-        if len(self.terminal_list.controls) > 80:
-            self.terminal_list.controls = self.terminal_list.controls[-80:]
-        self.terminal_list.update()
-
+        
+        # Syntax highlighting
+        color = ft.Colors.ON_SURFACE_VARIANT
+        if 'error' in text.lower() or '失败' in text or '错误' in text:
+            color = ft.Colors.ERROR
+        elif 'warn' in text.lower() or '警告' in text:
+            color = ft.Colors.AMBER_400
+        elif 'success' in text.lower() or '成功' in text or 'saved' in text.lower():
+            color = ft.Colors.GREEN_400
+        elif 'info' in text.lower() or '信息' in text:
+            color = ft.Colors.BLUE_400
+        
     def _append_mcp(self, text: str):
         self._mcp_logs.append(text)
         if len(self._mcp_logs) > 200:
