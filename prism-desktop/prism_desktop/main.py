@@ -568,7 +568,7 @@ class PrismDesktop:
         return self._sidebar_container
 
     def _build_chat(self) -> ft.Column:
-        self.chat_list = ft.ListView(expand=True, spacing=10, auto_scroll=True)
+        self.chat_list = ft.ListView(expand=True, spacing=10, auto_scroll=True, scroll=ft.ScrollMode.AUTO)
         self.input_field = ft.TextField(
             hint_text="输入消息...",
             expand=True,
@@ -632,8 +632,8 @@ class PrismDesktop:
         terminal_run_btn = ft.IconButton(icon=ft.Icons.PLAY_ARROW_ROUNDED, tooltip="执行命令", icon_color=ft.Colors.ON_SURFACE_VARIANT)
         terminal_run_btn.on_click = lambda e: self._run_terminal_command()
         self.terminal_input.on_submit = lambda e: self._run_terminal_command()
-        self.terminal_list = ft.ListView(expand=True, spacing=4, auto_scroll=True)
-        self.mcp_list = ft.ListView(expand=True, spacing=4, auto_scroll=True)
+        self.terminal_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO)
+        self.mcp_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO)
         
         clear_terminal_btn = ft.TextButton("清空终端", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6)))
         clear_terminal_btn.on_click = lambda e: self._clear_terminal()
@@ -1099,7 +1099,7 @@ class PrismDesktop:
         return self._sidebar_container
 
     def _build_chat(self) -> ft.Column:
-        self.chat_list = ft.ListView(expand=True, spacing=10, auto_scroll=True)
+        self.chat_list = ft.ListView(expand=True, spacing=10, auto_scroll=True, scroll=ft.ScrollMode.AUTO)
         self.input_field = ft.TextField(
             hint_text="输入消息...",
             expand=True,
@@ -1163,8 +1163,8 @@ class PrismDesktop:
         terminal_run_btn = ft.IconButton(icon=ft.Icons.PLAY_ARROW_ROUNDED, tooltip="执行命令", icon_color=ft.Colors.ON_SURFACE_VARIANT)
         terminal_run_btn.on_click = lambda e: self._run_terminal_command()
         self.terminal_input.on_submit = lambda e: self._run_terminal_command()
-        self.terminal_list = ft.ListView(expand=True, spacing=4, auto_scroll=True)
-        self.mcp_list = ft.ListView(expand=True, spacing=4, auto_scroll=True)
+        self.terminal_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO)
+        self.mcp_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO)
         
         clear_terminal_btn = ft.TextButton("清空终端", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6)))
         clear_terminal_btn.on_click = lambda e: self._clear_terminal()
