@@ -544,6 +544,7 @@ class PrismDesktop:
             ft.Container(
                 content=ft.Column([
                     ft.Text("浏览器控制", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Icon(ft.Icons.LANGUAGE_ROUNDED, size=14, color=ft.Colors.PRIMARY),
                     ft.Container(height=8),
                     self.url_field,
                     ft.Column([
@@ -562,6 +563,7 @@ class PrismDesktop:
             ft.Container(
                 content=ft.Column([
                     ft.Text("MCP 控制", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Icon(ft.Icons.EXTENSION_ROUNDED, size=14, color=ft.Colors.PRIMARY),
                     ft.Container(height=8),
                     self.mcp_refresh_btn,
                     ft.Container(height=6),
@@ -578,6 +580,7 @@ class PrismDesktop:
             ft.Container(
                 content=ft.Column([
                     ft.Text("Skills", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Icon(ft.Icons.PLUG_ROUNDED, size=14, color=ft.Colors.PRIMARY),
                     ft.Container(height=8),
                     self.skill_refresh_btn,
                     self.skill_install_field,
@@ -597,6 +600,7 @@ class PrismDesktop:
             ft.Container(
                 content=ft.Column([
                     ft.Text("会话", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Icon(ft.Icons.CHAT_ROUNDED, size=14, color=ft.Colors.PRIMARY),
                     ft.Container(height=8),
                     ft.Row([self.session_name_field, self.session_save_btn], spacing=6),
                     ft.Container(height=6),
@@ -614,6 +618,7 @@ class PrismDesktop:
             ft.Container(
                 content=ft.Column([
                     ft.Text("状态", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Icon(ft.Icons.INFO_ROUNDED, size=14, color=ft.Colors.PRIMARY),
                     ft.Container(height=8),
                     ft.Row([self.browser_status_icon, self.browser_status_text], spacing=8, alignment=ft.MainAxisAlignment.START),
                     ft.Row([self.status_text, ft.Container(expand=True), self._clock_text], spacing=8),
