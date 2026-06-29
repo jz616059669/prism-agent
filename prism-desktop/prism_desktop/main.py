@@ -487,7 +487,7 @@ class PrismDesktop:
         self.skill_list = ft.Column(spacing=4, tight=True)
 
         # 会话
-        self.session_new_btn = ft.IconButton(icon=ft.Icons.ADD_ROUNDED, tooltip="新建对话", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE)))
+        self.session_new_btn = ft.IconButton(icon=ft.Icons.ADD_ROUNDED, tooltip="新建对话", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)))
         self.session_new_btn.on_click = lambda e: self._new_session()
         self.session_name_field = ft.TextField(hint_text="会话名称", width=200, border_radius=14)
         self.session_save_btn = ft.Button("保存会话", icon=ft.Icons.BOOKMARK_ROUNDED, width=120, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(12, 10, 12, 10)))
@@ -504,7 +504,7 @@ class PrismDesktop:
                     # Preset selector
                     ft.Row([
                         self.model_dropdown,
-                        ft.IconButton(icon=ft.Icons.BOOKMARK_ROUNDED, tooltip="保存为预设", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE)), on_click=lambda e: self._save_preset()),
+                        ft.IconButton(icon=ft.Icons.BOOKMARK_ROUNDED, tooltip="保存为预设", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)), on_click=lambda e: self._save_preset()),
                     ], spacing=6, tight=True),
                     ft.Container(height=6),
                     self.provider_textfield,
