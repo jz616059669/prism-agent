@@ -632,13 +632,14 @@ class PrismDesktop:
         
         self._chat_placeholder = ft.Column(
             [
-                ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.4),
+                ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.4, animate_scale=True, scale=1.0),
                 ft.Container(height=12),
                 ft.Text("输入消息开始对话", size=13, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.CENTER, opacity=0.6),
             ],
             alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         )
+        self._chat_placeholder.controls[0].on_hover = lambda e: (setattr(self._chat_placeholder.controls[0], 'scale', 1.08) if e.data == 'true' else setattr(self._chat_placeholder.controls[0], 'scale', 1.0), self._chat_placeholder.controls[0].update())
         return ft.Column(
             [
                 ft.Text("对话", size=18, weight=ft.FontWeight.BOLD),
@@ -1210,13 +1211,14 @@ class PrismDesktop:
         
         self._chat_placeholder = ft.Column(
             [
-                ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.4),
+                ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.4, animate_scale=True, scale=1.0),
                 ft.Container(height=12),
                 ft.Text("输入消息开始对话", size=13, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.CENTER, opacity=0.6),
             ],
             alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         )
+        self._chat_placeholder.controls[0].on_hover = lambda e: (setattr(self._chat_placeholder.controls[0], 'scale', 1.08) if e.data == 'true' else setattr(self._chat_placeholder.controls[0], 'scale', 1.0), self._chat_placeholder.controls[0].update())
         return ft.Column(
             [
                 ft.Text("对话", size=18, weight=ft.FontWeight.BOLD),
