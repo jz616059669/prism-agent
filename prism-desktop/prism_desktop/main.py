@@ -771,9 +771,6 @@ class PrismDesktop:
             on_change=lambda e: None,
             expand=True,
             animation_duration=200,
-            indicator_color=ft.Colors.PRIMARY,
-            label_color=ft.Colors.ON_SURFACE_VARIANT,
-            selected_label_color=ft.Colors.PRIMARY,
         )
         return ft.Column(
             [
