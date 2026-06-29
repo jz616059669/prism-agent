@@ -830,6 +830,7 @@ class PrismDesktop:
                 border_radius=16,
                 padding=ft.Padding(14, 12, 14, 12),
                 shadow=ft.BoxShadow(blur_radius=8, color=ft.Colors.with_opacity(0.15, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 2)),
+                animate=ft.Animation(200, ft.AnimationCurve.EASE_IN_OUT),
             )
         else:
             content_widget = ft.Column(
