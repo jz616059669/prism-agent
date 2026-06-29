@@ -616,6 +616,7 @@ class PrismDesktop:
             focused_border_width=2,
             border_color=ft.Colors.OUTLINE_VARIANT,
             suffix=ft.IconButton(icon=ft.Icons.CLEAR_ROUNDED, tooltip="清空", icon_color=ft.Colors.ON_SURFACE_VARIANT, on_click=lambda e: self.input_field.clear()),
+            shadow=ft.BoxShadow(blur_radius=4, color=ft.Colors.with_opacity(0.06, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 1)),
         )
         self.input_count = ft.Text("0 字", size=12, color=ft.Colors.ON_SURFACE)
         self.input_field.on_change = lambda e: self._on_input_change()
@@ -706,6 +707,7 @@ class PrismDesktop:
             focused_border_width=2,
             border_color=ft.Colors.OUTLINE_VARIANT,
             suffix=ft.IconButton(icon=ft.Icons.CLEAR_ROUNDED, tooltip="清空", icon_size=16, icon_color=ft.Colors.ON_SURFACE_VARIANT, on_click=lambda e: self.terminal_input.clear()),
+            shadow=ft.BoxShadow(blur_radius=4, color=ft.Colors.with_opacity(0.06, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 1)),
         )
         terminal_run_btn = ft.IconButton(icon=ft.Icons.PLAY_ARROW_ROUNDED, tooltip="执行命令", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE)))
         terminal_run_btn.on_click = lambda e: self._run_terminal_command()
