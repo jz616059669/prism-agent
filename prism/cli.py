@@ -513,7 +513,7 @@ def chat(model: Optional[str], provider: Optional[str]):
     agent = create_agent()
     
     # 显示当前模型
-    current_model = model or config.get('model.default', 'gpt-4o')
+    current_model = model or prism_config.get('model.default', 'gpt-4o')
     console.print(f"[dim]当前模型: {current_model}[/dim]\n")
     
     # 对话循环
@@ -706,9 +706,9 @@ def show_tools(agent):
 
 def show_model():
     """显示模型配置"""
-    model = config.get('model.default', 'gpt-4o')
-    provider = config.get('model.provider', 'openai')
-    base_url = config.get('model.base_url', '')
+    model = prism_config.get('model.default', 'gpt-4o')
+    provider = prism_config.get('model.provider', 'openai')
+    base_url = prism_config.get('model.base_url', '')
     
     console.print(f"\n[bold cyan]当前模型配置：[/bold cyan]")
     console.print(f"  模型: [green]{model}[/green]")
