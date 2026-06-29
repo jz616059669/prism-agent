@@ -679,7 +679,7 @@ class PrismDesktop:
         
         self._chat_placeholder = ft.Column(
             [
-                ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.6),
+                ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=52, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.6),
                 ft.Container(height=16),
                 ft.Text("输入消息开始对话", size=14, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.CENTER, opacity=0.8),
             ],
@@ -710,7 +710,7 @@ class PrismDesktop:
                     bgcolor=ft.Colors.SURFACE_CONTAINER,
                     border_radius=20,
                     padding=ft.Padding(14, 12, 14, 12),
-                    border=ft.Border(bottom=ft.border.BorderSide(2, ft.Colors.PRIMARY), left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT, 0.3), right=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT, 0.3)),
+                    border=ft.Border(bottom=ft.border.BorderSide(2, ft.Colors.PRIMARY), left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), right=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
                 ),
                 ft.Container(
                     height=2,
