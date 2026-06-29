@@ -638,7 +638,7 @@ class PrismDesktop:
             shift_enter=True,
             border_radius=14,
             focused_border_color=ft.Colors.PRIMARY,
-            focused_border_width=2,
+            focused_border_width=2.5,
             border_color=ft.Colors.OUTLINE_VARIANT,
             suffix=ft.IconButton(icon=ft.Icons.CLEAR_ROUNDED, tooltip="清空", icon_color=ft.Colors.ON_SURFACE_VARIANT, on_click=lambda e: self.input_field.clear()),
         )
@@ -686,7 +686,7 @@ class PrismDesktop:
         self._chat_placeholder.controls[0].on_hover = lambda e: (self._chat_placeholder.controls[0].animate_scale(0.25, 1.08 if e.data == 'true' else 1.0), self._chat_placeholder.controls[0].update())
         return ft.Column(
             [
-                ft.Row([ft.Text("对话", size=20, weight=ft.FontWeight.BOLD), ft.Container(expand=True), self._clock_text], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                ft.Row([ft.Text("对话", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), ft.Container(expand=True), ft.Row([self._clock_text], alignment=ft.MainAxisAlignment.END)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                 ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT, opacity=0.6),
                 ft.Container(height=8),
                 ft.Stack(
@@ -696,6 +696,7 @@ class PrismDesktop:
                             content=self._chat_placeholder,
                             alignment=ft.Alignment(0, 0),
                             expand=True,
+                            animate_opacity=ft.Animation(300, ft.AnimationCurve.EASE_IN_OUT),
                         ),
                     ],
                     expand=True,
@@ -730,7 +731,7 @@ class PrismDesktop:
             shift_enter=True,
             border_radius=14,
             focused_border_color=ft.Colors.PRIMARY,
-            focused_border_width=2,
+            focused_border_width=2.5,
             border_color=ft.Colors.OUTLINE_VARIANT,
             suffix=ft.IconButton(icon=ft.Icons.CLEAR_ROUNDED, tooltip="清空", icon_size=18, icon_color=ft.Colors.ON_SURFACE_VARIANT, on_click=lambda e: self.terminal_input.clear()),
         )
