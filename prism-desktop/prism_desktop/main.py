@@ -516,6 +516,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
+                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
             ),
             ft.Container(height=12),
             ft.Container(
@@ -548,6 +549,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
+                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
             ),
             ft.Container(height=12),
             ft.Container(
@@ -1070,6 +1072,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
+                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
             ),
             ft.Container(height=12),
             ft.Container(
@@ -1102,6 +1105,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
+                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
             ),
             ft.Container(height=12),
             ft.Container(
