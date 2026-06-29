@@ -259,7 +259,7 @@ class PrismDesktop:
         visible = self._sidebar_container.visible
         self._sidebar_container.visible = not visible
         width = 0 if visible else 300
-        self._sidebar_container.width = width
+        self._sidebar_container.width = 300 if not visible else 0
         self._sidebar_container.animate = ft.Animation(300, ft.AnimationCurve.EASE_IN_OUT)
         self._sidebar_container.update()
         self._settings["sidebar_collapsed"] = not visible
@@ -796,8 +796,8 @@ class PrismDesktop:
                 content=content_widget,
                 bgcolor=ft.Colors.PRIMARY_CONTAINER,
                 border_radius=16,
-                padding=ft.Padding(12, 8, 12, 8),
-                shadow=ft.BoxShadow(blur_radius=4, color=ft.Colors.with_opacity(0.08, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 2)),
+                padding=ft.Padding(14, 10, 14, 10),
+                shadow=ft.BoxShadow(blur_radius=6, color=ft.Colors.with_opacity(0.1, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 2)),
             )
         else:
             content_widget = ft.Column(
@@ -814,8 +814,8 @@ class PrismDesktop:
                 content=content_widget,
                 bgcolor=bubble_bg,
                 border_radius=16,
-                padding=ft.Padding(12, 8, 12, 8),
-                shadow=ft.BoxShadow(blur_radius=4, color=ft.Colors.with_opacity(0.06, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 1)),
+                padding=ft.Padding(14, 10, 14, 10),
+                shadow=ft.BoxShadow(blur_radius=6, color=ft.Colors.with_opacity(0.08, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 1)),
             )
 
         message_row = ft.Row(
