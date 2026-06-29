@@ -489,10 +489,10 @@ class PrismDesktop:
         self.skill_list = ft.Column(spacing=4, tight=True)
 
         # 会话
-        self.session_new_btn = ft.IconButton(icon=ft.Icons.ADD_ROUNDED, tooltip="新建对话", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)))
+        self.session_new_btn = ft.IconButton(icon=ft.Icons.ADD_ROUNDED, tooltip="新建对话", icon_color=ft.Colors.PRIMARY, bgcolor=ft.Colors.with_opacity(0.08, ft.Colors.PRIMARY), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.PRIMARY)))
         self.session_new_btn.on_click = lambda e: self._new_session()
         self.session_name_field = ft.TextField(hint_text="会话名称", width=200, border_radius=14)
-        self.session_save_btn = ft.Button("保存会话", icon=ft.Icons.BOOKMARK_ROUNDED, width=120, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(12, 10, 12, 10)))
+        self.session_save_btn = ft.Button("保存会话", icon=ft.Icons.BOOKMARK_ROUNDED, width=120, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(12, 10, 12, 10), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), animate_scale=ft.Animation(180, ft.AnimationCurve.EASE_IN_OUT))
         self.session_save_btn.on_click = lambda e: self._save_session()
         self.session_list = ft.Column(spacing=4, tight=True)
         self._session_empty_state = ft.Column(
@@ -619,7 +619,7 @@ class PrismDesktop:
         return self._sidebar_container
 
     def _build_chat(self) -> ft.Column:
-        self.chat_list = ft.ListView(expand=True, spacing=6, auto_scroll=True, scroll=ft.ScrollMode.AUTO)
+        self.chat_list = ft.ListView(expand=True, spacing=6, auto_scroll=True, scroll=ft.ScrollMode.AUTO, padding=ft.Padding(8, 4, 8, 4))
         self.input_field = ft.TextField(
             hint_text="输入消息...",
             expand=True,
@@ -667,7 +667,7 @@ class PrismDesktop:
         
         self._chat_placeholder = ft.Column(
             [
-                ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.5, scale=1.0),
+                ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.6, scale=1.0),
                 ft.Container(height=16),
                 ft.Text("输入消息开始对话", size=14, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.CENTER, opacity=0.8),
             ],
@@ -706,7 +706,7 @@ class PrismDesktop:
                 ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.3),
                 ft.Row([clear_chat_btn, self.input_count], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                 ft.Container(height=4),
-                ft.Text("Enter 发送 / Shift+Enter 换行", size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.8),
+                ft.Text("Enter 发送 / Shift+Enter 换行", size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.9),
             ],
             expand=True,
             spacing=6,
