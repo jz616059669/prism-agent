@@ -780,15 +780,13 @@ class PrismDesktop:
             spacing=0,
         )
         self.right_tabs = ft.Tabs(
+            length=320,
+            content=self._right_tab_content,
             selected_index=0,
             on_change=lambda e: None,
             expand=True,
             animation_duration=200,
         )
-        self.right_tabs.tabs = [
-            ft.Tab(text="终端"),
-            ft.Tab(text="MCP"),
-        ]
         return ft.Column(
             [
                 self.right_tabs,
