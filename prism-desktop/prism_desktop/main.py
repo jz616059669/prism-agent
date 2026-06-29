@@ -438,6 +438,7 @@ class PrismDesktop:
                 [
                     ft.Text("PRISM", size=20, weight=ft.FontWeight.BOLD),
                     ft.Divider(height=12, color=ft.Colors.TRANSPARENT),
+                    ft.Text("v1.0.1", size=10, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.7),
                 ],
                 tight=True,
                 spacing=6,
@@ -1015,6 +1016,7 @@ class PrismDesktop:
                 [
                     ft.Text("PRISM", size=20, weight=ft.FontWeight.BOLD),
                     ft.Divider(height=12, color=ft.Colors.TRANSPARENT),
+                    ft.Text("v1.0.1", size=10, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.7),
                 ],
                 tight=True,
                 spacing=6,
