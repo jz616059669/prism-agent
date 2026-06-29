@@ -394,7 +394,6 @@ class PrismDesktop:
             modal=True,
             title=ft.Text("预设管理"),
             bgcolor=ft.Colors.SURFACE,
-            shadow=ft.BoxShadow(blur_radius=16, spread_radius=0, color=ft.Colors.with_opacity(0.2, ft.Colors.BLACK), offset=ft.Offset(0, 4)),
             content=ft.Column([
                 ft.Text("保存当前配置为新预设：", size=12, color=ft.Colors.ON_SURFACE_VARIANT),
                 ft.Row([preset_name_field, ft.IconButton(ft.Icons.ADD_ROUNDED, tooltip="保存", icon_color=ft.Colors.PRIMARY, on_click=save_as_preset)], spacing=8, tight=True),
@@ -572,7 +571,6 @@ class PrismDesktop:
                 border_radius=14,
                 padding=12,
                 shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE)),
-                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE))),
                 border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
             ),
             ft.Container(height=12),
