@@ -252,6 +252,7 @@ class PrismDesktop:
         self._sidebar_container.visible = not visible
         width = 0 if visible else 280
         self._sidebar_container.width = width
+        self._sidebar_container.animate = ft.Animation(300, ft.AnimationCurve.EASE_IN_OUT)
         self._sidebar_container.update()
         self._settings["sidebar_collapsed"] = not visible
         self._save_settings()
@@ -800,6 +801,7 @@ class PrismDesktop:
         self._sidebar_container.visible = not visible
         width = 0 if visible else 280
         self._sidebar_container.width = width
+        self._sidebar_container.animate = ft.Animation(300, ft.AnimationCurve.EASE_IN_OUT)
         self._sidebar_container.update()
         self._settings["sidebar_collapsed"] = not visible
         self._save_settings()
