@@ -469,7 +469,7 @@ class PrismDesktop:
         self.skill_list = ft.Column(spacing=4, tight=True)
 
         # 会话
-        self.session_new_btn = ft.IconButton(icon=ft.Icons.ADD_ROUNDED, tooltip="新建对话", icon_color=ft.Colors.ON_SURFACE_VARIANT, ink=True)
+        self.session_new_btn = ft.IconButton(icon=ft.Icons.ADD_ROUNDED, tooltip="新建对话", icon_color=ft.Colors.ON_SURFACE_VARIANT)
         self.session_new_btn.on_click = lambda e: self._new_session()
         self.session_name_field = ft.TextField(hint_text="会话名称", width=200, border_radius=8)
         self.session_save_btn = ft.Button("保存会话", icon=ft.Icons.BOOKMARK_ROUNDED, width=120, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding(12, 10, 12, 10)))
@@ -1018,7 +1018,7 @@ class PrismDesktop:
         self.skill_list = ft.Column(spacing=4, tight=True)
 
         # 会话
-        self.session_new_btn = ft.IconButton(icon=ft.Icons.ADD_ROUNDED, tooltip="新建对话", icon_color=ft.Colors.ON_SURFACE_VARIANT, ink=True)
+        self.session_new_btn = ft.IconButton(icon=ft.Icons.ADD_ROUNDED, tooltip="新建对话", icon_color=ft.Colors.ON_SURFACE_VARIANT)
         self.session_new_btn.on_click = lambda e: self._new_session()
         self.session_name_field = ft.TextField(hint_text="会话名称", width=200, border_radius=8)
         self.session_save_btn = ft.Button("保存会话", icon=ft.Icons.BOOKMARK_ROUNDED, width=120, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding(12, 10, 12, 10)))
