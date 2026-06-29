@@ -848,7 +848,7 @@ class PrismDesktop:
             content_widget = ft.Column(
                 [
                     self._markdown_to_ft(rendered),
-                    ft.Text(timestamp, size=11, color=ft.Colors.ON_SURFACE_VARIANT),
+                    ft.Text(timestamp, size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.9),
                 ],
                 tight=True,
                 spacing=3,
@@ -861,6 +861,7 @@ class PrismDesktop:
                 border_radius=22,
                 padding=ft.Padding(14, 12, 14, 12),
                 shadow=ft.BoxShadow(blur_radius=8, color=ft.Colors.with_opacity(0.12, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 1)),
+                animate=ft.Animation(200, ft.AnimationCurve.EASE_IN_OUT),
             )
 
         message_row = ft.Row(
@@ -876,7 +877,7 @@ class PrismDesktop:
             retry_btn = ft.TextButton(
                 "重试",
                 icon=ft.Icons.REFRESH_ROUNDED,
-                style=ft.ButtonStyle(color=ft.Colors.ERROR, shape=ft.RoundedRectangleBorder(radius=10)),
+                style=ft.ButtonStyle(color=ft.Colors.ERROR, shape=ft.RoundedRectangleBorder(radius=10), bgcolor=ft.Colors.ERROR_CONTAINER),
                 on_click=lambda e, t=retry_text: self._send(t),
             )
             retry_row = ft.Row(
