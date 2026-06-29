@@ -478,7 +478,7 @@ class PrismDesktop:
         # MCP
         self.mcp_refresh_btn = ft.Button("刷新 MCP 服务器", icon=ft.Icons.REFRESH_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(14, 10, 14, 10), bgcolor=ft.Colors.SURFACE_CONTAINER, color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(180, ft.AnimationCurve.EASE_IN_OUT))
         self.mcp_refresh_btn.on_click = lambda e: self._refresh_mcp()
-        self.mcp_server_list = ft.Column(spacing=4, tight=True)
+        self.mcp_server_list = ft.Column(spacing=6, tight=True)
 
         # Skills
         self.skill_refresh_btn = ft.Button("刷新 Skills", icon=ft.Icons.REFRESH_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(14, 10, 14, 10), bgcolor=ft.Colors.SURFACE_CONTAINER, color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(180, ft.AnimationCurve.EASE_IN_OUT))
@@ -486,7 +486,7 @@ class PrismDesktop:
         self.skill_install_field = ft.TextField(hint_text="安装 Skill 名称或本地路径", width=280, border_radius=14)
         self.skill_install_btn = ft.Button("安装 Skill", icon=ft.Icons.DOWNLOAD_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(14, 10, 14, 10), bgcolor=ft.Colors.SURFACE_CONTAINER, color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(180, ft.AnimationCurve.EASE_IN_OUT))
         self.skill_install_btn.on_click = lambda e: self._install_skill_from_ui()
-        self.skill_list = ft.Column(spacing=4, tight=True)
+        self.skill_list = ft.Column(spacing=6, tight=True)
 
         # 会话
         self.session_new_btn = ft.IconButton(icon=ft.Icons.ADD_ROUNDED, tooltip="新建对话", icon_color=ft.Colors.PRIMARY, bgcolor=ft.Colors.with_opacity(0.08, ft.Colors.PRIMARY), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.PRIMARY)))
@@ -494,7 +494,7 @@ class PrismDesktop:
         self.session_name_field = ft.TextField(hint_text="会话名称", width=200, border_radius=14)
         self.session_save_btn = ft.Button("保存会话", icon=ft.Icons.BOOKMARK_ROUNDED, width=120, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(12, 10, 12, 10), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), animate_scale=ft.Animation(180, ft.AnimationCurve.EASE_IN_OUT))
         self.session_save_btn.on_click = lambda e: self._save_session()
-        self.session_list = ft.Column(spacing=4, tight=True, scroll=ft.ScrollMode.AUTO)
+        self.session_list = ft.Column(spacing=6, tight=True, scroll=ft.ScrollMode.AUTO)
         self._session_empty_state = ft.Container(
             content=ft.Column(
                 [
@@ -714,7 +714,7 @@ class PrismDesktop:
                 ),
                 ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.3),
                 ft.Row([clear_chat_btn, self.input_count], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                ft.Container(height=4),
+                ft.Container(height=6),
                 ft.Text("Enter 发送 / Shift+Enter 换行", size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.9),
             ],
             expand=True,
@@ -768,6 +768,7 @@ class PrismDesktop:
             [
                 terminal_tab,
                 ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.3),
+                ft.Container(height=4),
                 mcp_tab,
             ],
             expand=True,
