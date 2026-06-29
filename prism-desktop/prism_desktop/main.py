@@ -90,6 +90,10 @@ class PrismDesktop:
         self._build_ui()
         self._bind_context_menu()
         self._bind_tray()
+        # Update clock every second
+        def _tick(_):
+            self._update_clock()
+        self.page.add_periodic_callback(_tick, 1000)
         self._maybe_show_setup_wizard()
         self._settings = self._load_settings()
         # Load model preset on startup
@@ -270,6 +274,7 @@ class PrismDesktop:
             pass
 
     def _build_ui(self):
+        self._clock_text = ft.Text(datetime.now().strftime("%H:%M:%S"), size=10, color=ft.Colors.ON_SURFACE_VARIANT)
         self.page.appbar = self._build_appbar()
         self._chat_container = ft.Container(self._build_chat(), expand=True)
         self._right_container = ft.Container(self._build_right_panel(), expand=True)
@@ -557,7 +562,7 @@ class PrismDesktop:
                     ft.Text("状态", size=11, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
                     ft.Container(height=6),
                     ft.Row([self.browser_status_icon, self.browser_status_text], spacing=8),
-                    self.status_text,
+                    ft.Row([self.status_text, self._clock_text], spacing=8),
                 ], tight=True, spacing=4),
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
@@ -801,6 +806,7 @@ class PrismDesktop:
             pass
 
     def _build_ui(self):
+        self._clock_text = ft.Text(datetime.now().strftime("%H:%M:%S"), size=10, color=ft.Colors.ON_SURFACE_VARIANT)
         self.page.appbar = self._build_appbar()
         self._chat_container = ft.Container(self._build_chat(), expand=True)
         self._right_container = ft.Container(self._build_right_panel(), expand=True)
@@ -1088,7 +1094,7 @@ class PrismDesktop:
                     ft.Text("状态", size=11, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
                     ft.Container(height=6),
                     ft.Row([self.browser_status_icon, self.browser_status_text], spacing=8),
-                    self.status_text,
+                    ft.Row([self.status_text, self._clock_text], spacing=8),
                 ], tight=True, spacing=4),
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
@@ -1361,6 +1367,14 @@ class PrismDesktop:
         self.status_text.value = text
         self.status_text.color = color
         self.status_text.update()
+
+    def _update_clock(self):
+        try:
+            now = datetime.now().strftime("%H:%M:%S")
+            self._clock_text.value = now
+            self._clock_text.update()
+        except Exception:
+            pass
 
     def _set_browser_status(self, connected: bool, text: str):
         self.browser_connected = connected
