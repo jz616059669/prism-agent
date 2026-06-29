@@ -764,10 +764,10 @@ class PrismDesktop:
             )
             self.chat_list.controls.append(retry_row)
         
-        max_chat_items = 200
+        max_chat_items = 500
         if len(self.chat_list.controls) > max_chat_items:
             self.chat_list.controls = self.chat_list.controls[-max_chat_items:]
-        self.chat_list.scroll_to(offset=-1, duration=150)
+        self.chat_list.scroll_to(offset=-1, duration=200)
         self.chat_list.update()
         return message_row
     def _build_appbar(self) -> ft.AppBar:
@@ -1311,10 +1311,10 @@ class PrismDesktop:
             )
             self.chat_list.controls.append(retry_row)
         
-        max_chat_items = 200
+        max_chat_items = 500
         if len(self.chat_list.controls) > max_chat_items:
             self.chat_list.controls = self.chat_list.controls[-max_chat_items:]
-        self.chat_list.scroll_to(offset=-1, duration=150)
+        self.chat_list.scroll_to(offset=-1, duration=200)
         self.chat_list.update()
         return message_row
     def _format_time(self) -> str:
