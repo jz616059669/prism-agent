@@ -394,7 +394,7 @@ class PrismDesktop:
 
         preset_dlg = ft.AlertDialog(
             modal=True,
-            title=ft.Text("预设管理"),
+            title=ft.Text("预设管理", size=16, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
             bgcolor=ft.Colors.SURFACE,
             content=ft.Column([
                 ft.Text("保存当前配置为新预设：", size=12, color=ft.Colors.ON_SURFACE_VARIANT),
