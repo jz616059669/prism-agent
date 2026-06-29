@@ -47,9 +47,9 @@ class PrismDesktop:
             bgcolor=ft.Colors.GREEN_400,
             border_radius=4,
         )
-        self.status_text = ft.Text("就绪", size=12, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_500)
+        self.status_text = ft.Text("就绪", size=12, color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.W_500)
         self._input_accent = None
-        self.browser_status_icon = ft.Icon(ft.Icons.LANGUAGE_ROUNDED, size=18, color=ft.Colors.ON_SURFACE_VARIANT)
+        self.browser_status_icon = ft.Icon(ft.Icons.LANGUAGE_ROUNDED, size=18, color=ft.Colors.PRIMARY)
         self.browser_status_text = ft.Text("就绪", size=12, color=ft.Colors.ON_SURFACE)
         self.browser_connected = None
         self.messages = []
