@@ -721,7 +721,7 @@ class PrismDesktop:
             [
                 ft.Row([self.terminal_input, terminal_run_btn], spacing=8),
                 ft.Row([clear_terminal_btn], alignment=ft.MainAxisAlignment.END),
-                ft.Container(self.terminal_list, expand=True, border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), bottom=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), right=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)), border_radius=12, padding=ft.Padding(12, 8, 12, 8), bgcolor=ft.Colors.SURFACE),
+                ft.Container(self.terminal_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=12, padding=ft.Padding(12, 8, 12, 8), bgcolor=ft.Colors.SURFACE),
             ],
             expand=True,
             spacing=8,
@@ -729,7 +729,7 @@ class PrismDesktop:
         mcp_tab = ft.Column(
             [
                 ft.Row([clear_mcp_btn], alignment=ft.MainAxisAlignment.END),
-                ft.Container(self.mcp_list, expand=True, border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), bottom=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), right=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)), border_radius=12, padding=ft.Padding(12, 8, 12, 8), bgcolor=ft.Colors.SURFACE),
+                ft.Container(self.mcp_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=12, padding=ft.Padding(12, 8, 12, 8), bgcolor=ft.Colors.SURFACE),
             ],
             expand=True,
             spacing=8,
