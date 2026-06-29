@@ -719,9 +719,11 @@ class PrismDesktop:
         self._right_tab_content = ft.Column(
             [
                 terminal_tab,
+                ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.4),
                 mcp_tab,
             ],
             expand=True,
+            spacing=0,
         )
         self.right_tabs = ft.Tabs(
             length=320,
@@ -1294,9 +1296,11 @@ class PrismDesktop:
         self._right_tab_content = ft.Column(
             [
                 terminal_tab,
+                ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.4),
                 mcp_tab,
             ],
             expand=True,
+            spacing=0,
         )
         self.right_tabs = ft.Tabs(
             length=320,
