@@ -513,7 +513,7 @@ class PrismDesktop:
             ),
             padding=ft.Padding(24, 24, 24, 24),
             border_radius=12,
-            bgcolor=ft.Colors.with_opacity(0.7, ft.Colors.SURFACE_CONTAINER),
+            bgcolor=ft.Colors.with_opacity(0.6, ft.Colors.SURFACE_CONTAINER),
         )
 
         sidebar_content = self._sidebar_container.content
@@ -691,9 +691,9 @@ class PrismDesktop:
         
         self._chat_placeholder = ft.Column(
             [
-                ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=52, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.6),
-                ft.Container(height=16),
-                ft.Text("输入消息开始对话", size=14, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.CENTER, opacity=0.85),
+                ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.6),
+                ft.Container(height=12),
+                ft.Text("输入消息开始对话", size=14, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.CENTER, opacity=0.8),
             ],
             alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -701,8 +701,8 @@ class PrismDesktop:
         self._chat_placeholder.controls[0].on_hover = lambda e: (self._chat_placeholder.controls[0].animate_scale(0.25, 1.08 if e.data == 'true' else 1.0), self._chat_placeholder.controls[0].update())
         return ft.Column(
             [
-                ft.Row([ft.Text("对话", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), ft.Container(expand=True), ft.Row([self._clock_text], alignment=ft.MainAxisAlignment.END)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT, opacity=0.5),
+                ft.Row([ft.Text("对话", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), ft.Container(expand=True), ft.Row([self._clock_text], alignment=ft.MainAxisAlignment.END)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=12),
+                ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT, opacity=0.4),
                 ft.Container(height=12),
                 ft.Stack(
                     [
@@ -716,7 +716,7 @@ class PrismDesktop:
                     ],
                     expand=True,
                 ),
-                ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT, opacity=0.5),
+                ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT, opacity=0.4),
                 ft.Container(
                     content=ft.Row([self.input_field, self.send_btn, self.stop_btn], spacing=10, expand=True),
                     bgcolor=ft.Colors.SURFACE_CONTAINER,
