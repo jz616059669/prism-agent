@@ -402,7 +402,7 @@ class PrismDesktop:
                 ft.Container(height=8),
                 ft.Text("已有预设：", size=12, color=ft.Colors.ON_SURFACE_VARIANT),
                 ft.Column(preset_buttons, spacing=6, tight=True, scroll=ft.ScrollMode.AUTO),
-            ], tight=True, spacing=6, height=420, width=320),
+            ], tight=True, spacing=6, height=400, width=320),
             actions=[ft.TextButton("关闭", on_click=lambda e: setattr(preset_dlg, 'open', False) or self.page.update())],
             actions_alignment=ft.MainAxisAlignment.END,
         )
@@ -464,7 +464,7 @@ class PrismDesktop:
             border_radius=14,
         )
 
-        save_btn = ft.Button("保存配置", icon=ft.Icons.SAVE_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(16, 12, 16, 12)))
+        save_btn = ft.Button("保存配置", icon=ft.Icons.SAVE_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(14, 10, 14, 10), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), animate_scale=ft.Animation(180, ft.AnimationCurve.EASE_IN_OUT))
         save_btn.on_click = lambda e: self._save_config()
 
         self.url_field = ft.TextField(hint_text="输入网址...", width=280, border_radius=14)
@@ -706,7 +706,7 @@ class PrismDesktop:
                     bgcolor=ft.Colors.SURFACE_CONTAINER,
                     border_radius=14,
                     padding=ft.Padding(10, 8, 10, 8),
-                    border=ft.Border(bottom=ft.border.BorderSide(2.5, ft.Colors.PRIMARY)),
+                    border=ft.Border(bottom=ft.border.BorderSide(2, ft.Colors.PRIMARY)),
                 ),
                 ft.Container(
                     height=2,
