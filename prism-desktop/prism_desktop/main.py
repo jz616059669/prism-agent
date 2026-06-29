@@ -219,6 +219,7 @@ class PrismDesktop:
         else:
             self.page.theme_mode = ft.ThemeMode.DARK
             self.page.theme = ft.Theme(color_scheme_seed="blue", use_material3=True)
+        self.page.animate = ft.Animation(300, ft.AnimationCurve.EASE_IN_OUT)
         self.page.update()
         self._append_terminal(f"theme -> {name}")
         self._save_settings()
