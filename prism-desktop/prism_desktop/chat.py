@@ -30,6 +30,140 @@ from prism_desktop import mcp as mcp_ui
 from prism_desktop import system as system_ui
 
 
+
+def _format_time(self) -> str:
+    return datetime.now().strftime("%m-%d %H:%M")
+
+
+def _markdown_to_ft(self, text: str):
+    html = markdown.markdown(text, extensions=["fenced_code", "tables", "nl2br"])
+    return ft.Markdown(
+        value=html,
+        selectable=True,
+        extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
+        on_tap_link=lambda e: self.page.launch_url(e.data),
+    )
+
+
+def _append(
+    self,
+    role: str,
+    text: str,
+    retry: bool = False,
+    retry_text: str = "",
+    placeholder: bool = False,
+):
+    if hasattr(self, "_chat_placeholder") and self._chat_placeholder and self._chat_placeholder in self.chat_list.controls:
+        self.chat_list.controls.remove(self._chat_placeholder)
+    is_user = role == "你"
+    align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
+    text_color = ft.Colors.ON_PRIMARY_CONTAINER if is_user else ft.Colors.ON_SURFACE
+    import datetime
+    timestamp = datetime.datetime.now().strftime("%H:%M")
+    try:
+        import markdown
+        rendered = markdown.markdown(text, extensions=["fenced_code", "tables", "nl2br"])
+    except Exception:
+        rendered = text
+    is_error = not is_user and (text.startswith("Error:") or text.startswith("请求超时") or text.startswith("失败"))
+    display_color = ft.Colors.ERROR if is_error else text_color
+    if is_user:
+        content_widget = ft.Column(
+            [
+                _markdown_to_ft(self, rendered),
+                ft.Text(timestamp, size=10, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.END),
+            ],
+            tight=True,
+            spacing=2,
+            horizontal_alignment=ft.CrossAxisAlignment.END,
+        )
+    else:
+        content_widget = ft.Column(
+            [
+                _markdown_to_ft(self, rendered),
+                ft.Text(timestamp, size=10, color=ft.Colors.ON_SURFACE_VARIANT),
+            ],
+            tight=True,
+            spacing=2,
+            horizontal_alignment=ft.CrossAxisAlignment.START,
+        )
+    message_row = ft.Row(
+        [content_widget],
+        alignment=align,
+        expand=True,
+    )
+    self.chat_list.controls.append(message_row)
+    max_chat_items = 500
+    if len(self.chat_list.controls) > max_chat_items:
+        self.chat_list.controls = self.chat_list.controls[-max_chat_items:]
+    self.chat_list.scroll_to(offset=-1, duration=150)
+    self.chat_list.update()
+    return message_row
+
+
+def _clear_chat(self):
+    self.chat_list.controls.clear()
+    if hasattr(self, "_chat_placeholder") and self._chat_placeholder:
+        self.chat_list.controls.append(self._chat_placeholder)
+    self.chat_list.update()
+    if hasattr(self, "_update_input_count"):
+        self._update_input_count()
+
+
+def _show_message_menu(self, e, target, message_text: str):
+    try:
+        self.page.set_clipboard(message_text)
+        self._set_status("已复制", ft.Colors.GREEN_400)
+    except Exception:
+        pass
+
+
+def _on_input_change(self):
+    try:
+        text = self.input_field.value or ""
+        self.input_count.value = f"{len(text)} 字"
+        self.input_count.update()
+    except Exception:
+        pass
+
+
+def _send(self, retry_text: str = ""):
+    try:
+        text = retry_text or (self.input_field.value or "").strip()
+    except Exception:
+        return
+    if not text:
+        return
+    _append(self, "你", text)
+    self.input_field.value = ""
+    self.input_field.disabled = True
+    self.send_btn.visible = False
+    self.stop_btn.visible = True
+    self.input_field.update()
+    self.send_btn.update()
+    self.stop_btn.update()
+    self._set_status("PRISM 正在思考...", ft.Colors.AMBER_400)
+    placeholder = _append(self, "PRISM", "", placeholder=True)
+    try:
+        reply = self.agent.chat(text) or "(无回复)"
+    except Exception as e:
+        reply = f"Error: {e}"
+    placeholder.content.controls[1] = _markdown_to_ft(self, reply)
+    placeholder.content.controls[0].color = ft.Colors.ON_SURFACE_VARIANT
+    placeholder.bgcolor = ft.Colors.SURFACE
+    placeholder.update()
+    self.chat_list.scroll_to(offset=-1, duration=0)
+    self.input_field.disabled = False
+    self.send_btn.visible = True
+    self.stop_btn.visible = False
+    self.send_btn.update()
+    self.stop_btn.update()
+    self._set_status("就绪", ft.Colors.GREEN_400)
+    try:
+        self.input_field.focus()
+    except Exception:
+        pass
+
 class PrismDesktop:
     def __init__(self, page: ft.Page):
         self.page = page

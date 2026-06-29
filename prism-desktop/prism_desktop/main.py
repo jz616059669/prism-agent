@@ -76,7 +76,7 @@ class PrismDesktop:
         self._append = lambda *args, **kwargs: chat_ui._append(self, *args, **kwargs)
         self._clear_chat = lambda: chat_ui._clear_chat(self)
         self._show_message_menu = lambda e, target, message_text: chat_ui._show_message_menu(self, e, target, message_text)
-        self._send = lambda: chat_ui._send(self)
+        self._send = lambda retry_text="": chat_ui._send(self, retry_text)
         self._load_settings = lambda: settings_ui._load_settings(self)
         self._save_settings = lambda: settings_ui._save_settings(self)
         self._apply_settings = lambda: settings_ui._apply_settings(self)
