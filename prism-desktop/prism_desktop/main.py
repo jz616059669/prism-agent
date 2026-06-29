@@ -495,15 +495,20 @@ class PrismDesktop:
         self.session_save_btn = ft.Button("保存会话", icon=ft.Icons.BOOKMARK_ROUNDED, width=120, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(12, 10, 12, 10), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), animate_scale=ft.Animation(180, ft.AnimationCurve.EASE_IN_OUT))
         self.session_save_btn.on_click = lambda e: self._save_session()
         self.session_list = ft.Column(spacing=4, tight=True)
-        self._session_empty_state = ft.Column(
-            [
-                ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=28, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.4),
-                ft.Container(height=6),
-                ft.Text("暂无保存的会话", size=12, color=ft.Colors.ON_SURFACE_VARIANT),
-            ],
-            alignment=ft.MainAxisAlignment.CENTER,
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            tight=True,
+        self._session_empty_state = ft.Container(
+            content=ft.Column(
+                [
+                    ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=28, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.5),
+                    ft.Container(height=6),
+                    ft.Text("暂无保存的会话", size=12, color=ft.Colors.ON_SURFACE_VARIANT),
+                ],
+                alignment=ft.MainAxisAlignment.CENTER,
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                tight=True,
+            ),
+            padding=ft.Padding(16, 8, 16, 8),
+            border_radius=12,
+            bgcolor=ft.Colors.with_opacity(0.5, ft.Colors.SURFACE_CONTAINER),
         )
 
         sidebar_content = self._sidebar_container.content
@@ -541,7 +546,11 @@ class PrismDesktop:
                     ft.Text("浏览器控制", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
                     ft.Container(height=8),
                     self.url_field,
-                    ft.Row([browser_open_btn, browser_snapshot_btn, browser_close_btn], spacing=6, wrap=True),
+                    ft.Column([
+                        browser_open_btn,
+                        browser_snapshot_btn,
+                        browser_close_btn,
+                    ], spacing=6, tight=True),
                 ], tight=True, spacing=6),
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=14,
