@@ -508,7 +508,7 @@ class PrismDesktop:
             ),
             padding=ft.Padding(16, 8, 16, 8),
             border_radius=12,
-            bgcolor=ft.Colors.with_opacity(0.5, ft.Colors.SURFACE_CONTAINER),
+            bgcolor=ft.Colors.with_opacity(0.6, ft.Colors.SURFACE_CONTAINER),
         )
 
         sidebar_content = self._sidebar_container.content
@@ -713,7 +713,7 @@ class PrismDesktop:
                     height=2,
                     bgcolor=ft.Colors.TRANSPARENT,
                 ),
-                ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.3),
+                ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.25),
                 ft.Row([clear_chat_btn, self.input_count], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                 ft.Container(height=6),
                 ft.Text("Enter 发送 / Shift+Enter 换行", size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.9),
@@ -768,7 +768,7 @@ class PrismDesktop:
         self._right_tab_content = ft.Column(
             [
                 terminal_tab,
-                ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.3),
+                ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.25),
                 ft.Container(height=4),
                 mcp_tab,
             ],
