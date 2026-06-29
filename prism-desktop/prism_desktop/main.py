@@ -608,13 +608,14 @@ class PrismDesktop:
         clear_chat_btn = ft.TextButton("清屏", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6)))
         clear_chat_btn.on_click = lambda e: self._clear_chat()
         
-        self._chat_placeholder = ft.Text(
-            "输入消息开始对话",
-            size=13,
-            color=ft.Colors.ON_SURFACE_VARIANT,
-            text_align=ft.TextAlign.CENTER,
-            opacity=0.6,
-            animate_opacity=ft.Animation(1500, ft.AnimationCurve.EASE_IN_OUT),
+        self._chat_placeholder = ft.Column(
+            [
+                ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.4),
+                ft.Container(height=12),
+                ft.Text("输入消息开始对话", size=13, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.CENTER, opacity=0.6),
+            ],
+            alignment=ft.MainAxisAlignment.CENTER,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         )
         return ft.Column(
             [
@@ -1161,13 +1162,14 @@ class PrismDesktop:
         clear_chat_btn = ft.TextButton("清屏", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6)))
         clear_chat_btn.on_click = lambda e: self._clear_chat()
         
-        self._chat_placeholder = ft.Text(
-            "输入消息开始对话",
-            size=13,
-            color=ft.Colors.ON_SURFACE_VARIANT,
-            text_align=ft.TextAlign.CENTER,
-            opacity=0.6,
-            animate_opacity=ft.Animation(1500, ft.AnimationCurve.EASE_IN_OUT),
+        self._chat_placeholder = ft.Column(
+            [
+                ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.4),
+                ft.Container(height=12),
+                ft.Text("输入消息开始对话", size=13, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.CENTER, opacity=0.6),
+            ],
+            alignment=ft.MainAxisAlignment.CENTER,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         )
         return ft.Column(
             [
