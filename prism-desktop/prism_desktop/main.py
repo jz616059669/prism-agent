@@ -43,6 +43,7 @@ class PrismDesktop:
         self._settings = {}
         
         self.status_text = ft.Text("就绪", size=11, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_500)
+        self._input_accent = None
         self.browser_status_icon = ft.Icon(ft.Icons.LANGUAGE_ROUNDED, size=16, color=ft.Colors.ON_SURFACE_VARIANT)
         self.browser_status_text = ft.Text("就绪", size=11, color=ft.Colors.ON_SURFACE_VARIANT)
         self.browser_connected = None
@@ -612,8 +613,8 @@ class PrismDesktop:
         self.send_btn = ft.IconButton(icon=ft.Icons.SEND_ROUNDED, tooltip="发送", bgcolor=ft.Colors.PRIMARY, icon_color=ft.Colors.ON_PRIMARY, animate_scale=True, scale=1.0, disabled=True, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), ink=True)
         self.send_btn.on_click = lambda e: self._send()
         self.input_field.on_change = lambda e: self._on_input_change()
-        self.input_field.on_focus = lambda e: setattr(self.send_btn, 'scale', 1.1) or self.send_btn.update()
-        self.input_field.on_blur = lambda e: setattr(self.send_btn, 'scale', 1.0) or self.send_btn.update()
+        self.input_field.on_focus = lambda e: (setattr(self.send_btn, 'scale', 1.1), self.send_btn.update(), setattr(self._input_accent, 'bgcolor', ft.Colors.PRIMARY), self._input_accent.update())
+        self.input_field.on_blur = lambda e: (setattr(self.send_btn, 'scale', 1.0), self.send_btn.update(), setattr(self._input_accent, 'bgcolor', ft.Colors.TRANSPARENT), self._input_accent.update())
         self.stop_btn = ft.IconButton(icon=ft.Icons.STOP_ROUNDED, tooltip="停止生成", visible=False, bgcolor=ft.Colors.ERROR_CONTAINER, icon_color=ft.Colors.ON_ERROR_CONTAINER, ink=True)
         self.stop_btn.on_click = lambda e: self._stop_send()
         self.input_field.on_submit = lambda e: self._send()
@@ -653,6 +654,11 @@ class PrismDesktop:
                     border=ft.Border(bottom=ft.border.BorderSide(2.0, ft.Colors.OUTLINE_VARIANT)),
                     shadow=ft.BoxShadow(blur_radius=8, spread_radius=0, color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)),
                     animate_border_color=ft.Animation(200, ft.AnimationCurve.EASE_IN_OUT),
+                ),
+                ft.Container(
+                    height=2,
+                    bgcolor=ft.Colors.TRANSPARENT,
+                    animate_bgcolor=ft.Animation(200, ft.AnimationCurve.EASE_IN_OUT),
                 ),
                 ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT),
                 ft.Row([clear_chat_btn, self.input_count], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
@@ -1183,8 +1189,8 @@ class PrismDesktop:
         self.send_btn = ft.IconButton(icon=ft.Icons.SEND_ROUNDED, tooltip="发送", bgcolor=ft.Colors.PRIMARY, icon_color=ft.Colors.ON_PRIMARY, animate_scale=True, scale=1.0, disabled=True, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), ink=True)
         self.send_btn.on_click = lambda e: self._send()
         self.input_field.on_change = lambda e: self._on_input_change()
-        self.input_field.on_focus = lambda e: setattr(self.send_btn, 'scale', 1.1) or self.send_btn.update()
-        self.input_field.on_blur = lambda e: setattr(self.send_btn, 'scale', 1.0) or self.send_btn.update()
+        self.input_field.on_focus = lambda e: (setattr(self.send_btn, 'scale', 1.1), self.send_btn.update(), setattr(self._input_accent, 'bgcolor', ft.Colors.PRIMARY), self._input_accent.update())
+        self.input_field.on_blur = lambda e: (setattr(self.send_btn, 'scale', 1.0), self.send_btn.update(), setattr(self._input_accent, 'bgcolor', ft.Colors.TRANSPARENT), self._input_accent.update())
         self.stop_btn = ft.IconButton(icon=ft.Icons.STOP_ROUNDED, tooltip="停止生成", visible=False, bgcolor=ft.Colors.ERROR_CONTAINER, icon_color=ft.Colors.ON_ERROR_CONTAINER, ink=True)
         self.stop_btn.on_click = lambda e: self._stop_send()
         self.input_field.on_submit = lambda e: self._send()
@@ -1224,6 +1230,11 @@ class PrismDesktop:
                     border=ft.Border(bottom=ft.border.BorderSide(2.0, ft.Colors.OUTLINE_VARIANT)),
                     shadow=ft.BoxShadow(blur_radius=8, spread_radius=0, color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)),
                     animate_border_color=ft.Animation(200, ft.AnimationCurve.EASE_IN_OUT),
+                ),
+                ft.Container(
+                    height=2,
+                    bgcolor=ft.Colors.TRANSPARENT,
+                    animate_bgcolor=ft.Animation(200, ft.AnimationCurve.EASE_IN_OUT),
                 ),
                 ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT),
                 ft.Row([clear_chat_btn, self.input_count], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
