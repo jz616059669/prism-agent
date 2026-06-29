@@ -733,6 +733,7 @@ class PrismDesktop:
             selected_index=0,
             on_change=lambda e: None,
             expand=True,
+            animation_duration=200,
         )
         return ft.Column(
             [
@@ -1312,6 +1313,7 @@ class PrismDesktop:
             selected_index=0,
             on_change=lambda e: None,
             expand=True,
+            animation_duration=200,
         )
         return ft.Column(
             [
