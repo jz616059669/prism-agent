@@ -97,9 +97,10 @@ class PrismDesktop:
         self._bind_context_menu()
         self._bind_tray()
         # Update clock every second
-        def _tick(_):
-            self._update_clock()
-        self.page.add_periodic_callback(_tick, 1000)
+        if hasattr(self.page, 'add_periodic_callback'):
+            def _tick(_):
+                self._update_clock()
+            self.page.add_periodic_callback(_tick, 1000)
         # Placeholder opacity handled by animate_opacity on show/hide
         self._maybe_show_setup_wizard()
         self._settings = self._load_settings()
@@ -519,8 +520,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
-                ink=True,
-                shadow=ft.BoxShadow(blur_radius=8, spread_radius=0, color=ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE)),
+                                shadow=ft.BoxShadow(blur_radius=8, spread_radius=0, color=ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE)),
             ),
             ft.Container(height=12),
             ft.Container(
@@ -549,8 +549,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
-                ink=True,
-            ),
+                            ),
             ft.Container(height=12),
             ft.Container(
                 content=ft.Column([
@@ -583,8 +582,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
-                ink=True,
-            ),
+                            ),
             ft.Container(height=12),
             ft.Container(
                 content=ft.Column([
@@ -596,8 +594,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
-                ink=True,
-            ),
+                            ),
         ])
         return self._sidebar_container
 
@@ -618,7 +615,7 @@ class PrismDesktop:
         )
         self.input_count = ft.Text("0 字", size=11, color=ft.Colors.ON_SURFACE)
         self.input_field.on_change = lambda e: self._on_input_change()
-        self.send_btn = ft.IconButton(icon=ft.Icons.SEND_ROUNDED, tooltip="发送", bgcolor=ft.Colors.PRIMARY, icon_color=ft.Colors.ON_PRIMARY, animate_scale=True, scale=1.0, disabled=True, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)))
+        self.send_btn = ft.IconButton(icon=ft.Icons.SEND_ROUNDED, tooltip="发送", bgcolor=ft.Colors.PRIMARY, icon_color=ft.Colors.ON_PRIMARY, scale=1.0, disabled=True, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)))
         self.send_btn.on_click = lambda e: self._send()
         self.input_field.on_change = lambda e: self._on_input_change()
         accent = self._input_accent
@@ -632,7 +629,7 @@ class PrismDesktop:
         
         self._chat_placeholder = ft.Column(
             [
-                ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.4, animate_scale=True, scale=1.0),
+                ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.4, scale=1.0),
                 ft.Container(height=12),
                 ft.Text("输入消息开始对话", size=13, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.CENTER, opacity=0.6),
             ],
@@ -727,6 +724,7 @@ class PrismDesktop:
             expand=True,
         )
         self.right_tabs = ft.Tabs(
+            length=320,
             content=self._right_tab_content,
             selected_index=0,
             on_change=lambda e: None,
@@ -1097,8 +1095,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
-                ink=True,
-                shadow=ft.BoxShadow(blur_radius=8, spread_radius=0, color=ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE)),
+                                shadow=ft.BoxShadow(blur_radius=8, spread_radius=0, color=ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE)),
             ),
             ft.Container(height=12),
             ft.Container(
@@ -1127,8 +1124,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
-                ink=True,
-            ),
+                            ),
             ft.Container(height=12),
             ft.Container(
                 content=ft.Column([
@@ -1161,8 +1157,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
-                ink=True,
-            ),
+                            ),
             ft.Container(height=12),
             ft.Container(
                 content=ft.Column([
@@ -1174,8 +1169,7 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=10,
                 padding=10,
-                ink=True,
-            ),
+                            ),
         ])
         return self._sidebar_container
 
@@ -1196,7 +1190,7 @@ class PrismDesktop:
         )
         self.input_count = ft.Text("0 字", size=11, color=ft.Colors.ON_SURFACE)
         self.input_field.on_change = lambda e: self._on_input_change()
-        self.send_btn = ft.IconButton(icon=ft.Icons.SEND_ROUNDED, tooltip="发送", bgcolor=ft.Colors.PRIMARY, icon_color=ft.Colors.ON_PRIMARY, animate_scale=True, scale=1.0, disabled=True, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)))
+        self.send_btn = ft.IconButton(icon=ft.Icons.SEND_ROUNDED, tooltip="发送", bgcolor=ft.Colors.PRIMARY, icon_color=ft.Colors.ON_PRIMARY, scale=1.0, disabled=True, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)))
         self.send_btn.on_click = lambda e: self._send()
         self.input_field.on_change = lambda e: self._on_input_change()
         accent = self._input_accent
@@ -1210,7 +1204,7 @@ class PrismDesktop:
         
         self._chat_placeholder = ft.Column(
             [
-                ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.4, animate_scale=True, scale=1.0),
+                ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.4, scale=1.0),
                 ft.Container(height=12),
                 ft.Text("输入消息开始对话", size=13, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.CENTER, opacity=0.6),
             ],
@@ -1305,6 +1299,7 @@ class PrismDesktop:
             expand=True,
         )
         self.right_tabs = ft.Tabs(
+            length=320,
             content=self._right_tab_content,
             selected_index=0,
             on_change=lambda e: None,
