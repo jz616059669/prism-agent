@@ -731,7 +731,6 @@ class PrismDesktop:
             selected_index=0,
             on_change=lambda e: None,
             expand=True,
-            tab_alignment=ft.TabAlignment.START,
         )
         return ft.Column(
             [
@@ -1310,7 +1309,6 @@ class PrismDesktop:
             selected_index=0,
             on_change=lambda e: None,
             expand=True,
-            tab_alignment=ft.TabAlignment.START,
         )
         return ft.Column(
             [
