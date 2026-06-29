@@ -633,6 +633,7 @@ class PrismDesktop:
             self.send_btn.update()
             self._send()
         self.send_btn.on_click = _on_send_click
+        self.send_btn.on_hover = lambda e: (self.send_btn.update() if not self.send_btn.disabled else None)
         self.stop_btn = ft.IconButton(icon=ft.Icons.STOP_ROUNDED, tooltip="停止生成", visible=False, bgcolor=ft.Colors.ERROR_CONTAINER, icon_color=ft.Colors.ON_ERROR_CONTAINER, animate_scale=ft.Animation(180, ft.AnimationCurve.EASE_IN_OUT))
         self.stop_btn.on_click = lambda e: self._stop_send()
         self.input_field.on_submit = lambda e: self._send()
@@ -657,8 +658,8 @@ class PrismDesktop:
         self._chat_placeholder = ft.Column(
             [
                 ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.5, scale=1.0),
-                ft.Container(height=14),
-                ft.Text("输入消息开始对话", size=13, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.CENTER, opacity=0.7),
+                ft.Container(height=16),
+                ft.Text("输入消息开始对话", size=14, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.CENTER, opacity=0.8),
             ],
             alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
