@@ -520,7 +520,8 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=14,
                 padding=12,
-                shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)),
+                shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE)),
+                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE))),
             ),
             ft.Container(height=12),
             ft.Container(
@@ -534,7 +535,7 @@ class PrismDesktop:
                 border_radius=14,
                 padding=10,
                 border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
-                shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)),
+                shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE)),
             ),
             ft.Container(height=12),
             ft.Container(
@@ -549,7 +550,8 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=14,
                 padding=12,
-                shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)),
+                shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE)),
+                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE))),
             ),
             ft.Container(height=12),
             ft.Container(
@@ -567,7 +569,8 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=14,
                 padding=12,
-                shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)),
+                shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE)),
+                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE))),
                 border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)),
             ),
             ft.Container(height=12),
@@ -584,7 +587,8 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=14,
                 padding=12,
-                shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)),
+                shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE)),
+                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE))),
             ),
             ft.Container(height=12),
             ft.Container(
@@ -597,7 +601,8 @@ class PrismDesktop:
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=14,
                 padding=12,
-                shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)),
+                shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE)),
+                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE))),
             ),
         ])
         return self._sidebar_container
@@ -681,7 +686,7 @@ class PrismDesktop:
                     border_radius=14,
                     padding=ft.Padding(10, 8, 10, 8),
                     border=ft.Border(bottom=ft.border.BorderSide(2.5, ft.Colors.PRIMARY)),
-                    shadow=ft.BoxShadow(blur_radius=14, spread_radius=0, color=ft.Colors.with_opacity(0.25, ft.Colors.ON_SURFACE)),
+                    shadow=ft.BoxShadow(blur_radius=16, spread_radius=0, color=ft.Colors.with_opacity(0.3, ft.Colors.ON_SURFACE)),
                 ),
                 ft.Container(
                     height=2,
