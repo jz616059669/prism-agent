@@ -508,7 +508,7 @@ class PrismDesktop:
             ),
             padding=ft.Padding(16, 16, 16, 16),
             border_radius=12,
-            bgcolor=ft.Colors.with_opacity(0.6, ft.Colors.SURFACE_CONTAINER),
+            bgcolor=ft.Colors.with_opacity(0.7, ft.Colors.SURFACE_CONTAINER),
         )
 
         sidebar_content = self._sidebar_container.content
