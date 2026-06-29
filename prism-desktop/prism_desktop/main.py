@@ -617,7 +617,7 @@ class PrismDesktop:
         self.stop_btn = ft.IconButton(icon=ft.Icons.STOP_ROUNDED, tooltip="停止生成", visible=False, bgcolor=ft.Colors.ERROR_CONTAINER, icon_color=ft.Colors.ON_ERROR_CONTAINER, ink=True)
         self.stop_btn.on_click = lambda e: self._stop_send()
         self.input_field.on_submit = lambda e: self._send()
-        clear_chat_btn = ft.TextButton("清屏", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6)))
+        clear_chat_btn = ft.TextButton("清屏", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED)
         clear_chat_btn.on_click = lambda e: self._clear_chat()
         
         self._chat_placeholder = ft.Column(
@@ -1188,7 +1188,7 @@ class PrismDesktop:
         self.stop_btn = ft.IconButton(icon=ft.Icons.STOP_ROUNDED, tooltip="停止生成", visible=False, bgcolor=ft.Colors.ERROR_CONTAINER, icon_color=ft.Colors.ON_ERROR_CONTAINER, ink=True)
         self.stop_btn.on_click = lambda e: self._stop_send()
         self.input_field.on_submit = lambda e: self._send()
-        clear_chat_btn = ft.TextButton("清屏", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6)))
+        clear_chat_btn = ft.TextButton("清屏", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED)
         clear_chat_btn.on_click = lambda e: self._clear_chat()
         
         self._chat_placeholder = ft.Column(
