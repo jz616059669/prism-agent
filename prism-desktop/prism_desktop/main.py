@@ -259,6 +259,15 @@ class PrismDesktop:
         self._save_settings()
         self.page.update()
 
+    def _animate_sidebar_cards(self):
+        import time
+        time.sleep(0.1)
+        for card in self._sidebar_container.content.controls:
+            if hasattr(card, 'animate_opacity'):
+                card.opacity = 1
+                card.update()
+                time.sleep(0.05)
+
     def _cycle_theme(self):
         current = self._settings.get("theme", "Dark")
         themes = ["Dark", "Light", "Midnight", "Warm"]
@@ -814,6 +823,15 @@ class PrismDesktop:
         self._settings["sidebar_collapsed"] = not visible
         self._save_settings()
         self.page.update()
+
+    def _animate_sidebar_cards(self):
+        import time
+        time.sleep(0.1)
+        for card in self._sidebar_container.content.controls:
+            if hasattr(card, 'animate_opacity'):
+                card.opacity = 1
+                card.update()
+                time.sleep(0.05)
 
     def _cycle_theme(self):
         current = self._settings.get("theme", "Dark")
