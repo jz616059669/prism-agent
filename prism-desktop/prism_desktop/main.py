@@ -511,9 +511,9 @@ class PrismDesktop:
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 tight=True,
             ),
-            padding=ft.Padding(32, 32, 32, 32),
+            padding=ft.Padding(36, 36, 36, 36),
             border_radius=12,
-            bgcolor=ft.Colors.with_opacity(0.6, ft.Colors.SURFACE_CONTAINER),
+            bgcolor=ft.Colors.with_opacity(0.7, ft.Colors.SURFACE_CONTAINER),
         )
 
         sidebar_content = self._sidebar_container.content
@@ -521,17 +521,17 @@ class PrismDesktop:
             ft.Container(
                 content=ft.Column([
                     ft.Row([ft.Text("模型配置", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), ft.Icon(ft.Icons.TUNE_ROUNDED, size=14, color=ft.Colors.PRIMARY)], spacing=6, tight=True),
-                    ft.Container(height=16),
+                    ft.Container(height=18),
                     # Preset selector
                     ft.Row([
                         self.model_dropdown,
                         ft.IconButton(icon=ft.Icons.BOOKMARK_ROUNDED, tooltip="保存为预设", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)), on_click=lambda e: self._save_preset()),
                     ], spacing=6, tight=True),
-                    ft.Container(height=16),
+                    ft.Container(height=18),
                     self.provider_textfield,
-                    ft.Container(height=16),
+                    ft.Container(height=18),
                     self.base_url_textfield,
-                    ft.Container(height=16),
+                    ft.Container(height=18),
                     self.api_key_textfield,
                     ft.Container(height=12),
                     ft.Row([
