@@ -485,7 +485,7 @@ class PrismDesktop:
         self.skill_list = ft.Column(spacing=4, tight=True)
 
         # 会话
-        self.session_new_btn = ft.IconButton(icon=ft.Icons.ADD_ROUNDED, tooltip="新建对话", icon_color=ft.Colors.ON_SURFACE_VARIANT)
+        self.session_new_btn = ft.IconButton(icon=ft.Icons.ADD_ROUNDED, tooltip="新建对话", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE)))
         self.session_new_btn.on_click = lambda e: self._new_session()
         self.session_name_field = ft.TextField(hint_text="会话名称", width=200, border_radius=10)
         self.session_save_btn = ft.Button("保存会话", icon=ft.Icons.BOOKMARK_ROUNDED, width=120, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=ft.Padding(12, 10, 12, 10)))
@@ -502,7 +502,7 @@ class PrismDesktop:
                     # Preset selector
                     ft.Row([
                         self.model_dropdown,
-                        ft.IconButton(icon=ft.Icons.BOOKMARK_ROUNDED, tooltip="保存为预设", icon_color=ft.Colors.ON_SURFACE_VARIANT, on_click=lambda e: self._save_preset()),
+                        ft.IconButton(icon=ft.Icons.BOOKMARK_ROUNDED, tooltip="保存为预设", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE)), on_click=lambda e: self._save_preset()),
                     ], spacing=6, tight=True),
                     ft.Container(height=4),
                     self.provider_textfield,
@@ -513,7 +513,7 @@ class PrismDesktop:
                     ft.Container(height=8),
                     ft.Row([
                         save_btn,
-                        ft.TextButton("预设管理", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6)), on_click=lambda e: self._open_preset_manager()),
+                        ft.TextButton("预设管理", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), on_click=lambda e: self._open_preset_manager()),
                     ], spacing=8, tight=True),
                 ], tight=True, spacing=4),
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
@@ -702,7 +702,7 @@ class PrismDesktop:
             border_color=ft.Colors.OUTLINE_VARIANT,
             suffix=ft.IconButton(icon=ft.Icons.CLEAR_ROUNDED, tooltip="清空", icon_size=16, icon_color=ft.Colors.ON_SURFACE_VARIANT, on_click=lambda e: self.terminal_input.clear()),
         )
-        terminal_run_btn = ft.IconButton(icon=ft.Icons.PLAY_ARROW_ROUNDED, tooltip="执行命令", icon_color=ft.Colors.ON_SURFACE_VARIANT)
+        terminal_run_btn = ft.IconButton(icon=ft.Icons.PLAY_ARROW_ROUNDED, tooltip="执行命令", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE)))
         terminal_run_btn.on_click = lambda e: self._run_terminal_command()
         self.terminal_input.on_submit = lambda e: self._run_terminal_command()
         self.terminal_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO)
@@ -717,7 +717,7 @@ class PrismDesktop:
             [
                 ft.Row([self.terminal_input, terminal_run_btn], spacing=8),
                 ft.Row([clear_terminal_btn], alignment=ft.MainAxisAlignment.END),
-                ft.Container(self.terminal_list, expand=True, border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), bottom=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), right=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)), border_radius=12, padding=12, bgcolor=ft.Colors.SURFACE),
+                ft.Container(self.terminal_list, expand=True, border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), bottom=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), right=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)), border_radius=12, padding=ft.Padding(12, 8, 12, 8), bgcolor=ft.Colors.SURFACE),
             ],
             expand=True,
             spacing=8,
@@ -725,7 +725,7 @@ class PrismDesktop:
         mcp_tab = ft.Column(
             [
                 ft.Row([clear_mcp_btn], alignment=ft.MainAxisAlignment.END),
-                ft.Container(self.mcp_list, expand=True, border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), bottom=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), right=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)), border_radius=12, padding=12, bgcolor=ft.Colors.SURFACE),
+                ft.Container(self.mcp_list, expand=True, border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), bottom=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), right=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)), border_radius=12, padding=ft.Padding(12, 8, 12, 8), bgcolor=ft.Colors.SURFACE),
             ],
             expand=True,
             spacing=8,
@@ -875,16 +875,6 @@ class PrismDesktop:
         self._save_settings()
         self.page.update()
 
-    def _animate_sidebar_cards(self):
-        import time
-        time.sleep(0.1)
-        for card in self._sidebar_container.content.controls:
-            if hasattr(card, 'animate_opacity'):
-                card.opacity = 1
-                card.update()
-                time.sleep(0.05)
-
-    def _cycle_theme(self):
         current = self._settings.get("theme", "Dark")
         themes = ["Dark", "Light", "Midnight", "Warm"]
         idx = themes.index(current) if current in themes else 0
@@ -1123,7 +1113,7 @@ class PrismDesktop:
                     ft.Container(height=8),
                     ft.Row([
                         save_btn,
-                        ft.TextButton("预设管理", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6)), on_click=lambda e: self._open_preset_manager()),
+                        ft.TextButton("预设管理", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10)), on_click=lambda e: self._open_preset_manager()),
                     ], spacing=8, tight=True),
                 ], tight=True, spacing=4),
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
@@ -1261,7 +1251,6 @@ class PrismDesktop:
             alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         )
-        self._chat_placeholder.controls[0].on_hover = lambda e: (self._chat_placeholder.controls[0].animate_scale(0.2, 1.08 if e.data == 'true' else 1.0), self._chat_placeholder.controls[0].update())
         return ft.Column(
             [
                 ft.Text("对话", size=18, weight=ft.FontWeight.BOLD),
@@ -1326,7 +1315,7 @@ class PrismDesktop:
             [
                 ft.Row([self.terminal_input, terminal_run_btn], spacing=8),
                 ft.Row([clear_terminal_btn], alignment=ft.MainAxisAlignment.END),
-                ft.Container(self.terminal_list, expand=True, border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), bottom=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), right=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)), border_radius=12, padding=12, bgcolor=ft.Colors.SURFACE),
+                ft.Container(self.terminal_list, expand=True, border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), bottom=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), right=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)), border_radius=12, padding=ft.Padding(12, 8, 12, 8), bgcolor=ft.Colors.SURFACE),
             ],
             expand=True,
             spacing=8,
@@ -1334,7 +1323,7 @@ class PrismDesktop:
         mcp_tab = ft.Column(
             [
                 ft.Row([clear_mcp_btn], alignment=ft.MainAxisAlignment.END),
-                ft.Container(self.mcp_list, expand=True, border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), bottom=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), right=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)), border_radius=12, padding=12, bgcolor=ft.Colors.SURFACE),
+                ft.Container(self.mcp_list, expand=True, border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), bottom=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT), right=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)), border_radius=12, padding=ft.Padding(12, 8, 12, 8), bgcolor=ft.Colors.SURFACE),
             ],
             expand=True,
             spacing=8,
