@@ -232,13 +232,13 @@ class PrismDesktop:
 
     def _build_appbar(self) -> ft.AppBar:
         self.title_text = ft.Text("PRISM Agent", size=18, weight=ft.FontWeight.BOLD)
-        self.theme_icon_btn = ft.IconButton(icon=ft.Icons.SETTINGS_ROUNDED, tooltip="切换主题", icon_color=ft.Colors.ON_SURFACE_VARIANT)
+        self.theme_icon_btn = ft.IconButton(icon=ft.Icons.SETTINGS_ROUNDED, tooltip="切换主题", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE)))
         self.theme_icon_btn.on_click = lambda e: self._cycle_theme()
-        self.minimize_btn = ft.IconButton(icon=ft.Icons.MINIMIZE_ROUNDED, tooltip="最小化到托盘", icon_color=ft.Colors.ON_SURFACE_VARIANT)
+        self.minimize_btn = ft.IconButton(icon=ft.Icons.MINIMIZE_ROUNDED, tooltip="最小化到托盘", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE)))
         self.minimize_btn.on_click = lambda e: self._minimize_to_tray()
-        self.about_btn = ft.IconButton(icon=ft.Icons.INFO_ROUNDED, tooltip="关于", icon_color=ft.Colors.ON_SURFACE_VARIANT)
+        self.about_btn = ft.IconButton(icon=ft.Icons.INFO_ROUNDED, tooltip="关于", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE)))
         self.about_btn.on_click = lambda e: self._about(e)
-        self.sidebar_toggle_btn = ft.IconButton(icon=ft.Icons.MENU_ROUNDED, tooltip="切换侧边栏", icon_color=ft.Colors.ON_SURFACE_VARIANT)
+        self.sidebar_toggle_btn = ft.IconButton(icon=ft.Icons.MENU_ROUNDED, tooltip="切换侧边栏", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE)))
         self.sidebar_toggle_btn.on_click = lambda e: self._toggle_sidebar()
         return ft.AppBar(
             title=self.title_text,
@@ -640,7 +640,7 @@ class PrismDesktop:
             except Exception:
                 pass
         self._on_input_change = _on_input_change
-        clear_chat_btn = ft.TextButton("清屏", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED)
+        clear_chat_btn = ft.TextButton("清屏", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED)
         clear_chat_btn.on_click = lambda e: self._clear_chat()
         
         self._chat_placeholder = ft.Column(
@@ -708,9 +708,9 @@ class PrismDesktop:
         self.terminal_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO)
         self.mcp_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO)
         
-        clear_terminal_btn = ft.TextButton("清空终端", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED)
+        clear_terminal_btn = ft.TextButton("清空终端", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED)
         clear_terminal_btn.on_click = lambda e: self._clear_terminal()
-        clear_mcp_btn = ft.TextButton("清空 MCP", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED)
+        clear_mcp_btn = ft.TextButton("清空 MCP", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED)
         clear_mcp_btn.on_click = lambda e: self._clear_mcp()
         
         terminal_tab = ft.Column(
@@ -1249,7 +1249,7 @@ class PrismDesktop:
             except Exception:
                 pass
         self._on_input_change = _on_input_change
-        clear_chat_btn = ft.TextButton("清屏", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED)
+        clear_chat_btn = ft.TextButton("清屏", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED)
         clear_chat_btn.on_click = lambda e: self._clear_chat()
         
         self._chat_placeholder = ft.Column(
@@ -1317,9 +1317,9 @@ class PrismDesktop:
         self.terminal_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO)
         self.mcp_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO)
         
-        clear_terminal_btn = ft.TextButton("清空终端", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED)
+        clear_terminal_btn = ft.TextButton("清空终端", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED)
         clear_terminal_btn.on_click = lambda e: self._clear_terminal()
-        clear_mcp_btn = ft.TextButton("清空 MCP", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=6), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED)
+        clear_mcp_btn = ft.TextButton("清空 MCP", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED)
         clear_mcp_btn.on_click = lambda e: self._clear_mcp()
         
         terminal_tab = ft.Column(
