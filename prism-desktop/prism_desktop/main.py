@@ -153,7 +153,7 @@ class PrismDesktop:
             content=ft.Column(
                 [
                     ft.Text("请先填写模型配置，否则无法正常对话。", size=13, color=ft.Colors.ON_SURFACE_VARIANT),
-                    ft.Container(height=8),
+                    ft.Container(height=12),
                     wizard_provider,
                     ft.Container(height=6),
                     wizard_key,
@@ -399,7 +399,7 @@ class PrismDesktop:
             content=ft.Column([
                 ft.Text("保存当前配置为新预设：", size=12, color=ft.Colors.ON_SURFACE_VARIANT),
                 ft.Row([preset_name_field, ft.IconButton(ft.Icons.ADD_ROUNDED, tooltip="保存", icon_color=ft.Colors.PRIMARY, on_click=save_as_preset)], spacing=8, tight=True),
-                ft.Container(height=8),
+                ft.Container(height=12),
                 ft.Text("已有预设：", size=12, color=ft.Colors.ON_SURFACE_VARIANT),
                 ft.Column(preset_buttons, spacing=6, tight=True, scroll=ft.ScrollMode.AUTO),
             ], tight=True, spacing=6, height=400, width=320),
@@ -528,7 +528,7 @@ class PrismDesktop:
                     self.base_url_textfield,
                     ft.Container(height=6),
                     self.api_key_textfield,
-                    ft.Container(height=8),
+                    ft.Container(height=12),
                     ft.Row([
                         save_btn,
                         ft.TextButton("预设管理", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.SURFACE_CONTAINER, color=ft.Colors.ON_SURFACE), on_click=lambda e: self._open_preset_manager()),
@@ -562,7 +562,7 @@ class PrismDesktop:
             ft.Container(
                 content=ft.Column([
                     ft.Row([ft.Text("MCP 控制", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), ft.Icon(ft.Icons.EXTENSION_ROUNDED, size=14, color=ft.Colors.PRIMARY)], spacing=8, tight=True),
-                    ft.Container(height=8),
+                    ft.Container(height=12),
                     self.mcp_refresh_btn,
                     ft.Container(height=6),
                     ft.Text("已配置服务器", size=12, color=ft.Colors.ON_SURFACE),
@@ -579,10 +579,10 @@ class PrismDesktop:
                 content=ft.Column([
                     ft.Text("Skills", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
                     ft.Icon(ft.Icons.EXTENSION, size=14, color=ft.Colors.PRIMARY),
-                    ft.Container(height=8),
+                    ft.Container(height=12),
                     self.skill_refresh_btn,
                     self.skill_install_field,
-                    ft.Container(height=8),
+                    ft.Container(height=12),
                     self.skill_install_btn,
                     ft.Container(height=6),
                     ft.Text("可用 Skills", size=12, color=ft.Colors.ON_SURFACE),
@@ -599,7 +599,7 @@ class PrismDesktop:
                 content=ft.Column([
                     ft.Text("会话", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
                     ft.Icon(ft.Icons.CHAT, size=14, color=ft.Colors.PRIMARY),
-                    ft.Container(height=8),
+                    ft.Container(height=12),
                     ft.Row([self.session_name_field, self.session_save_btn], spacing=6),
                     ft.Container(height=6),
                     ft.Text("已保存会话", size=12, color=ft.Colors.ON_SURFACE),
@@ -617,7 +617,7 @@ class PrismDesktop:
                 content=ft.Column([
                     ft.Text("状态", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
                     ft.Icon(ft.Icons.INFO, size=14, color=ft.Colors.PRIMARY),
-                    ft.Container(height=8),
+                    ft.Container(height=12),
                     ft.Row([self.browser_status_icon, self.browser_status_text], spacing=10, alignment=ft.MainAxisAlignment.START),
                     ft.Row([self.status_text, ft.Container(expand=True), self._clock_text], spacing=10),
                 ], tight=True, spacing=6),
@@ -691,7 +691,7 @@ class PrismDesktop:
             [
                 ft.Row([ft.Text("对话", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), ft.Container(expand=True), ft.Row([self._clock_text], alignment=ft.MainAxisAlignment.END)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                 ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT, opacity=0.6),
-                ft.Container(height=8),
+                ft.Container(height=12),
                 ft.Stack(
                     [
                         self.chat_list,
@@ -709,7 +709,7 @@ class PrismDesktop:
                     content=ft.Row([self.input_field, self.send_btn, self.stop_btn], spacing=10, expand=True),
                     bgcolor=ft.Colors.SURFACE_CONTAINER,
                     border_radius=14,
-                    padding=ft.Padding(10, 8, 10, 8),
+                    padding=ft.Padding(12, 10, 12, 10),
                     border=ft.Border(bottom=ft.border.BorderSide(2, ft.Colors.PRIMARY)),
                 ),
                 ft.Container(
@@ -717,7 +717,7 @@ class PrismDesktop:
                     bgcolor=ft.Colors.TRANSPARENT,
                 ),
                 ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.25),
-                ft.Row([clear_chat_btn, self.input_count], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                ft.Row([clear_chat_btn, self.input_count], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=8),
                 ft.Container(height=6),
                 ft.Text("Enter 发送 / Shift+Enter 换行", size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.9),
             ],
@@ -787,6 +787,10 @@ class PrismDesktop:
             expand=True,
             animation_duration=200,
         )
+        self.right_tabs.tabs = [
+            ft.Tab(text="终端"),
+            ft.Tab(text="MCP"),
+        ]
         return ft.Column(
             [
                 self.right_tabs,
