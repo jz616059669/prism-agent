@@ -484,7 +484,7 @@ class PrismDesktop:
         self.session_save_btn = ft.Button("保存会话", icon=ft.Icons.BOOKMARK_ROUNDED, width=120, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding(12, 10, 12, 10)))
         self.session_save_btn.on_click = lambda e: self._save_session()
         self.session_list = ft.Column(spacing=4, tight=True)
-        self._session_empty_text = ft.Text("暂无保存的会话", size=11, color=ft.Colors.ON_SURFACE)
+        self._session_empty_text = ft.Text("暂无保存的会话", size=11, color=ft.Colors.ON_SURFACE_VARIANT)
 
         sidebar_content = self._sidebar_container.content
         sidebar_content.controls.extend([
@@ -1055,7 +1055,7 @@ class PrismDesktop:
         self.session_save_btn = ft.Button("保存会话", icon=ft.Icons.BOOKMARK_ROUNDED, width=120, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8), padding=ft.Padding(12, 10, 12, 10)))
         self.session_save_btn.on_click = lambda e: self._save_session()
         self.session_list = ft.Column(spacing=4, tight=True)
-        self._session_empty_text = ft.Text("暂无保存的会话", size=11, color=ft.Colors.ON_SURFACE)
+        self._session_empty_text = ft.Text("暂无保存的会话", size=11, color=ft.Colors.ON_SURFACE_VARIANT)
 
         sidebar_content = self._sidebar_container.content
         sidebar_content.controls.extend([
