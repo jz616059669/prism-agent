@@ -662,7 +662,6 @@ class PrismDesktop:
                     padding=ft.Padding(12, 8, 12, 8),
                     border=ft.Border(bottom=ft.border.BorderSide(2.0, ft.Colors.OUTLINE_VARIANT)),
                     shadow=ft.BoxShadow(blur_radius=8, spread_radius=0, color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)),
-                    animate_border_color=ft.Animation(200, ft.AnimationCurve.EASE_IN_OUT),
                 ),
                 ft.Container(
                     height=2,
@@ -1242,7 +1241,6 @@ class PrismDesktop:
                     padding=ft.Padding(12, 8, 12, 8),
                     border=ft.Border(bottom=ft.border.BorderSide(2.0, ft.Colors.OUTLINE_VARIANT)),
                     shadow=ft.BoxShadow(blur_radius=8, spread_radius=0, color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)),
-                    animate_border_color=ft.Animation(200, ft.AnimationCurve.EASE_IN_OUT),
                 ),
                 ft.Container(
                     height=2,
