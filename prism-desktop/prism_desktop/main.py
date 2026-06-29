@@ -241,7 +241,7 @@ class PrismDesktop:
                 self.minimize_btn,
                 self.about_btn,
             ],
-            elevation=2,
+            elevation=4,
             bgcolor=ft.Colors.SURFACE,
         )
 
@@ -584,6 +584,8 @@ class PrismDesktop:
             shift_enter=True,
             border_radius=10,
             focused_border_color=ft.Colors.PRIMARY,
+            focused_border_width=2,
+            border_color=ft.Colors.OUTLINE_VARIANT,
         )
         self.input_count = ft.Text("0 字", size=11, color=ft.Colors.ON_SURFACE)
         self.input_field.on_change = lambda e: self._on_input_change()
@@ -682,10 +684,10 @@ class PrismDesktop:
         )
         self.right_tabs = ft.Tabs(
             content=self._right_tab_content,
-            length=400,
             selected_index=0,
             on_change=lambda e: None,
             expand=True,
+            tab_alignment=ft.TabAlignment.START,
         )
         return ft.Column(
             [
@@ -781,7 +783,7 @@ class PrismDesktop:
                 self.minimize_btn,
                 self.about_btn,
             ],
-            elevation=2,
+            elevation=4,
             bgcolor=ft.Colors.SURFACE,
         )
 
@@ -1124,6 +1126,8 @@ class PrismDesktop:
             shift_enter=True,
             border_radius=10,
             focused_border_color=ft.Colors.PRIMARY,
+            focused_border_width=2,
+            border_color=ft.Colors.OUTLINE_VARIANT,
         )
         self.input_count = ft.Text("0 字", size=11, color=ft.Colors.ON_SURFACE)
         self.input_field.on_change = lambda e: self._on_input_change()
@@ -1222,10 +1226,10 @@ class PrismDesktop:
         )
         self.right_tabs = ft.Tabs(
             content=self._right_tab_content,
-            length=400,
             selected_index=0,
             on_change=lambda e: None,
             expand=True,
+            tab_alignment=ft.TabAlignment.START,
         )
         return ft.Column(
             [
