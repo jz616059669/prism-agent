@@ -666,7 +666,6 @@ class PrismDesktop:
                 ft.Container(
                     height=2,
                     bgcolor=ft.Colors.TRANSPARENT,
-                    animate_bgcolor=ft.Animation(200, ft.AnimationCurve.EASE_IN_OUT),
                 ),
                 ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT),
                 ft.Row([clear_chat_btn, self.input_count], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
@@ -1245,7 +1244,6 @@ class PrismDesktop:
                 ft.Container(
                     height=2,
                     bgcolor=ft.Colors.TRANSPARENT,
-                    animate_bgcolor=ft.Animation(200, ft.AnimationCurve.EASE_IN_OUT),
                 ),
                 ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT),
                 ft.Row([clear_chat_btn, self.input_count], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
