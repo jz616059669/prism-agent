@@ -311,9 +311,9 @@ class PrismDesktop:
             ft.Row(
                 [
                     sidebar,
-                    ft.VerticalDivider(width=1),
+                    ft.VerticalDivider(width=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.4),
                     self._chat_container,
-                    ft.VerticalDivider(width=1),
+                    ft.VerticalDivider(width=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.4),
                     self._right_container,
                 ],
                 expand=True,
@@ -891,9 +891,9 @@ class PrismDesktop:
             ft.Row(
                 [
                     sidebar,
-                    ft.VerticalDivider(width=1),
+                    ft.VerticalDivider(width=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.4),
                     self._chat_container,
-                    ft.VerticalDivider(width=1),
+                    ft.VerticalDivider(width=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.4),
                     self._right_container,
                 ],
                 expand=True,
