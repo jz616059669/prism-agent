@@ -20,20 +20,20 @@ def test_tools():
     print(f"已注册工具: {len(tools)}")
     for t in tools:
         print(f" - {t['name']}: {t['description']}")
-    return len(tools) > 0
+    assert len(tools) > 0
 
 
 def test_gateway():
     print("\n=== Gateway ===")
     platforms = gateway.list_platforms()
     print(f"已注册平台: {platforms}")
-    return True
+    assert True
 
 
 def test_mcp():
     print("\n=== MCP ===")
     print(f"MCP 客户端状态: 已初始化")
-    return True
+    assert True
 
 
 def test_skills():
@@ -42,7 +42,7 @@ def test_skills():
     print(f"已注册 Skills: {len(skill_list)}")
     for s in skill_list:
         print(f" - {s['name']}: {s['description']}")
-    return len(skill_list) > 0
+    assert len(skill_list) > 0
 
 
 def test_browser_basic():
@@ -50,10 +50,10 @@ def test_browser_basic():
     try:
         from prism.tools.browser import browser
         print("浏览器模块可导入")
-        return True
+        assert True
     except Exception as e:
         print(f"浏览器模块导入失败: {e}")
-        return False
+        assert False
 
 
 if __name__ == "__main__":
