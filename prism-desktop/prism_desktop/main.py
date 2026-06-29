@@ -49,7 +49,7 @@ class PrismDesktop:
         )
         self.status_text = ft.Text("就绪", size=12, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_500)
         self._input_accent = None
-        self.browser_status_icon = ft.Icon(ft.Icons.LANGUAGE_ROUNDED, size=16, color=ft.Colors.ON_SURFACE_VARIANT)
+        self.browser_status_icon = ft.Icon(ft.Icons.LANGUAGE_ROUNDED, size=18, color=ft.Colors.ON_SURFACE_VARIANT)
         self.browser_status_text = ft.Text("就绪", size=12, color=ft.Colors.ON_SURFACE)
         self.browser_connected = None
         self.messages = []
@@ -515,7 +515,7 @@ class PrismDesktop:
                     ft.Container(height=8),
                     ft.Row([
                         save_btn,
-                        ft.TextButton("预设管理", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12)), on_click=lambda e: self._open_preset_manager()),
+                        ft.TextButton("预设管理", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.SURFACE_CONTAINER, color=ft.Colors.ON_SURFACE), on_click=lambda e: self._open_preset_manager()),
                     ], spacing=8, tight=True),
                 ], tight=True, spacing=6),
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
@@ -711,7 +711,7 @@ class PrismDesktop:
             focused_border_color=ft.Colors.PRIMARY,
             focused_border_width=2,
             border_color=ft.Colors.OUTLINE_VARIANT,
-            suffix=ft.IconButton(icon=ft.Icons.CLEAR_ROUNDED, tooltip="清空", icon_size=16, icon_color=ft.Colors.ON_SURFACE_VARIANT, on_click=lambda e: self.terminal_input.clear()),
+            suffix=ft.IconButton(icon=ft.Icons.CLEAR_ROUNDED, tooltip="清空", icon_size=18, icon_color=ft.Colors.ON_SURFACE_VARIANT, on_click=lambda e: self.terminal_input.clear()),
         )
         terminal_run_btn = ft.IconButton(icon=ft.Icons.PLAY_ARROW_ROUNDED, tooltip="执行命令", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)))
         terminal_run_btn.on_click = lambda e: self._run_terminal_command()
@@ -746,7 +746,7 @@ class PrismDesktop:
         self._right_tab_content = ft.Column(
             [
                 terminal_tab,
-                ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.4),
+                ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.3),
                 mcp_tab,
             ],
             expand=True,
