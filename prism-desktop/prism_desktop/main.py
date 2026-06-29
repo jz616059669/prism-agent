@@ -554,7 +554,7 @@ class PrismDesktop:
                 ], tight=True, spacing=6),
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=14,
-                padding=10,
+                padding=12,
                 border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.6, ft.Colors.OUTLINE_VARIANT))),
                 shadow=ft.BoxShadow(blur_radius=12, spread_radius=0, color=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE)),
             ),
@@ -581,7 +581,7 @@ class PrismDesktop:
                     ft.Container(height=8),
                     self.skill_refresh_btn,
                     self.skill_install_field,
-                    ft.Container(height=6),
+                    ft.Container(height=8),
                     self.skill_install_btn,
                     ft.Container(height=6),
                     ft.Text("可用 Skills", size=12, color=ft.Colors.ON_SURFACE),
@@ -686,7 +686,7 @@ class PrismDesktop:
         self._chat_placeholder.controls[0].on_hover = lambda e: (self._chat_placeholder.controls[0].animate_scale(0.25, 1.08 if e.data == 'true' else 1.0), self._chat_placeholder.controls[0].update())
         return ft.Column(
             [
-                ft.Text("对话", size=20, weight=ft.FontWeight.BOLD),
+                ft.Row([ft.Text("对话", size=20, weight=ft.FontWeight.BOLD), ft.Container(expand=True), self._clock_text], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                 ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT, opacity=0.6),
                 ft.Container(height=8),
                 ft.Stack(
