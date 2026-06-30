@@ -759,6 +759,13 @@ class PrismDesktop:
             ft.Container(height=14),
             ft.Container(
                 content=ft.Column([
+                    ft.Text("快捷提示词", size=13, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Icon(ft.Icons.LIGHTBULB_ROUNDED, size=14, color=ft.Colors.PRIMARY),
+                    ft.Container(height=6),
+                    self._build_prompt_templates(),
+                    ft.Container(height=14),
+                    ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.5),
+                    ft.Container(height=14),
                     ft.Text(_("session_tab"), size=13, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
                     ft.Icon(ft.Icons.CHAT, size=14, color=ft.Colors.PRIMARY),
                     ft.Container(height=14),
@@ -852,9 +859,16 @@ class PrismDesktop:
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         )
         self._chat_placeholder.controls[0].on_hover = lambda e: (setattr(self._chat_placeholder.controls[0], 'scale', 1.08 if e.data == 'true' else 1.0), self._chat_placeholder.controls[0].update())
+        self.chat_search_field = ft.TextField(hint_text="搜索消息...", width=260, border_radius=18, dense=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), content_padding=ft.Padding(10, 8, 10, 8), bgcolor=ft.Colors.SURFACE_CONTAINER)
         return ft.Column(
             [
                 ft.Row([ft.Text(_("chat_tab"), size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), ft.Container(expand=True), ft.Row([self._clock_text], alignment=ft.MainAxisAlignment.END)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=14),
+                self.chat_search_field,
+                ft.Row([
+                    ft.IconButton(icon=ft.Icons.SEARCH_ROUNDED, tooltip="搜索", icon_color=ft.Colors.PRIMARY, on_click=lambda e: self._search_messages(self.chat_search_field.value or "")),
+                    ft.IconButton(icon=ft.Icons.ARROW_DOWNWARD_ROUNDED, tooltip="下一个", icon_color=ft.Colors.ON_SURFACE_VARIANT, on_click=lambda e: self._jump_to_next_match(self.chat_search_field.value or "")),
+                    ft.IconButton(icon=ft.Icons.ARROW_UPWARD_ROUNDED, tooltip="上一个", icon_color=ft.Colors.ON_SURFACE_VARIANT, on_click=lambda e: self._prev_match(self.chat_search_field.value or "")),
+                ], spacing=4, tight=True),
                 ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT, opacity=0.3),
                 ft.Container(height=14),
                 ft.Stack(
@@ -1491,6 +1505,18 @@ class PrismDesktop:
         command = self.terminal_input.value.strip() if hasattr(self, 'terminal_input') else ""
         if not command:
             return
+        # Save to terminal history
+        try:
+            if not hasattr(self, "_terminal_history"):
+                self._terminal_history = []
+                self._terminal_history_index = -1
+            if command and (not self._terminal_history or self._terminal_history[-1] != command):
+                self._terminal_history.append(command)
+                if len(self._terminal_history) > 200:
+                    self._terminal_history = self._terminal_history[-200:]
+            self._terminal_history_index = len(self._terminal_history)
+        except Exception:
+            pass
         self._append_terminal(f"$ {command}")
         self.terminal_input.value = ""
         self.terminal_input.update()

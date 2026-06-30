@@ -106,9 +106,12 @@ def _append(
     timestamp = datetime.datetime.now().strftime("%H:%M")
     try:
         import markdown
-        rendered = markdown.markdown(text, extensions=["fenced_code", "tables", "nl2br"])
+        rendered = markdown.markdown(text, extensions=["fenced_code", "tables", "nl2br", "pymdownx.arithmatex"])
     except Exception:
-        rendered = text
+        try:
+            rendered = markdown.markdown(text, extensions=["fenced_code", "tables", "nl2br"])
+        except Exception:
+            rendered = text
     is_error = not is_user and (text.startswith("Error:") or text.startswith("请求超时") or text.startswith("失败"))
     display_color = ft.Colors.ERROR if is_error else text_color
     if is_user:
@@ -155,6 +158,39 @@ def _append(
         )
     return message_row
 
+
+def _build_prompt_templates(self) -> ft.Column:
+    templates = [
+        ("翻译助手", "请将以下内容翻译成英文：\n"),
+        ("代码解释", "请解释以下代码的功能和逻辑：\n"),
+        ("总结摘要", "请用简短的几句话总结以下内容：\n"),
+        ("纠错润色", "请检查并修正以下文本中的语法和表达问题：\n"),
+        ("头脑风暴", "请针对以下主题提供创意想法和建议：\n"),
+    ]
+    buttons = []
+    for title, prompt in templates:
+        btn = ft.TextButton(
+            title,
+            style=ft.ButtonStyle(
+                shape=ft.RoundedRectangleBorder(radius=10),
+                bgcolor=ft.Colors.SURFACE_CONTAINER,
+                color=ft.Colors.ON_SURFACE,
+            ),
+            on_click=lambda e, p=prompt: self._apply_prompt_template(p),
+        )
+        buttons.append(btn)
+    return ft.Column(buttons, spacing=6, tight=True)
+
+def _apply_prompt_template(self, prompt: str):
+    try:
+        current = self.input_field.value or ""
+        self.input_field.value = prompt + current
+        self.input_field.focus()
+        self.input_field.update()
+        if hasattr(self, "_update_input_count"):
+            self._update_input_count()
+    except Exception:
+        pass
 
 def _clear_chat(self):
     self.chat_list.controls.clear()
@@ -224,6 +260,84 @@ def _pin_message(self, message_row):
     except Exception:
         pass
 
+
+    def _search_messages(self, query: str):
+        if not query or not hasattr(self, "chat_list"):
+            return
+        query = query.lower()
+        found = 0
+        for idx, control in enumerate(self.chat_list.controls):
+            try:
+                text = ""
+                if hasattr(control, "content") and hasattr(control.content, "controls"):
+                    for c in control.content.controls:
+                        if hasattr(c, "value") and isinstance(getattr(c, "value", None), str):
+                            text += c.value
+                if query and query in text.lower():
+                    found += 1
+                    try:
+                        control.bgcolor = ft.Colors.with_opacity(0.18, ft.Colors.PRIMARY)
+                    except Exception:
+                        pass
+                else:
+                    try:
+                        control.bgcolor = None
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+        self.chat_list.update()
+        self._set_status(f"搜索完成：找到 {found} 条", ft.Colors.GREEN_400 if found else ft.Colors.AMBER_400)
+
+    def _jump_to_next_match(self, query: str):
+        if not query or not hasattr(self, "chat_list"):
+            return
+        query = query.lower()
+        start = getattr(self, "_search_cursor", -1) + 1
+        controls = getattr(self.chat_list, "controls", [])
+        for idx in range(start, len(controls)):
+            control = controls[idx]
+            try:
+                text = ""
+                if hasattr(control, "content") and hasattr(control.content, "controls"):
+                    for c in control.content.controls:
+                        if hasattr(c, "value") and isinstance(getattr(c, "value", None), str):
+                            text += c.value
+                if query and query in text.lower():
+                    self._search_cursor = idx
+                    self.chat_list.scroll_to(idx=idx)
+                    self.chat_list.update()
+                    self._set_status(f"定位到第 {idx + 1} 条", ft.Colors.GREEN_400)
+                    return
+            except Exception:
+                pass
+        self._set_status("已到最后一条", ft.Colors.AMBER_400)
+
+    def _prev_match(self, query: str):
+        if not query or not hasattr(self, "chat_list"):
+            return
+        query = query.lower()
+        controls = getattr(self.chat_list, "controls", [])
+        start = getattr(self, "_search_cursor", len(controls))
+        for idx in range(start - 1, -1, -1):
+            control = controls[idx]
+            try:
+                text = ""
+                if hasattr(control, "content") and hasattr(control.content, "controls"):
+                    for c in control.content.controls:
+                        if hasattr(c, "value") and isinstance(getattr(c, "value", None), str):
+                            text += c.value
+                if query and query in text.lower():
+                    self._search_cursor = idx
+                    self.chat_list.scroll_to(idx=idx)
+                    self.chat_list.update()
+                    self._set_status(f"定位到第 {idx + 1} 条", ft.Colors.GREEN_400)
+                    return
+            except Exception:
+                pass
+        self._set_status("已到第一条", ft.Colors.AMBER_400)
+
+
 def _on_input_change(self):
     try:
         text = self.input_field.value or ""
@@ -234,6 +348,39 @@ def _on_input_change(self):
             DRAFTS_PATH.write_text(text, encoding="utf-8")
         except Exception:
             pass
+    except Exception:
+        pass
+
+def _terminal_history_up(self):
+    try:
+        if not hasattr(self, "_terminal_history"):
+            self._terminal_history = []
+            self._terminal_history_index = -1
+        if not self._terminal_history:
+            return
+        current = self.input_field.value or ""
+        if self._terminal_history_index == -1:
+            self._terminal_history_buffer = current
+        self._terminal_history_index = max(0, self._terminal_history_index - 1)
+        self.input_field.value = self._terminal_history[self._terminal_history_index]
+        self.input_field.update()
+    except Exception:
+        pass
+
+def _terminal_history_down(self):
+    try:
+        if not hasattr(self, "_terminal_history"):
+            self._terminal_history = []
+            self._terminal_history_index = -1
+        if not self._terminal_history:
+            return
+        if self._terminal_history_index + 1 >= len(self._terminal_history):
+            self.input_field.value = getattr(self, "_terminal_history_buffer", "")
+            self._terminal_history_index = len(self._terminal_history)
+        else:
+            self._terminal_history_index += 1
+            self.input_field.value = self._terminal_history[self._terminal_history_index]
+        self.input_field.update()
     except Exception:
         pass
 
@@ -282,7 +429,7 @@ def _send(self, retry_text: str = ""):
             pass
         try:
             # Typewriter effect: render full accumulated text through markdown
-            rendered = markdown.markdown(stream_text[0], extensions=["fenced_code", "tables", "nl2br"]) if stream_text[0] else ""
+            rendered = markdown.markdown(stream_text[0], extensions=["fenced_code", "tables", "nl2br", "pymdownx.arithmatex"]) if stream_text[0] else ""
             placeholder.controls[0].content.controls[1] = _markdown_to_ft(self, rendered)
             placeholder.update()
         except Exception:
