@@ -207,6 +207,32 @@ def switch(name: str):
     except ValueError as e:
         console.print(f"[red]✗[/red] {e}")
 
+
+@cli.command()
+@click.argument('query')
+def session_search(query: str):
+    """搜索会话内容"""
+    from prism.agent import Agent
+    results = Agent.search_sessions(query)
+    if not results:
+        console.print(f"[yellow]未找到匹配 '{query}' 的会话[/yellow]")
+        return
+    
+    table = Table(title=f"Session Search: {query}")
+    table.add_column("Session", style="cyan")
+    table.add_column("Role")
+    table.add_column("Content")
+    table.add_column("Time")
+    
+    for r in results[:20]:  # 最多显示20条
+        table.add_row(
+            r.get("file", ""),
+            r.get("role", ""),
+            r.get("content", "")[:100],
+            r.get("timestamp", "")[:19] if r.get("timestamp") else "",
+        )
+    console.print(table)
+
 @cli.group()
 def acp():
     """ACP 协议通信命令"""

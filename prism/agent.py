@@ -14,6 +14,7 @@ from datetime import datetime
 from prism.providers.manager import provider_pool
 from prism.tools.registry import registry
 from prism.hooks import hook_manager
+from prism.memory import memory as persistent_memory
 
 logger = logging.getLogger("prism.agent")
 
@@ -193,7 +194,7 @@ class Agent:
         self.messages = [self.messages[0]]  # 保留系统消息
         self.tool_calls = []
 
-    def save_session(self, name: str) -> str:
+    def save_session(self, name: str, tags: Optional[List[str]] = None) -> str:
         """保存当前会话到本地"""
         session_dir = Path.home() / ".prism" / "sessions"
         session_dir.mkdir(parents=True, exist_ok=True)
@@ -209,6 +210,8 @@ class Agent:
                 }
                 for m in self.messages
             ],
+            "tags": tags or [],
+            "created_at": datetime.now().isoformat(),
         }
         path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
         return str(path)
@@ -229,18 +232,70 @@ class Agent:
                     role=m.get("role", "user"),
                     content=m.get("content", ""),
                     timestamp=ts,
+                    metadata=m.get("metadata") or {},
                 ))
             return True
         except Exception:
             return False
 
+    def search_sessions(self, query: str) -> List[Dict[str, Any]]:
+        """搜索会话内容，返回匹配的会话列表"""
+        session_dir = Path.home() / ".prism" / "sessions"
+        if not session_dir.exists():
+            return []
+        
+        results = []
+        query_lower = query.lower()
+        
+        for path in session_dir.glob("*.json"):
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+                messages = payload.get("messages", [])
+                
+                # 搜索消息内容
+                for msg in messages:
+                    if query_lower in msg.get("content", "").lower():
+                        results.append({
+                            "file": path.stem,
+                            "role": msg.get("role"),
+                            "content": msg.get("content", "")[:200],
+                            "timestamp": msg.get("timestamp"),
+                        })
+                        break  # 每个会话只返回第一个匹配
+                
+                # 搜索标签
+                tags = payload.get("tags", [])
+                if any(query_lower in tag.lower() for tag in tags):
+                    results.append({
+                        "file": path.stem,
+                        "role": "tag",
+                        "content": f"Tags: {', '.join(tags)}",
+                        "timestamp": payload.get("created_at"),
+                    })
+            except Exception:
+                continue
+        
+        return results[:50]  # 最多返回50条
+
     @staticmethod
-    def list_sessions() -> List[str]:
+    def list_sessions() -> List[Dict[str, Any]]:
         """列出已保存的会话"""
         session_dir = Path.home() / ".prism" / "sessions"
         if not session_dir.exists():
             return []
-        return [p.stem for p in session_dir.glob("*.json")]
+        sessions = []
+        for path in session_dir.glob("*.json"):
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+                sessions.append({
+                    "name": path.stem,
+                    "tags": payload.get("tags", []),
+                    "created_at": payload.get("created_at"),
+                    "message_count": len(payload.get("messages", [])),
+                })
+            except Exception:
+                continue
+        return sessions
 
     def delete_session(self, name: str) -> bool:
         """删除已保存的会话"""
@@ -251,6 +306,21 @@ class Agent:
         return False
 
 
+
+
+    # ========== 记忆系统 ==========
+    def remember(self, key: str, value: str, category: str = "general") -> None:
+        """存储到持久记忆"""
+        persistent_memory.remember(key, value, category)
+
+    def recall(self, key: str) -> Optional[str]:
+        """从持久记忆回忆"""
+        return persistent_memory.recall(key)
+
+    def search_memory(self, query: str, limit: int = 5) -> List[str]:
+        """搜索持久记忆"""
+        results = persistent_memory.search(query, limit=limit)
+        return [m.value for m in results]
 
 class SubagentManager:
     """管理子 Agent，借鉴 Codex CLI 的 subagent 分层机制。"""
