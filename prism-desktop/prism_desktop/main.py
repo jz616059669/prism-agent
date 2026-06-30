@@ -96,6 +96,7 @@ class PrismDesktop:
         self._save_settings_timer = None
         self._save_settings_delay = 0.5  # seconds
         self.page.on_keyboard_event = self._on_keyboard_event
+
     def _on_keyboard_event(self, e: ft.KeyboardEvent):
         try:
             if e.ctrl and e.key == "Enter":
@@ -110,6 +111,41 @@ class PrismDesktop:
         except Exception:
             pass
 
+    async def _check_for_updates(self):
+        try:
+            import urllib.request, json
+            req = urllib.request.Request(
+                "https://api.github.com/repos/jz616059669/prism-agent/releases/latest",
+                headers={"User-Agent": "PRISM-Desktop"},
+            )
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            latest = data.get("tag_name", "").lstrip("v")
+            current = prism_config.get("app.version", "0.0.0")
+            if latest and latest != current:
+                self._set_status(f"发现新版本 {latest}", ft.Colors.AMBER_400)
+                self._append_terminal(f"update available: {latest} (current {current})")
+        except Exception:
+            pass
+
+    def _validate_config(self) -> bool:
+        provider = (self.provider_textfield.value or "").strip()
+        base_url = (self.base_url_textfield.value or "").strip()
+        api_key = (self.api_key_textfield.value or "").strip()
+        model = (self.model_dropdown.value or "").strip()
+        missing = []
+        if not provider:
+            missing.append("模型提供商")
+        if not base_url:
+            missing.append("Base URL")
+        if not api_key:
+            missing.append("API Key")
+        if not model:
+            missing.append("默认模型")
+        if missing:
+            self._set_status(f"配置缺失：{', '.join(missing)}", ft.Colors.RED_400)
+            return False
+        return True
 
         self._open_config_dir = lambda e: system_ui._open_config_dir(self, e)
         self._open_terminal_here = lambda e: system_ui._open_terminal_here(self, e)
@@ -127,6 +163,8 @@ class PrismDesktop:
         # Placeholder opacity handled by animate_opacity on show/hide
         self._maybe_show_setup_wizard()
         self._settings = self._load_settings()
+        if hasattr(self.page, "run_task"):
+            self.page.run_task(self._check_for_updates)
         # Load model preset on startup
         presets = (self._settings.get("model_presets") or {})
         current_preset = self._settings.get("model_preset_name", "")

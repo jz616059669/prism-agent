@@ -44,6 +44,8 @@ def _save_settings(self: PrismDesktop) -> None:
 
 
 def _apply_settings(self: PrismDesktop) -> None:
+    if hasattr(self, "_validate_config") and not self._validate_config():
+        return
     settings = self._settings
     theme_name = settings.get("theme_mode") or "dark"
     theme_mode_map = {
@@ -56,6 +58,21 @@ def _apply_settings(self: PrismDesktop) -> None:
     if isinstance(theme_seed, str) and theme_seed:
         self.page.theme = ft.Theme(color_scheme_seed=theme_seed)
         self.page.dark_theme = ft.Theme(color_scheme_seed=theme_seed)
+    try:
+        provider = (self.provider_textfield.value or "").strip()
+        base_url = (self.base_url_textfield.value or "").strip()
+        api_key = (self.api_key_textfield.value or "").strip()
+        model = (self.model_dropdown.value or "").strip()
+        if provider:
+            prism_config.set("model.provider", provider)
+        if base_url:
+            prism_config.set("model.base_url", base_url)
+        if api_key:
+            prism_config.set("model.api_key", api_key)
+        if model:
+            prism_config.set("model.default", model)
+    except Exception:
+        pass
     current_session = settings.get("current_session")
     if current_session:
         try:
