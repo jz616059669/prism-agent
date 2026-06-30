@@ -144,6 +144,9 @@ class PrismDesktop:
             self._log_error("keyboard handler", exc)
 
     def _start_update_check(self):
+        if os.environ.get("PRISM_SKIP_UPDATE_CHECK", "").strip() in ("1", "true", "yes", "y"):
+            print("[UPDATE] skipped by PRISM_SKIP_UPDATE_CHECK", flush=True)
+            return
         if hasattr(self.page, "run_task"):
             self.page.run_task(self._check_for_updates)
 
