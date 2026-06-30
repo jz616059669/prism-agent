@@ -75,6 +75,7 @@ class PrismDesktop:
         self._skill_list_cache = []
         self._mcp_server_status = {}
         self._current_session_name = None
+        self._session_all_items = []
 
         self.model_dropdown = ft.Dropdown(
             label="默认模型",
@@ -400,7 +401,7 @@ class PrismDesktop:
         self._sidebar_container.width = 0 if was_visible else 300
         self._sidebar_container.animate = ft.Animation(duration=300, curve=ft.AnimationCurve.EASE_IN_OUT)
         self._sidebar_container.update()
-        self._settings["sidebar_collapsed"] = not visible
+        self._settings["sidebar_collapsed"] = str(not was_visible).lower()
         self._save_settings()
         self.page.update()
 

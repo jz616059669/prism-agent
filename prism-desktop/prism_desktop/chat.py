@@ -11,8 +11,11 @@ import json
 from datetime import datetime
 import flet as ft
 from typing import Optional
+from prism_desktop.i18n import gettext as _
 import markdown
 import subprocess
+
+DRAFTS_PATH = Path.home() / '.prism' / 'drafts.json'
 
 # 让桌面端可直接导入上层 prism 包和同目录 prism_desktop 包
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -35,8 +38,43 @@ def _format_time(self) -> str:
     return datetime.now().strftime("%m-%d %H:%M")
 
 
+_CODE_COPY_SCRIPT = """
+<script>
+function prismCopyCode(btn) {
+    const pre = btn.closest('pre');
+    const code = pre.querySelector('code');
+    const text = code ? code.innerText : pre.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        btn.innerText = '已复制';
+        setTimeout(() => btn.innerText = '复制', 1500);
+    }).catch(() => {
+        btn.innerText = '失败';
+        setTimeout(() => btn.innerText = '复制', 1500);
+    });
+}
+</script>
+"""
+
 def _markdown_to_ft(self, text: str):
     html = markdown.markdown(text, extensions=["fenced_code", "tables", "nl2br"])
+    # Inject copy button into each code block
+    if "<pre><code>" in html:
+        html = html.replace("<pre><code>", "<pre><code>")
+        parts = html.split("</code></pre>")
+        if len(parts) > 1:
+            new_parts = []
+            for idx, part in enumerate(parts[:-1]):
+                new_parts.append(part + "</code></pre>")
+                new_parts.append(
+                    '<button onclick="prismCopyCode(this)" '
+                    'style="position:absolute;top:8px;right:12px;'
+                    'background:rgba(255,255,255,0.12);color:#fff;'
+                    'border:none;border-radius:8px;padding:4px 10px;'
+                    'font-size:12px;cursor:pointer;backdrop-filter:blur(4px);">复制</button>'
+                )
+            new_parts.append(parts[-1])
+            html = "".join(new_parts)
+        html = _CODE_COPY_SCRIPT + html
     return ft.Markdown(
         value=html,
         selectable=True,
@@ -191,6 +229,11 @@ def _on_input_change(self):
         text = self.input_field.value or ""
         self.input_count.value = f"{len(text)} 字"
         self.input_count.update()
+        # Auto-save draft
+        try:
+            DRAFTS_PATH.write_text(text, encoding="utf-8")
+        except Exception:
+            pass
     except Exception:
         pass
 
@@ -200,6 +243,16 @@ def _send(self, retry_text: str = ""):
         text = retry_text or (self.input_field.value or "").strip()
     except Exception:
         return
+    if not text:
+        # Try restore from draft
+        try:
+            draft = DRAFTS_PATH.read_text(encoding="utf-8")
+            if draft.strip():
+                text = draft.strip()
+                self.input_field.value = ""
+                self.input_field.update()
+        except Exception:
+            pass
     if not text:
         return
     _append(self, "你", text)
@@ -228,12 +281,9 @@ def _send(self, retry_text: str = ""):
         except Exception:
             pass
         try:
-            placeholder.controls[0].content.controls[1] = ft.Text(
-                stream_text[0],
-                size=14,
-                selectable=True,
-                font_family="Consolas, Monaco, monospace",
-            )
+            # Typewriter effect: render full accumulated text through markdown
+            rendered = markdown.markdown(stream_text[0], extensions=["fenced_code", "tables", "nl2br"]) if stream_text[0] else ""
+            placeholder.controls[0].content.controls[1] = _markdown_to_ft(self, rendered)
             placeholder.update()
         except Exception:
             pass
