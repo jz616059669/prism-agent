@@ -95,6 +95,22 @@ class PrismDesktop:
         self._minimize_to_tray = lambda: system_ui._minimize_to_tray(self)
         self._save_settings_timer = None
         self._save_settings_delay = 0.5  # seconds
+        self.page.on_keyboard_event = self._on_keyboard_event
+    def _on_keyboard_event(self, e: ft.KeyboardEvent):
+        try:
+            if e.ctrl and e.key == "Enter":
+                if hasattr(self, "input_field") and self.input_field and not self.input_field.disabled:
+                    self._send()
+            elif e.ctrl and e.key == ",":
+                if hasattr(self, "settings_panel"):
+                    self._apply_settings()
+            elif e.ctrl and e.key == "n":
+                if hasattr(self, "_new_chat"):
+                    self._new_chat()
+        except Exception:
+            pass
+
+
         self._open_config_dir = lambda e: system_ui._open_config_dir(self, e)
         self._open_terminal_here = lambda e: system_ui._open_terminal_here(self, e)
         self._about = lambda e: system_ui._about(self, e)
@@ -1004,8 +1020,10 @@ class PrismDesktop:
                 load_btn.on_click = lambda e, n=name: self._load_session(n)
                 del_btn = ft.IconButton(icon=ft.Icons.DELETE_OUTLINE, tooltip="删除会话", icon_color=ft.Colors.ERROR, width=36, height=36)
                 del_btn.on_click = lambda e, n=name: self._delete_session(n)
+                export_btn = ft.IconButton(icon=ft.Icons.DOWNLOAD_OUTLINED, tooltip="导出 Markdown", icon_color=ft.Colors.ON_SURFACE_VARIANT, width=36, height=36)
+                export_btn.on_click = lambda e, n=name: self._export_session(n)
                 self.session_list.controls.append(
-                    ft.Row([pin_btn, load_btn, rename_btn, del_btn], spacing=6, tight=True)
+                    ft.Row([pin_btn, load_btn, rename_btn, export_btn, del_btn], spacing=6, tight=True)
                 )
         self.session_list.update()
 
@@ -1020,6 +1038,29 @@ class PrismDesktop:
             self._append_terminal(f"session delete error: {e}")
             self._set_status("删除异常", ft.Colors.RED_400)
         self._refresh_sessions()
+
+    def _export_session(self, name: str):
+        try:
+            session = self.agent.load_session(name)
+            messages = getattr(session, "messages", [])
+            lines = [f"# PRISM Session: {name}", ""]
+            for m in messages:
+                role = m.role if hasattr(m, "role") else getattr(m, "role", "unknown")
+                content = m.content if hasattr(m, "content") else getattr(m, "content", "")
+                if role == "system":
+                    continue
+                label = "你" if role == "user" else ("PRISM" if role == "assistant" else role)
+                lines.append(f"## {label}")
+                lines.append(content or "")
+                lines.append("")
+            path = os.path.join(self.agent.session_dir, f"{name}.md")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("\n".join(lines))
+            self._append_terminal(f"session exported: {path}")
+            self._set_status("会话已导出", ft.Colors.GREEN_400)
+        except Exception as e:
+            self._append_terminal(f"session export failed: {e}")
+            self._set_status("导出失败", ft.Colors.RED_400)
 
     def _toggle_pin_session(self, name: str):
         pinned = self._settings.get("pinned_sessions", {}) or {}
