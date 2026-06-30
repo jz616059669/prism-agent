@@ -103,9 +103,64 @@ class PrismDesktop:
         self._bind_tray = lambda: system_ui._bind_tray(self)
         self._bind_context_menu = lambda: system_ui._bind_context_menu(self)
         self._minimize_to_tray = lambda: system_ui._minimize_to_tray(self)
+        self._build_prompt_templates = lambda: chat_ui._build_prompt_templates(self)
         self._save_settings_timer = None
         self._save_settings_delay = 0.5  # seconds
         self.page.on_keyboard_event = self._on_keyboard_event
+
+        self._open_config_dir = lambda e: system_ui._open_config_dir(self, e)
+        self._open_terminal_here = lambda e: system_ui._open_terminal_here(self, e)
+        self._about = lambda e: system_ui._about(self, e)
+        self._open_github_releases = lambda e: system_ui._open_github_releases(self, e)
+
+        try:
+            self._build_ui()
+            self._bind_context_menu()
+            self._bind_tray()
+            self._maybe_show_setup_wizard()
+            self._settings = self._load_settings()
+            if hasattr(self.page, "run_task"):
+                self._start_update_check()
+        except Exception as exc:
+            import traceback
+            tb = traceback.format_exc()
+            try:
+                INIT_ERROR_LOG.write_text(tb, encoding="utf-8")
+            except Exception:
+                pass
+            print(f"[INIT ERROR] {exc}\n{tb}", flush=True)
+            try:
+                self._append_terminal(f"init error: {exc}")
+            except Exception:
+                pass
+            try:
+                self.page.add(ft.Text(f"初始化失败: {exc}", color=ft.Colors.ERROR))
+            except Exception:
+                pass
+        # Update clock every second
+        if hasattr(self.page, 'add_periodic_callback'):
+            def _tick(_):
+                self._update_clock()
+            self.page.add_periodic_callback(_tick, 1000)
+            self._start_perf_monitor()
+            self.page.add_periodic_callback(lambda _: self._perf_tick(), 1000)
+        presets = (self._settings.get("model_presets") or {})
+        current_preset = self._settings.get("model_preset_name", "")
+        if current_preset and current_preset in presets:
+            p = presets[current_preset]
+            if p.get("model"):
+                if hasattr(self, "model_dropdown") and self.model_dropdown:
+                    self.model_dropdown.value = p["model"]
+            if p.get("provider"):
+                if hasattr(self, "provider_textfield") and self.provider_textfield:
+                    self.provider_textfield.value = p["provider"]
+            if p.get("base_url"):
+                if hasattr(self, "base_url_textfield") and self.base_url_textfield:
+                    self.base_url_textfield.value = p["base_url"]
+            if p.get("api_key"):
+                if hasattr(self, "api_key_textfield") and self.api_key_textfield:
+                    self.api_key_textfield.value = p["api_key"]
+        self._apply_settings()
 
     def _log_error(self, context: str, exc: BaseException) -> None:
         try:
@@ -169,77 +224,29 @@ class PrismDesktop:
             pass
 
     def _validate_config(self) -> bool:
-        provider = (self.provider_textfield.value or "").strip()
-        base_url = (self.base_url_textfield.value or "").strip()
-        api_key = (self.api_key_textfield.value or "").strip()
-        model = (self.model_dropdown.value or "").strip()
-        missing = []
-        if not provider:
-            missing.append("模型提供商")
-        if not base_url:
-            missing.append("Base URL")
-        if not api_key:
-            missing.append("API Key")
-        if not model:
-            missing.append("默认模型")
-        if missing:
-            self._set_status(f"配置缺失：{', '.join(missing)}", ft.Colors.RED_400)
-            return False
-        return True
-
-        self._open_config_dir = lambda e: system_ui._open_config_dir(self, e)
-        self._open_terminal_here = lambda e: system_ui._open_terminal_here(self, e)
-        self._about = lambda e: system_ui._about(self, e)
-        self._open_github_releases = lambda e: system_ui._open_github_releases(self, e)
-
         try:
-            self._build_ui()
-            self._bind_context_menu()
-            self._bind_tray()
-            self._maybe_show_setup_wizard()
-            self._settings = self._load_settings()
-            if hasattr(self.page, "run_task"):
-                self._start_update_check()
-        except Exception as exc:
-            import traceback
-            tb = traceback.format_exc()
-            try:
-                INIT_ERROR_LOG.write_text(tb, encoding="utf-8")
-            except Exception:
-                pass
-            print(f"[INIT ERROR] {exc}\n{tb}", flush=True)
-            try:
-                self._append_terminal(f"init error: {exc}")
-            except Exception:
-                pass
-            try:
-                self.page.add(ft.Text(f"初始化失败: {exc}", color=ft.Colors.ERROR))
-            except Exception:
-                pass
-        # Update clock every second
-        if hasattr(self.page, 'add_periodic_callback'):
-            def _tick(_):
-                self._update_clock()
-            self.page.add_periodic_callback(_tick, 1000)
-            self._start_perf_monitor()
-            self.page.add_periodic_callback(lambda _: self._perf_tick(), 1000)
-        presets = (self._settings.get("model_presets") or {})
-        current_preset = self._settings.get("model_preset_name", "")
-        if current_preset and current_preset in presets:
-            p = presets[current_preset]
-            if p.get("model"):
-                if hasattr(self, "model_dropdown") and self.model_dropdown:
-                    self.model_dropdown.value = p["model"]
-            if p.get("provider"):
-                if hasattr(self, "provider_textfield") and self.provider_textfield:
-                    self.provider_textfield.value = p["provider"]
-            if p.get("base_url"):
-                if hasattr(self, "base_url_textfield") and self.base_url_textfield:
-                    self.base_url_textfield.value = p["base_url"]
-            if p.get("api_key"):
-                if hasattr(self, "api_key_textfield") and self.api_key_textfield:
-                    self.api_key_textfield.value = p["api_key"]
-        self._apply_settings()
+            provider = (self.provider_textfield.value or "").strip()
+            base_url = (self.base_url_textfield.value or "").strip()
+            api_key = (self.api_key_textfield.value or "").strip()
+            model = (self.model_dropdown.value or "").strip()
+            missing = []
+            if not provider:
+                missing.append("模型提供商")
+            if not base_url:
+                missing.append("Base URL")
+            if not api_key:
+                missing.append("API Key")
+            if not model:
+                missing.append("默认模型")
+            if missing:
+                try:
+                    self._set_status(f"配置缺失：{', '.join(missing)}", ft.Colors.RED_400)
+                except Exception:
+                    pass
+                return False
+            return True
+        except Exception:
+            return True
 
     def _maybe_show_setup_wizard(self):
         try:
