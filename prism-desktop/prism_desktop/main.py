@@ -13,6 +13,7 @@ import flet as ft
 from typing import Optional
 import markdown
 import subprocess
+import threading
 
 # 让桌面端可直接导入上层 prism 包和同目录 prism_desktop 包
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -87,6 +88,8 @@ class PrismDesktop:
         self._bind_tray = lambda: system_ui._bind_tray(self)
         self._bind_context_menu = lambda: system_ui._bind_context_menu(self)
         self._minimize_to_tray = lambda: system_ui._minimize_to_tray(self)
+        self._save_settings_timer = None
+        self._save_settings_delay = 0.5  # seconds
         self._open_config_dir = lambda e: system_ui._open_config_dir(self, e)
         self._open_terminal_here = lambda e: system_ui._open_terminal_here(self, e)
         self._about = lambda e: system_ui._about(self, e)
@@ -168,9 +171,15 @@ class PrismDesktop:
         self.page.dialog.open = True
         self.page.update()
 
+    def _save_settings_debounced(self) -> None:
+        if self._save_settings_timer is not None:
+            self._save_settings_timer.cancel()
+        self._save_settings_timer = threading.Timer(self._save_settings_delay, self._save_settings)
+        self._save_settings_timer.start()
+
     def _bind_context_menu(self) -> None:
-        self.page.on_resized = lambda e: self._save_settings()
-        self.page.on_window_event = lambda e: self._save_settings()
+        self.page.on_resized = lambda e: self._save_settings_debounced()
+        self.page.on_window_event = lambda e: self._save_settings_debounced()
 
     def _bind_tray(self) -> None:
         try:
