@@ -321,7 +321,7 @@ class PrismDesktop:
         else:
             self.page.theme_mode = ft.ThemeMode.DARK
             self.page.theme = ft.Theme(color_scheme_seed="blue", use_material3=True)
-        self.page.animate = ft.Animation(300, ft.AnimationCurve.EASE_IN_OUT)
+        self.page.animate = ft.Animation(duration=300, curve=ft.AnimationCurve.EASE_IN_OUT)
         self.page.update()
         self._append_terminal(f"theme -> {name}")
         self._save_settings()
@@ -355,7 +355,7 @@ class PrismDesktop:
         was_visible = self._sidebar_container.visible
         self._sidebar_container.visible = not was_visible
         self._sidebar_container.width = 0 if was_visible else 300
-        self._sidebar_container.animate = ft.Animation(300, ft.AnimationCurve.EASE_IN_OUT)
+        self._sidebar_container.animate = ft.Animation(duration=300, curve=ft.AnimationCurve.EASE_IN_OUT)
         self._sidebar_container.update()
         self._settings["sidebar_collapsed"] = not visible
         self._save_settings()
@@ -538,7 +538,7 @@ class PrismDesktop:
         self._set_status(f"预设已保存：{name}")
 
     def _build_sidebar(self) -> ft.Container:
-        self._sidebar_container = ft.Container(animate=ft.Animation(300, ft.AnimationCurve.EASE_IN_OUT),
+        self._sidebar_container = ft.Container(animate=ft.Animation(duration=300, curve=ft.AnimationCurve.EASE_IN_OUT),
             content=ft.Column(
                 [
                     ft.Text("PRISM", size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
@@ -560,7 +560,7 @@ class PrismDesktop:
             border_radius=34,
         )
 
-        save_btn = ft.Button("保存配置", icon=ft.Icons.SAVE_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), animate_scale=ft.Animation(180, ft.AnimationCurve.EASE_IN_OUT))
+        save_btn = ft.Button("保存配置", icon=ft.Icons.SAVE_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         save_btn.on_click = lambda e: self._save_config()
 
         browser_deps = self._check_browser_dependencies()
@@ -573,27 +573,27 @@ class PrismDesktop:
         )
         self.url_field = ft.TextField(hint_text="输入网址...", width=280, border_radius=14)
         browser_open_btn = ft.Button("打开网页", icon=ft.Icons.LANGUAGE_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
-                     color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(180, ft.AnimationCurve.EASE_IN_OUT), disabled=not self._browser_deps_ok)
+                     color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT), disabled=not self._browser_deps_ok)
         browser_open_btn.on_click = lambda e: self._browser_open()
         browser_snapshot_btn = ft.Button("读取页面快照", icon=ft.Icons.ARTICLE_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
-                     color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(180, ft.AnimationCurve.EASE_IN_OUT), disabled=not self._browser_deps_ok)
+                     color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT), disabled=not self._browser_deps_ok)
         browser_snapshot_btn.on_click = lambda e: self._browser_snapshot()
-        browser_close_btn = ft.Button("关闭浏览器", icon=ft.Icons.CLOSE_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), animate_scale=ft.Animation(180, ft.AnimationCurve.EASE_IN_OUT), disabled=not self._browser_deps_ok)
+        browser_close_btn = ft.Button("关闭浏览器", icon=ft.Icons.CLOSE_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT), disabled=not self._browser_deps_ok)
         browser_close_btn.on_click = lambda e: self._browser_close()
 
         # MCP
         self.mcp_refresh_btn = ft.Button("刷新 MCP 服务器", icon=ft.Icons.REFRESH_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
-                     color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(180, ft.AnimationCurve.EASE_IN_OUT))
+                     color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         self.mcp_refresh_btn.on_click = lambda e: self._refresh_mcp()
         self.mcp_server_list = ft.Column(spacing=6, tight=True)
 
         # Skills
         self.skill_refresh_btn = ft.Button("刷新 Skills", icon=ft.Icons.REFRESH_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
-                     color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(180, ft.AnimationCurve.EASE_IN_OUT))
+                     color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         self.skill_refresh_btn.on_click = lambda e: self._refresh_skills()
         self.skill_install_field = ft.TextField(hint_text="安装 Skill 名称或本地路径", width=280, border_radius=14)
         self.skill_install_btn = ft.Button("安装 Skill", icon=ft.Icons.DOWNLOAD_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
-                     color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(180, ft.AnimationCurve.EASE_IN_OUT))
+                     color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         self.skill_install_btn.on_click = lambda e: self._install_skill_from_ui()
         self.skill_list = ft.Column(spacing=6, tight=True)
 
@@ -601,7 +601,7 @@ class PrismDesktop:
         self.session_new_btn = ft.IconButton(icon=ft.Icons.ADD_ROUNDED, tooltip="新建对话", icon_color=ft.Colors.PRIMARY, bgcolor=ft.Colors.with_opacity(0.08, ft.Colors.PRIMARY), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.PRIMARY)))
         self.session_new_btn.on_click = lambda e: self._new_session()
         self.session_name_field = ft.TextField(hint_text="会话名称", width=200, border_radius=14)
-        self.session_save_btn = ft.Button("保存会话", icon=ft.Icons.BOOKMARK_ROUNDED, width=120, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(22, 20, 22, 20), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), animate_scale=ft.Animation(180, ft.AnimationCurve.EASE_IN_OUT))
+        self.session_save_btn = ft.Button("保存会话", icon=ft.Icons.BOOKMARK_ROUNDED, width=120, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(22, 20, 22, 20), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         self.session_save_btn.on_click = lambda e: self._save_session()
         self.session_search = ft.TextField(
             hint_text="搜索会话...",
@@ -765,7 +765,7 @@ class PrismDesktop:
         )
         self.input_count = ft.Text("0 字", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.95)
         self.input_field.on_change = lambda e: self._on_input_change()
-        self.send_btn = ft.IconButton(icon=ft.Icons.SEND_ROUNDED, tooltip="发送", bgcolor=ft.Colors.PRIMARY, icon_color=ft.Colors.ON_PRIMARY, scale=1.0, disabled=True, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), elevation=3, shadow_color=ft.Colors.with_opacity(0.3, ft.Colors.PRIMARY), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.ON_PRIMARY)), animate_scale=ft.Animation(150, ft.AnimationCurve.EASE_IN_OUT))
+        self.send_btn = ft.IconButton(icon=ft.Icons.SEND_ROUNDED, tooltip="发送", bgcolor=ft.Colors.PRIMARY, icon_color=ft.Colors.ON_PRIMARY, scale=1.0, disabled=True, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), elevation=3, shadow_color=ft.Colors.with_opacity(0.3, ft.Colors.PRIMARY), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.ON_PRIMARY)), animate_scale=ft.Animation(duration=150, curve=ft.AnimationCurve.EASE_IN_OUT))
         def _on_send_click(e):
             self.send_btn.scale = 0.92
             self.send_btn.update()
@@ -774,7 +774,7 @@ class PrismDesktop:
             self._send()
         self.send_btn.on_click = _on_send_click
         self.send_btn.on_hover = lambda e: (self.send_btn.update() if not self.send_btn.disabled else None)
-        self.stop_btn = ft.IconButton(icon=ft.Icons.STOP_ROUNDED, tooltip="停止生成", visible=False, bgcolor=ft.Colors.ERROR, icon_color=ft.Colors.ON_ERROR, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.ON_ERROR)), animate_scale=ft.Animation(180, ft.AnimationCurve.EASE_IN_OUT))
+        self.stop_btn = ft.IconButton(icon=ft.Icons.STOP_ROUNDED, tooltip="停止生成", visible=False, bgcolor=ft.Colors.ERROR, icon_color=ft.Colors.ON_ERROR, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.ON_ERROR)), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         self.stop_btn.on_click = lambda e: self._stop_send()
         self.input_field.on_submit = lambda e: self._send()
         def _on_input_change():
@@ -795,7 +795,7 @@ class PrismDesktop:
             except Exception:
                 pass
         self._on_input_change = _on_input_change
-        clear_chat_btn = ft.TextButton("清屏", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED, animate_scale=ft.Animation(180, ft.AnimationCurve.EASE_IN_OUT))
+        clear_chat_btn = ft.TextButton("清屏", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED, animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         clear_chat_btn.on_click = lambda e: self._clear_chat()
         
         self._chat_placeholder = ft.Column(
@@ -865,9 +865,9 @@ class PrismDesktop:
         self.terminal_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO, padding=ft.Padding(6, 4, 6, 4))
         self.mcp_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO, padding=ft.Padding(6, 4, 6, 4))
         
-        clear_terminal_btn = ft.TextButton("清空终端", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED, animate_scale=ft.Animation(180, ft.AnimationCurve.EASE_IN_OUT))
+        clear_terminal_btn = ft.TextButton("清空终端", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED, animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         clear_terminal_btn.on_click = lambda e: self._clear_terminal()
-        clear_mcp_btn = ft.TextButton("清空 MCP", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED, animate_scale=ft.Animation(180, ft.AnimationCurve.EASE_IN_OUT))
+        clear_mcp_btn = ft.TextButton("清空 MCP", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED, animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         clear_mcp_btn.on_click = lambda e: self._clear_mcp()
         
         terminal_tab = ft.Column(
