@@ -63,6 +63,66 @@ def cli():
     # 配置校验延后到实际需要时执行，避免影响 help / version 等命令
 
 
+
+@cli.command()
+def doctor():
+    """诊断 PRISM 环境状态"""
+    from rich.table import Table
+    from prism.hooks import hook_manager
+    from prism.workspace import workspace_manager
+
+    table = Table(title="PRISM Doctor")
+    table.add_column("Component", style="cyan")
+    table.add_column("Status", style="bold")
+    table.add_column("Details")
+
+    # Check config
+    try:
+        from prism.config import config
+        table.add_row("Config", "[green]✓[/green]", str(config.path()))
+    except Exception as e:
+        table.add_row("Config", "[red]✗[/red]", str(e))
+
+    # Check provider
+    try:
+        from prism.providers.manager import provider_pool
+        providers = provider_pool.list_providers()
+        table.add_row("Providers", "[green]✓[/green]", f"{len(providers)} available")
+    except Exception as e:
+        table.add_row("Providers", "[red]✗[/red]", str(e))
+
+    # Check tools
+    try:
+        from prism.tools.registry import registry
+        tools = registry.list_tools()
+        table.add_row("Tools", "[green]✓[/green]", f"{len(tools)} registered")
+    except Exception as e:
+        table.add_row("Tools", "[red]✗[/red]", str(e))
+
+    # Check hooks
+    try:
+        hooks = hook_manager.get_hooks("*")
+        table.add_row("Hooks", "[green]✓[/green]", f"{len(hooks)} active")
+    except Exception as e:
+        table.add_row("Hooks", "[red]✗[/red]", str(e))
+
+    # Check workspaces
+    try:
+        workspaces = workspace_manager.list_workspaces()
+        table.add_row("Workspaces", "[green]✓[/green]", f"{len(workspaces)} configured")
+    except Exception as e:
+        table.add_row("Workspaces", "[red]✗[/red]", str(e))
+
+    # Check sessions
+    try:
+        from prism.agent import Agent
+        sessions = Agent.list_sessions()
+        table.add_row("Sessions", "[green]✓[/green]", f"{len(sessions)} saved")
+    except Exception as e:
+        table.add_row("Sessions", "[red]✗[/red]", str(e))
+
+    console.print(table)
+
 @cli.group()
 def acp():
     """ACP 协议通信命令"""

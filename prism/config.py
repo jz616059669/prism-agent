@@ -32,6 +32,10 @@ class Config:
         else:
             self._config = self._defaults()
             self._save()
+        # Load hooks config
+        self._load_hooks()
+        # Load workspaces config
+        self._load_workspaces()
     
     def _save(self) -> None:
         """保存配置文件"""
@@ -145,6 +149,47 @@ class Config:
         """返回.env文件路径"""
         return str(self.env_file)
 
+
+    def _load_hooks(self) -> None:
+        """加载 hooks 配置"""
+        hooks_cfg = self._config.get('hooks', [])
+        self._config['_hooks'] = hooks_cfg if isinstance(hooks_cfg, list) else []
+
+    def _load_workspaces(self) -> None:
+        """加载 workspaces 配置"""
+        workspaces_cfg = self._config.get('workspaces', [])
+        if not workspaces_cfg:
+            # 创建默认工作区
+            workspaces_cfg = [{
+                'name': 'default',
+                'path': str(Path.home() / '.prism' / 'sessions'),
+                'description': 'Default workspace',
+                'tags': ['main'],
+            }]
+        self._config['_workspaces'] = workspaces_cfg
+
+    def get_hooks(self) -> list:
+        """获取 hooks 配置"""
+        return self._config.get('_hooks', [])
+
+    def get_workspaces(self) -> list:
+        """获取 workspaces 配置"""
+        return self._config.get('_workspaces', [])
+
+    def add_workspace(self, name: str, path: str, description: str = "", tags: list = None) -> None:
+        """添加工作区"""
+        workspaces = self._config.get('_workspaces', [])
+        if any(w.get('name') == name for w in workspaces):
+            raise ValueError(f"Workspace '{name}' already exists")
+        workspaces.append({
+            'name': name,
+            'path': path,
+            'description': description,
+            'tags': tags or [],
+        })
+        self._config['_workspaces'] = workspaces
+        self._config['workspaces'] = workspaces
+        self._save()
 
 # 全局配置实例
 config = Config()
