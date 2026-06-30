@@ -154,6 +154,59 @@ def ask(prompt: str, stream: bool, model: Optional[str], output_json: bool):
         result = agent.chat(prompt)
         click.echo(result)
 
+
+@cli.group()
+def workspace():
+    """工作区管理（借鉴 OpenClaw）"""
+    pass
+
+@workspace.command()
+@click.argument('name')
+@click.option('--path', required=True, help='工作区路径')
+@click.option('--description', default='', help='工作区描述')
+@click.option('--tags', multiple=True, help='工作区标签')
+def create(name: str, path: str, description: str, tags: tuple):
+    """创建新工作区"""
+    from prism.config import config
+    try:
+        config.add_workspace(name, path, description, list(tags))
+        console.print(f"[green]✓[/green] 工作区已创建: {name} -> {path}")
+    except ValueError as e:
+        console.print(f"[red]✗[/red] {e}")
+
+@workspace.command()
+def list():
+    """列出所有工作区"""
+    from prism.workspace import workspace_manager
+    workspaces = workspace_manager.list_workspaces()
+    if not workspaces:
+        console.print("暂无工作区")
+        return
+    table = Table(title="Workspaces")
+    table.add_column("Name", style="cyan")
+    table.add_column("Path")
+    table.add_column("Description")
+    table.add_column("Tags")
+    for ws in workspaces:
+        table.add_row(
+            ws["name"],
+            ws["path"],
+            ws.get("description", ""),
+            ", ".join(ws.get("tags", [])),
+        )
+    console.print(table)
+
+@workspace.command()
+@click.argument('name')
+def switch(name: str):
+    """切换到指定工作区"""
+    from prism.workspace import workspace_manager
+    try:
+        agent = workspace_manager.switch_workspace(name)
+        console.print(f"[green]✓[/green] 已切换到工作区: {name}")
+    except ValueError as e:
+        console.print(f"[red]✗[/red] {e}")
+
 @cli.group()
 def acp():
     """ACP 协议通信命令"""

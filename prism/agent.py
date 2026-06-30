@@ -251,6 +251,70 @@ class Agent:
         return False
 
 
+
+class SubagentManager:
+    """管理子 Agent，借鉴 Codex CLI 的 subagent 分层机制。"""
+
+    def __init__(self, parent_agent: Agent) -> None:
+        self.parent = parent_agent
+        self._subagents: Dict[str, Agent] = {}
+
+    def spawn(self, name: str, system_prompt: Optional[str] = None) -> Agent:
+        """生成一个子 Agent，继承父级上下文摘要。"""
+        if name in self._subagents:
+            raise ValueError(f"Subagent '{name}' already exists")
+        child = Agent(system_prompt=system_prompt)
+        self._subagents[name] = child
+        logger.info("subagent spawned: %s", name)
+        return child
+
+    def get(self, name: str) -> Agent:
+        """获取子 Agent。"""
+        if name not in self._subagents:
+            raise ValueError(f"Subagent '{name}' not found")
+        return self._subagents[name]
+
+    def list_subagents(self) -> List[str]:
+        """列出所有子 Agent。"""
+        return list(self._subagents.keys())
+
+    def destroy(self, name: str) -> None:
+        """销毁子 Agent。"""
+        if name in self._subagents:
+            del self._subagents[name]
+            logger.info("subagent destroyed: %s", name)
+
+    def summarize_back(self, name: str) -> str:
+        """将子 Agent 的上下文摘要回传给父级。"""
+        if name not in self._subagents:
+            return ""
+        child = self._subagents[name]
+        msgs = [m.content for m in child.messages if m.role in {"user", "assistant"}]
+        return "\n".join(msgs[-10:])  # 最近10条
+
+
+class AgentWithSubagents:
+    """带 subagent 支持的 Agent 包装器。"""
+
+    def __init__(self, agent: Agent) -> None:
+        self.agent = agent
+        self.subagents = SubagentManager(agent)
+
+    def delegate(self, subagent_name: str, task: str) -> str:
+        """委托任务给子 Agent。"""
+        child = self.subagents.spawn(subagent_name)
+        result = child.chat(task)
+        summary = self.subagents.summarize_back(subagent_name)
+        self.agent.messages.append(Message(
+            role="tool",
+            content=f"[subagent:{subagent_name}] {summary}",
+        ))
+        return result
+
+
+# 在 Agent 类中添加 subagent 支持
+Agent.subagent_manager = property(lambda self: SubagentManager(self))
+
 def create_agent(system_prompt: Optional[str] = None) -> Agent:
     """创建 Agent 实例"""
     return Agent(system_prompt=system_prompt)
