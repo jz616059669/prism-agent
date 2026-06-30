@@ -47,10 +47,10 @@ class PrismDesktop:
             bgcolor=ft.Colors.GREEN_400,
             border_radius=4,
         )
-        self.status_text = ft.Text("就绪", size=12, color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.W_500)
+        self.status_text = ft.Text("就绪", size=12, color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.W_600)
         self._input_accent = None
         self.browser_status_icon = ft.Icon(ft.Icons.LANGUAGE_ROUNDED, size=18, color=ft.Colors.PRIMARY)
-        self.browser_status_text = ft.Text("就绪", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.85)
+        self.browser_status_text = ft.Text("就绪", size=12, color=ft.Colors.ON_SURFACE, opacity=0.9, weight=ft.FontWeight.W_500)
         self.browser_connected = None
         self.messages = []
         self.agent = create_agent()
@@ -190,7 +190,17 @@ class PrismDesktop:
                         self.page.window_show()
                         if hasattr(self, "input_field"):
                             self.input_field.focus()
-                            self.page.update()
+                        try:
+                            if hasattr(self, "_refresh_sessions"):
+                                self._refresh_sessions()
+                            if hasattr(self, "_refresh_mcp"):
+                                self._refresh_mcp()
+                            if hasattr(self, "_refresh_skills"):
+                                self._refresh_skills()
+                        except Exception:
+                            pass
+                        self._set_status("就绪", ft.Colors.GREEN_400)
+                        self.page.update()
                     except Exception:
                         pass
 
@@ -295,7 +305,7 @@ class PrismDesktop:
             pass
 
     def _build_ui(self):
-        self._clock_text = ft.Text(datetime.now().strftime("%H:%M:%S"), size=11, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_500, opacity=0.85)
+        self._clock_text = ft.Text(datetime.now().strftime("%H:%M:%S"), size=11, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_500, opacity=0.95)
         self.page.appbar = self._build_appbar()
         self._chat_container = ft.Container(self._build_chat(), expand=True)
         self._right_container = ft.Container(self._build_right_panel(), expand=True, border=ft.Border(left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)))
@@ -505,7 +515,7 @@ class PrismDesktop:
                 [
                     ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=28, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.5),
                     ft.Container(height=6),
-                    ft.Text("暂无保存的会话", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.85),
+                    ft.Text("暂无保存的会话", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.95),
                 ],
                 alignment=ft.MainAxisAlignment.CENTER,
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -650,7 +660,7 @@ class PrismDesktop:
             border_color=ft.Colors.OUTLINE_VARIANT,
             suffix=ft.IconButton(icon=ft.Icons.CLEAR_ROUNDED, tooltip="清空终端", icon_color=ft.Colors.ON_SURFACE_VARIANT, on_click=lambda e: self.input_field.clear()),
         )
-        self.input_count = ft.Text("0 字", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.8)
+        self.input_count = ft.Text("0 字", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.95)
         self.input_field.on_change = lambda e: self._on_input_change()
         self.send_btn = ft.IconButton(icon=ft.Icons.SEND_ROUNDED, tooltip="发送", bgcolor=ft.Colors.PRIMARY, icon_color=ft.Colors.ON_PRIMARY, scale=1.0, disabled=True, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), elevation=3, shadow_color=ft.Colors.with_opacity(0.3, ft.Colors.PRIMARY), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.ON_PRIMARY)), animate_scale=ft.Animation(150, ft.AnimationCurve.EASE_IN_OUT))
         def _on_send_click(e):
@@ -686,7 +696,7 @@ class PrismDesktop:
             [
                 ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=52, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.6),
                 ft.Container(height=14),
-                ft.Text("输入消息开始对话", size=14, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.CENTER, opacity=0.85),
+                ft.Text("输入消息开始对话", size=14, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.CENTER, opacity=0.95),
             ],
             alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
