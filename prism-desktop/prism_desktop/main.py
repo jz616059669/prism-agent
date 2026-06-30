@@ -388,12 +388,36 @@ class PrismDesktop:
         self.about_btn.on_click = lambda e: self._about(e)
         self.sidebar_toggle_btn = ft.IconButton(icon=ft.Icons.MENU_ROUNDED, tooltip="折叠侧边栏", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE_VARIANT)))
         self.sidebar_toggle_btn.on_click = lambda e: self._toggle_sidebar()
+        # Quick action buttons in appbar
+        quick_actions = ft.Row(
+            [
+                ft.IconButton(
+                    icon=ft.Icons.CLEAR_ALL_ROUNDED,
+                    tooltip="清空对话",
+                    icon_color=ft.Colors.ON_SURFACE_VARIANT,
+                    bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT),
+                    style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)),
+                    on_click=lambda e: self._clear_chat(),
+                ),
+                ft.IconButton(
+                    icon=ft.Icons.BOOKMARK_ROUNDED,
+                    tooltip="保存会话",
+                    icon_color=ft.Colors.ON_SURFACE_VARIANT,
+                    bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT),
+                    style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)),
+                    on_click=lambda e: self._save_session(),
+                ),
+            ],
+            spacing=2,
+        )
+
         return ft.AppBar(
             title=self.title_text,
             actions=[
                 self.sidebar_toggle_btn,
                 self.theme_icon_btn,
                 self.minimize_btn,
+                quick_actions,
                 self.about_btn,
             ],
             elevation=6,
@@ -444,7 +468,7 @@ class PrismDesktop:
     def _build_ui(self):
         self._clock_text = ft.Text(datetime.now().strftime("%H:%M:%S"), size=11, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_500, opacity=0.95)
         self.page.appbar = self._build_appbar()
-        self._chat_container = ft.Container(self._build_chat(), expand=True)
+        self._chat_container = ft.Container(self._build_chat(), expand=True, padding=ft.Padding(0, 4, 0, 4))
         self._right_container = ft.Container(self._build_right_panel(), expand=True, border=ft.Border(left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)))
         sidebar = self._build_sidebar()
         if str(self._settings.get("sidebar_collapsed", "false")).lower() == "true":
