@@ -550,6 +550,14 @@ class PrismDesktop:
         self.session_name_field = ft.TextField(hint_text="会话名称", width=200, border_radius=14)
         self.session_save_btn = ft.Button("保存会话", icon=ft.Icons.BOOKMARK_ROUNDED, width=120, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(22, 20, 22, 20), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), animate_scale=ft.Animation(180, ft.AnimationCurve.EASE_IN_OUT))
         self.session_save_btn.on_click = lambda e: self._save_session()
+        self.session_search = ft.TextField(
+            hint_text="搜索会话...",
+            dense=True,
+            border_radius=18,
+            height=36,
+            content_padding=ft.Padding(10, 8, 10, 8),
+            on_change=lambda e: self._filter_sessions(e.control.value or ""),
+        )
         self.session_list = ft.Column(spacing=6, tight=True, scroll=ft.ScrollMode.AUTO)
         self._session_empty_state = ft.Container(
             content=ft.Column(
@@ -1022,9 +1030,20 @@ class PrismDesktop:
                 del_btn.on_click = lambda e, n=name: self._delete_session(n)
                 export_btn = ft.IconButton(icon=ft.Icons.DOWNLOAD_OUTLINED, tooltip="导出 Markdown", icon_color=ft.Colors.ON_SURFACE_VARIANT, width=36, height=36)
                 export_btn.on_click = lambda e, n=name: self._export_session(n)
-                self.session_list.controls.append(
-                    ft.Row([pin_btn, load_btn, rename_btn, export_btn, del_btn], spacing=6, tight=True)
-                )
+                session_row = ft.Row([pin_btn, load_btn, rename_btn, export_btn, del_btn], spacing=6, tight=True)
+                session_row._session_name = name
+                self._session_all_items.append(session_row)
+                self.session_list.controls.append(session_row)
+        self.session_list.update()
+
+    def _filter_sessions(self, query: str):
+        query = (query or "").strip().lower()
+        for row in getattr(self, "_session_all_items", []):
+            name = getattr(row, "_session_name", "")
+            if not query or query in name.lower():
+                row.visible = True
+            else:
+                row.visible = False
         self.session_list.update()
 
     def _delete_session(self, name: str):
