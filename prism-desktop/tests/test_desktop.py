@@ -62,3 +62,36 @@ def test_browser_tabs_disabled_when_deps_missing(desktop):
     with patch.object(PrismDesktop, "_check_browser_dependencies", return_value={"playwright": False, "chromium": False}):
         desktop._browser_deps_ok = False
         assert desktop._browser_deps_ok is False
+
+
+def test_run_terminal_command_calls_subprocess(desktop):
+    """_run_terminal_command should execute shell command."""
+    with patch.object(desktop, "_append_terminal") as mock_terminal, \
+         patch.object(desktop, "_append_mcp") as mock_mcp, \
+         patch("prism_desktop.main.subprocess.run") as mock_run:
+        mock_run.return_value.stdout = "hello"
+        mock_run.return_value.stderr = ""
+        desktop.terminal_input = MagicMock()
+        desktop.terminal_input.value = "echo hello"
+        desktop._run_terminal_command()
+        mock_run.assert_called_once()
+        assert mock_terminal.call_count >= 1
+        mock_mcp.assert_called_once()
+
+
+def test_startup_create_agent_failure_sets_agent_none():
+    """When create_agent raises, desktop should set agent to None."""
+    with patch.object(PrismDesktop, "_set_status", MagicMock()), \
+         patch.object(PrismDesktop, "_append_terminal", MagicMock()), \
+         patch("prism_desktop.main.create_agent", side_effect=RuntimeError("boom")):
+        page = MagicMock(spec=ft.Page)
+        page.title = "PRISM Agent"
+        page.theme_mode = ft.ThemeMode.DARK
+        page.padding = 14
+        page.window_width = 1320
+        page.window_height = 800
+        page.window_top = 100
+        page.window_left = 100
+        page.session_id = "test-session"
+        d = PrismDesktop(page)
+        assert d.agent is None

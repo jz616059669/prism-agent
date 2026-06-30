@@ -54,9 +54,14 @@ class PrismDesktop:
         self.browser_status_text = ft.Text("就绪", size=12, color=ft.Colors.ON_SURFACE, opacity=0.9, weight=ft.FontWeight.W_500)
         self.browser_connected = None
         self.messages = []
-        self.agent = create_agent()
         self.browser_connected = False
         self._terminal_lines = ["PRISM Desktop 已启动"]
+        try:
+            self.agent = create_agent()
+        except Exception as e:
+            self.agent = None
+            self._set_status(f"初始化失败：{e}", ft.Colors.RED_400)
+            self._append_terminal(f"[ERROR] Agent 初始化失败: {e}")
         self._mcp_logs = []
         self._skill_list_cache = []
         self._mcp_server_status = {}
@@ -1184,6 +1189,9 @@ class PrismDesktop:
         try:
             self.agent = create_agent()
         except Exception as e:
+            self.agent = None
+            self._set_status(f"初始化失败：{e}", ft.Colors.RED_400)
+            self._append_terminal(f"[ERROR] Agent 初始化失败: {e}")
             self._append_terminal(f"agent recreate failed: {e}")
 
     def _stop_send(self):
