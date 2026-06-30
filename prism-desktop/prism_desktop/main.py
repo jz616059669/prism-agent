@@ -900,6 +900,7 @@ class PrismDesktop:
 
     def _new_session(self):
         self._current_session_name = None
+        self._settings["current_session"] = None
         self.chat_list.controls.clear()
         if hasattr(self, "_chat_placeholder") and self._chat_placeholder:
             self.chat_list.controls.append(self._chat_placeholder)
@@ -909,6 +910,19 @@ class PrismDesktop:
         self._update_input_count()
         self._set_status("新对话")
         self._append_terminal("new session")
+
+    def _save_session(self):
+        name = self._current_session_name or f"session_{int(time.time())}"
+        try:
+            path = self.agent.save_session(name)
+            self._append_terminal(f"session saved: {path}")
+            self._set_status("会话已保存", ft.Colors.GREEN_400)
+            self._settings["current_session"] = name
+            self._refresh_sessions()
+        except Exception as e:
+            self._append_terminal(f"session save failed: {e}")
+            self._set_status("会话保存失败", ft.Colors.RED_400)
+
 
     def _refresh_sessions(self):
         self.session_list.controls.clear()
@@ -1015,6 +1029,7 @@ class PrismDesktop:
             ok = self.agent.load_session(name)
             if ok:
                 self._current_session_name = name
+                self._settings["current_session"] = name
                 self._append_terminal(f"session loaded: {name}")
                 self._set_status("会话已加载")
                 self.chat_list.controls.clear()

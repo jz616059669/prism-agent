@@ -36,6 +36,7 @@ def _save_settings(self: PrismDesktop) -> None:
             "model": self.model_dropdown.value,
             "base_url": self.base_url_textfield.value,
             "api_key": self.api_key_textfield.value,
+            "current_session": getattr(self, "_current_session_name", None),
         }
         self._settings_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     except Exception as e:
@@ -55,3 +56,9 @@ def _apply_settings(self: PrismDesktop) -> None:
     if isinstance(theme_seed, str) and theme_seed:
         self.page.theme = ft.Theme(color_scheme_seed=theme_seed)
         self.page.dark_theme = ft.Theme(color_scheme_seed=theme_seed)
+    current_session = settings.get("current_session")
+    if current_session:
+        try:
+            self._load_session(current_session)
+        except Exception:
+            pass
