@@ -116,7 +116,7 @@ prism --help
 prism-desktop
 ```
 
-> PyPI 已发布：`https://pypi.org/project/prism-agent/1.0.1/`
+> PyPI 已发布：`https://pypi.org/project/prism-agent/2.0.2/`
 
 ## 外部用户使用说明
 
