@@ -58,10 +58,10 @@ class PrismDesktop:
         self._terminal_lines = ["PRISM Desktop 已启动"]
         try:
             self.agent = create_agent()
-        except Exception as e:
+        except Exception as exc:
             self.agent = None
-            self._set_status(f"初始化失败：{e}", ft.Colors.RED_400)
-            self._append_terminal(f"[ERROR] Agent 初始化失败: {e}")
+            self._log_error("agent init", exc)
+            self._set_status(f"初始化失败：{exc}", ft.Colors.RED_400)
         self._mcp_logs = []
         self._skill_list_cache = []
         self._mcp_server_status = {}
@@ -97,6 +97,19 @@ class PrismDesktop:
         self._save_settings_delay = 0.5  # seconds
         self.page.on_keyboard_event = self._on_keyboard_event
 
+    def _log_error(self, context: str, exc: BaseException) -> None:
+        try:
+            self._append_terminal(f"[ERROR] {context}: {exc}")
+        except Exception:
+            pass
+
+    def _structured_log(self, level: str, event: str, **fields) -> None:
+        try:
+            line = {"ts": __import__("datetime").datetime.now().isoformat(timespec="seconds"), "level": level, "event": event, **fields}
+            self._append_terminal(f"[{line['level']}] {line['event']} | {fields}")
+        except Exception:
+            pass
+
     def _on_keyboard_event(self, e: ft.KeyboardEvent):
         try:
             if e.ctrl and e.key == "Enter":
@@ -108,8 +121,8 @@ class PrismDesktop:
             elif e.ctrl and e.key == "n":
                 if hasattr(self, "_new_chat"):
                     self._new_chat()
-        except Exception:
-            pass
+        except Exception as exc:
+            self._log_error("keyboard handler", exc)
 
     async def _check_for_updates(self):
         try:
@@ -190,8 +203,8 @@ class PrismDesktop:
             has_provider = bool(prism_config.get("model.provider"))
             if has_key and has_provider:
                 return
-        except Exception:
-            pass
+        except Exception as exc:
+            self._log_error("setup wizard check", exc)
         wizard_provider = ft.TextField(label="模型提供商", value="stepfun", width=320)
         wizard_key = ft.TextField(label="API Key", password=True, can_reveal_password=True, width=320)
         wizard_model = ft.TextField(label="默认模型", value="step-3.7-flash", width=320)
@@ -207,8 +220,9 @@ class PrismDesktop:
                 self.page.close_dialog()
                 self._append_terminal("setup wizard saved")
                 self._set_status("配置已保存", ft.Colors.GREEN_400)
-            except Exception as e:
-                self._set_status(f"保存失败：{e}", ft.Colors.RED_400)
+            except Exception as exc:
+                self._log_error("setup wizard save", exc)
+                self._set_status(f"保存失败：{exc}", ft.Colors.RED_400)
 
         self.page.dialog = ft.AlertDialog(
             title=ft.Text("首次运行配置向导", size=16, weight=ft.FontWeight.BOLD),
@@ -265,8 +279,8 @@ class PrismDesktop:
                                 self._refresh_mcp()
                             if hasattr(self, "_refresh_skills"):
                                 self._refresh_skills()
-                        except Exception:
-                            pass
+                        except Exception as exc:
+                            self._log_error("stream chunk refresh", exc)
                         self._set_status("就绪", ft.Colors.GREEN_400)
                         self.page.update()
                     except Exception:
@@ -287,10 +301,11 @@ class PrismDesktop:
                 t = threading.Thread(target=icon.run, daemon=True)
                 t.start()
                 self._tray_icon = icon
-            except Exception:
+            except Exception as exc:
+                self._log_error("tray icon create", exc)
                 self._tray_icon = None
-        except Exception:
-            pass
+        except Exception as exc:
+            self._log_error("tray bind outer", exc)
 
     def _apply_theme(self, name: str):
         name = (name or "Dark").strip()
@@ -904,15 +919,16 @@ class PrismDesktop:
     def _on_right_tab_changed(self, e: ft.ControlEvent) -> None:
         try:
             idx = int(e.data) if hasattr(e, "data") else 0
-        except Exception:
+        except Exception as exc:
+            self._log_error("tab change parse", exc)
             idx = 0
         try:
             self._right_terminal_tab.visible = idx == 0
             self._right_mcp_tab.visible = idx == 1
             self._right_terminal_tab.update()
             self._right_mcp_tab.update()
-        except Exception:
-            pass
+        except Exception as exc:
+            self._log_error("right tab change", exc)
 
     def _append(self, role: str, text: str, retry: bool = False, retry_text: str = "", placeholder: bool = False):
         if hasattr(self, "_chat_placeholder") and self._chat_placeholder and self._chat_placeholder in self.chat_list.controls:
@@ -926,7 +942,8 @@ class PrismDesktop:
         try:
             import markdown
             rendered = markdown.markdown(text, extensions=["fenced_code", "tables", "nl2br"])
-        except Exception:
+        except Exception as exc:
+            self._log_error("markdown render", exc)
             rendered = text
 
         is_error = not is_user and (text.startswith("Error:") or text.startswith("请求超时") or text.startswith("失败"))
@@ -1029,7 +1046,8 @@ class PrismDesktop:
         self.session_list.controls.clear()
         try:
             names = self.agent.list_sessions()
-        except Exception:
+        except Exception as exc:
+            self._log_error("list sessions", exc)
             names = []
         # Sort: pinned first, then alphabetical
         pinned = self._settings.get("pinned_sessions", {}) or {}
@@ -1115,8 +1133,8 @@ class PrismDesktop:
                 f.write("\n".join(lines))
             self._append_terminal(f"session exported: {path}")
             self._set_status("会话已导出", ft.Colors.GREEN_400)
-        except Exception as e:
-            self._append_terminal(f"session export failed: {e}")
+        except Exception as exc:
+            self._log_error("session export", exc)
             self._set_status("导出失败", ft.Colors.RED_400)
 
     def _toggle_pin_session(self, name: str):
@@ -1180,8 +1198,8 @@ class PrismDesktop:
             else:
                 self._append_terminal(f"session load failed: {name}")
                 self._set_status("会话加载失败", ft.Colors.RED_400)
-        except Exception as e:
-            self._append_terminal(f"session load error: {e}")
+        except Exception as exc:
+            self._log_error("session load", exc)
             self._set_status("会话加载异常", ft.Colors.RED_400)
 
 
@@ -1289,10 +1307,10 @@ class PrismDesktop:
         self._append_terminal("配置已保存")
         try:
             self.agent = create_agent()
-        except Exception as e:
+        except Exception as exc:
             self.agent = None
-            self._set_status(f"初始化失败：{e}", ft.Colors.RED_400)
-            self._append_terminal(f"[ERROR] Agent 初始化失败: {e}")
+            self._log_error("agent init", exc)
+            self._set_status(f"初始化失败：{exc}", ft.Colors.RED_400)
             self._append_terminal(f"agent recreate failed: {e}")
 
     def _stop_send(self):
@@ -1374,8 +1392,8 @@ class PrismDesktop:
         try:
             from prism.tools.browser import browser as browser_api
             browser_api.disconnect()
-        except Exception:
-            pass
+        except Exception as exc:
+            self._log_error("browser disconnect", exc)
         self._set_browser_status(False, "未连接")
 
     def _run_terminal_command(self):
