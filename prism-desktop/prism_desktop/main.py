@@ -140,6 +140,10 @@ class PrismDesktop:
         except Exception as exc:
             self._log_error("keyboard handler", exc)
 
+    def _start_update_check(self):
+        if hasattr(self.page, "run_task"):
+            self.page.run_task(self._check_for_updates)
+
     async def _check_for_updates(self):
         try:
             import urllib.request, json
@@ -181,9 +185,25 @@ class PrismDesktop:
         self._about = lambda e: system_ui._about(self, e)
         self._open_github_releases = lambda e: system_ui._open_github_releases(self, e)
 
-        self._build_ui()
-        self._bind_context_menu()
-        self._bind_tray()
+        try:
+            self._build_ui()
+            self._bind_context_menu()
+            self._bind_tray()
+            self._maybe_show_setup_wizard()
+            self._settings = self._load_settings()
+            if hasattr(self.page, "run_task"):
+                self._start_update_check()
+        except Exception as exc:
+            import traceback
+            traceback.print_exc()
+            try:
+                self._append_terminal(f"init error: {exc}")
+            except Exception:
+                pass
+            try:
+                self.page.add(ft.Text(f"初始化失败: {exc}", color=ft.Colors.ERROR))
+            except Exception:
+                pass
         # Update clock every second
         if hasattr(self.page, 'add_periodic_callback'):
             def _tick(_):
@@ -191,12 +211,6 @@ class PrismDesktop:
             self.page.add_periodic_callback(_tick, 1000)
             self._start_perf_monitor()
             self.page.add_periodic_callback(lambda _: self._perf_tick(), 1000)
-        # Placeholder opacity handled by animate_opacity on show/hide
-        self._maybe_show_setup_wizard()
-        self._settings = self._load_settings()
-        if hasattr(self.page, "run_task"):
-            self.page.run_task(self._check_for_updates)
-        # Load model preset on startup
         presets = (self._settings.get("model_presets") or {})
         current_preset = self._settings.get("model_preset_name", "")
         if current_preset and current_preset in presets:
