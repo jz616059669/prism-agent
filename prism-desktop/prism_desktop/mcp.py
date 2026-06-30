@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import flet as ft
+from prism_desktop.i18n import gettext as _
 
 from prism.config import config as prism_config
 
