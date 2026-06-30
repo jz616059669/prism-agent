@@ -279,13 +279,16 @@ class PrismDesktop:
         self.page.update()
 
     def _animate_sidebar_cards(self):
-        import time
-        time.sleep(0.1)
-        for card in self._sidebar_container.content.controls:
-            if hasattr(card, 'animate_opacity'):
-                card.opacity = 1
-                card.update()
-                time.sleep(0.05)
+        try:
+            import time
+            time.sleep(0.1)
+            for card in self._sidebar_container.content.controls:
+                if hasattr(card, 'animate_opacity'):
+                    card.opacity = 1
+                    card.update()
+                    time.sleep(0.05)
+        except Exception:
+            pass
 
     def _cycle_theme(self):
         current = self._settings.get("theme", "Dark")
@@ -701,7 +704,7 @@ class PrismDesktop:
             alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         )
-        self._chat_placeholder.controls[0].on_hover = lambda e: (self._chat_placeholder.controls[0].animate_scale(0.25, 1.08 if e.data == 'true' else 1.0), self._chat_placeholder.controls[0].update())
+        self._chat_placeholder.controls[0].on_hover = lambda e: (setattr(self._chat_placeholder.controls[0], 'scale', 1.08 if e.data == 'true' else 1.0), self._chat_placeholder.controls[0].update())
         return ft.Column(
             [
                 ft.Row([ft.Text("对话", size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), ft.Container(expand=True), ft.Row([self._clock_text], alignment=ft.MainAxisAlignment.END)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=14),
