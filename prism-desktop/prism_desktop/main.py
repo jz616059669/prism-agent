@@ -5,16 +5,7 @@ PRISM Agent - 桌面客户端
 """
 
 import sys
-import os
 from pathlib import Path
-import json
-from datetime import datetime
-import flet as ft
-from prism_desktop.i18n import gettext as _
-from typing import Optional
-import markdown
-import subprocess
-import threading
 
 # 让桌面端可直接导入上层 prism 包和同目录 prism_desktop 包
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -22,6 +13,16 @@ DESKTOP_ROOT = Path(__file__).resolve().parent.parent
 for _p in (str(REPO_ROOT), str(DESKTOP_ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+
+import os
+import json
+from datetime import datetime
+import flet as ft
+from typing import Optional
+import markdown
+import subprocess
+import threading
+from prism_desktop.i18n import gettext as _
 
 from prism.config import config as prism_config
 from prism.agent import create_agent
