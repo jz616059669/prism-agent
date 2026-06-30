@@ -151,8 +151,24 @@ def _send(self, retry_text: str = ""):
     self.stop_btn.update()
     self._set_status("PRISM 正在思考...", ft.Colors.AMBER_400)
     placeholder = _append(self, "PRISM", "", placeholder=True)
+    stream_text = [""]
+
+    def on_chunk(chunk: str):
+        stream_text[0] += chunk
+        try:
+            placeholder.controls[0].content.controls[1] = ft.Text(
+                stream_text[0],
+                size=14,
+                selectable=True,
+                font_family="Consolas, Monaco, monospace",
+            )
+            placeholder.update()
+        except Exception:
+            pass
+
     try:
-        reply = self.agent.chat(text) or "(无回复)"
+        result = self.agent.chat(text, on_stream=on_chunk) or "(无回复)"
+        reply = result if isinstance(result, str) else result.get("content", "(无回复)")
     except Exception as e:
         reply = f"Error: {e}"
     placeholder.controls[0].content.controls[1] = _markdown_to_ft(self, reply)

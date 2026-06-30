@@ -27,6 +27,8 @@ def _save_settings(self: PrismDesktop) -> None:
         payload = {
             "window_width": int(self.page.window_width) if self.page.window_width else None,
             "window_height": int(self.page.window_height) if self.page.window_height else None,
+            "window_top": int(self.page.window_top) if getattr(self.page, "window_top", None) else None,
+            "window_left": int(self.page.window_left) if getattr(self.page, "window_left", None) else None,
             "theme_mode": getattr(self.page.theme_mode, "value", ""),
             "theme_seed": getattr(self.page, "theme_seed", None),
             "sidebar_width": getattr(self, "_sidebar_width", 260),
