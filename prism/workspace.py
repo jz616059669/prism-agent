@@ -11,8 +11,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from prism.agent import Agent, Message
-
 logger = logging.getLogger("prism.workspace")
 
 
@@ -37,6 +35,7 @@ class WorkspaceManager:
 
     def _load_workspaces(self) -> None:
         """从磁盘加载工作区配置。"""
+        from prism.agent import Agent
         config_file = self.base_dir / "workspaces.json"
         if not config_file.exists():
             # 创建默认工作区
@@ -86,6 +85,7 @@ class WorkspaceManager:
         tags: Optional[List[str]] = None,
     ) -> Workspace:
         """创建新工作区。"""
+        from prism.agent import Agent
         if name in self._workspaces:
             raise ValueError(f"Workspace '{name}' already exists")
         workspace = Workspace(
