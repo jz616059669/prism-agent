@@ -31,6 +31,8 @@ from prism_desktop import settings as settings_ui
 from prism_desktop import mcp as mcp_ui
 from prism_desktop import system as system_ui
 
+INIT_ERROR_LOG = Path.home() / '.prism' / 'init-error.log'
+
 
 class PrismDesktop:
     def __init__(self, page: ft.Page):
@@ -195,7 +197,12 @@ class PrismDesktop:
                 self._start_update_check()
         except Exception as exc:
             import traceback
-            traceback.print_exc()
+            tb = traceback.format_exc()
+            try:
+                INIT_ERROR_LOG.write_text(tb, encoding="utf-8")
+            except Exception:
+                pass
+            print(f"[INIT ERROR] {exc}\n{tb}", flush=True)
             try:
                 self._append_terminal(f"init error: {exc}")
             except Exception:
