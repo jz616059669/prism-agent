@@ -10,6 +10,7 @@ from pathlib import Path
 import json
 from datetime import datetime
 import flet as ft
+from prism_desktop.i18n import gettext as _
 from typing import Optional
 import markdown
 import subprocess
@@ -48,11 +49,11 @@ class PrismDesktop:
             bgcolor=ft.Colors.GREEN_400,
             border_radius=4,
         )
-        self.status_text = ft.Text("就绪", size=12, color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.W_600)
+        self.status_text = ft.Text(_("ready"), size=12, color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.W_600)
         self.perf_text = ft.Text("", size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.8, weight=ft.FontWeight.W_500)
         self._input_accent = None
         self.browser_status_icon = ft.Icon(ft.Icons.LANGUAGE_ROUNDED, size=18, color=ft.Colors.PRIMARY)
-        self.browser_status_text = ft.Text("就绪", size=12, color=ft.Colors.ON_SURFACE, opacity=0.9, weight=ft.FontWeight.W_500)
+        self.browser_status_text = ft.Text(_("ready"), size=12, color=ft.Colors.ON_SURFACE, opacity=0.9, weight=ft.FontWeight.W_500)
         self.browser_connected = None
         self.messages = []
         self.browser_connected = False
@@ -78,9 +79,9 @@ class PrismDesktop:
             value=prism_config.get("model.default", "step-3.7-flash") or "step-3.7-flash",
             width=280,
         )
-        self.provider_textfield = ft.TextField(label="模型提供商", value=prism_config.get("model.provider", "stepfun") or "stepfun", width=280)
-        self.base_url_textfield = ft.TextField(label="Base URL", value=prism_config.get("model.base_url", "https://api.stepfun.com/step_plan/v1") or "https://api.stepfun.com/step_plan/v1", width=280)
-        self.api_key_textfield = ft.TextField(label="API Key", password=True, can_reveal_password=True, value=prism_config.get("model.api_key", "") or "", width=280)
+        self.provider_textfield = ft.TextField(label=_("model_provider"), value=prism_config.get("model.provider", "stepfun") or "stepfun", width=280)
+        self.base_url_textfield = ft.TextField(label=_("base_url"), value=prism_config.get("model.base_url", "https://api.stepfun.com/step_plan/v1") or "https://api.stepfun.com/step_plan/v1", width=280)
+        self.api_key_textfield = ft.TextField(label=_("api_key"), password=True, can_reveal_password=True, value=prism_config.get("model.api_key", "") or "", width=280)
 
         self._format_time = lambda: chat_ui._format_time(self)
         self._markdown_to_ft = lambda text: chat_ui._markdown_to_ft(self, text)
@@ -222,9 +223,9 @@ class PrismDesktop:
                 return
         except Exception as exc:
             self._log_error("setup wizard check", exc)
-        wizard_provider = ft.TextField(label="模型提供商", value="stepfun", width=320)
-        wizard_key = ft.TextField(label="API Key", password=True, can_reveal_password=True, width=320)
-        wizard_model = ft.TextField(label="默认模型", value="step-3.7-flash", width=320)
+        wizard_provider = ft.TextField(label=_("model_provider"), value="stepfun", width=320)
+        wizard_key = ft.TextField(label=_("api_key"), password=True, can_reveal_password=True, width=320)
+        wizard_model = ft.TextField(label=_("default_model"), value="step-3.7-flash", width=320)
 
         def _save(_):
             try:
@@ -311,8 +312,8 @@ class PrismDesktop:
                         pass
 
                 menu = pystray.Menu(
-                    pystray.MenuItem("打开主窗口", _on_tray_click),
-                    pystray.MenuItem("退出", _on_exit),
+                    pystray.MenuItem(_("open_main"), _on_tray_click),
+                    pystray.MenuItem(_("exit_app"), _on_exit),
                 )
                 icon = pystray.Icon("PRISM", _create_tray_image(), "PRISM Agent", menu)
                 t = threading.Thread(target=icon.run, daemon=True)
@@ -348,9 +349,9 @@ class PrismDesktop:
         self.title_text = ft.Text("PRISM Agent", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE)
         self.theme_icon_btn = ft.IconButton(icon=ft.Icons.SETTINGS_ROUNDED, tooltip="切换主题", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE_VARIANT)))
         self.theme_icon_btn.on_click = lambda e: self._cycle_theme()
-        self.minimize_btn = ft.IconButton(icon=ft.Icons.MINIMIZE_ROUNDED, tooltip="最小化到托盘", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE_VARIANT)))
+        self.minimize_btn = ft.IconButton(icon=ft.Icons.MINIMIZE_ROUNDED, tooltip=_("minimize_to_tray"), icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE_VARIANT)))
         self.minimize_btn.on_click = lambda e: self._minimize_to_tray()
-        self.about_btn = ft.IconButton(icon=ft.Icons.INFO, tooltip="关于", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE_VARIANT)))
+        self.about_btn = ft.IconButton(icon=ft.Icons.INFO, tooltip=_("about"), icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE_VARIANT)))
         self.about_btn.on_click = lambda e: self._about(e)
         self.sidebar_toggle_btn = ft.IconButton(icon=ft.Icons.MENU_ROUNDED, tooltip="折叠侧边栏", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE_VARIANT)))
         self.sidebar_toggle_btn.on_click = lambda e: self._toggle_sidebar()
@@ -577,7 +578,7 @@ class PrismDesktop:
             border_radius=34,
         )
 
-        save_btn = ft.Button("保存配置", icon=ft.Icons.SAVE_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
+        save_btn = ft.Button(_("save_settings"), icon=ft.Icons.SAVE_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         save_btn.on_click = lambda e: self._save_config()
 
         browser_deps = self._check_browser_dependencies()
@@ -595,21 +596,21 @@ class PrismDesktop:
         browser_snapshot_btn = ft.Button("读取页面快照", icon=ft.Icons.ARTICLE_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
                      color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT), disabled=not self._browser_deps_ok)
         browser_snapshot_btn.on_click = lambda e: self._browser_snapshot()
-        browser_close_btn = ft.Button("关闭浏览器", icon=ft.Icons.CLOSE_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT), disabled=not self._browser_deps_ok)
+        browser_close_btn = ft.Button(_("close_browser"), icon=ft.Icons.CLOSE_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT), disabled=not self._browser_deps_ok)
         browser_close_btn.on_click = lambda e: self._browser_close()
 
         # MCP
-        self.mcp_refresh_btn = ft.Button("刷新 MCP 服务器", icon=ft.Icons.REFRESH_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
+        self.mcp_refresh_btn = ft.Button(_("refresh_mcp"), icon=ft.Icons.REFRESH_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
                      color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         self.mcp_refresh_btn.on_click = lambda e: self._refresh_mcp()
         self.mcp_server_list = ft.Column(spacing=6, tight=True)
 
         # Skills
-        self.skill_refresh_btn = ft.Button("刷新 Skills", icon=ft.Icons.REFRESH_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
+        self.skill_refresh_btn = ft.Button(_("refresh_skills"), icon=ft.Icons.REFRESH_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
                      color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         self.skill_refresh_btn.on_click = lambda e: self._refresh_skills()
-        self.skill_install_field = ft.TextField(hint_text="安装 Skill 名称或本地路径", width=280, border_radius=14)
-        self.skill_install_btn = ft.Button("安装 Skill", icon=ft.Icons.DOWNLOAD_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
+        self.skill_install_field = ft.TextField(hint_text=_("install_skill_placeholder"), width=280, border_radius=14)
+        self.skill_install_btn = ft.Button(_("install_skill"), icon=ft.Icons.DOWNLOAD_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
                      color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         self.skill_install_btn.on_click = lambda e: self._install_skill_from_ui()
         self.skill_list = ft.Column(spacing=6, tight=True)
@@ -678,7 +679,7 @@ class PrismDesktop:
             ft.Container(height=14),
             ft.Container(
                 content=ft.Column([
-                    ft.Row([ft.Icon(ft.Icons.LANGUAGE_ROUNDED, size=14, color=ft.Colors.PRIMARY), ft.Text("浏览器控制", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE)], spacing=8, tight=True),
+                    ft.Row([ft.Icon(ft.Icons.LANGUAGE_ROUNDED, size=14, color=ft.Colors.PRIMARY), ft.Text(_("browser_control"), size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE)], spacing=8, tight=True),
                     browser_hint,
                     ft.Container(height=6),
                     self.url_field,
@@ -732,7 +733,7 @@ class PrismDesktop:
             ft.Container(height=14),
             ft.Container(
                 content=ft.Column([
-                    ft.Text("会话", size=13, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Text(_("session_tab"), size=13, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
                     ft.Icon(ft.Icons.CHAT, size=14, color=ft.Colors.PRIMARY),
                     ft.Container(height=14),
                     ft.Row([self.session_name_field, self.session_save_btn], spacing=6),
@@ -750,7 +751,7 @@ class PrismDesktop:
             ft.Container(height=14),
             ft.Container(
                 content=ft.Column([
-                    ft.Text("状态", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Text(_("status_tab"), size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
                     ft.Icon(ft.Icons.INFO, size=14, color=ft.Colors.PRIMARY),
                     ft.Container(height=14),
                     ft.Row([self.browser_status_icon, self.browser_status_text], spacing=10, alignment=ft.MainAxisAlignment.START),
@@ -827,7 +828,7 @@ class PrismDesktop:
         self._chat_placeholder.controls[0].on_hover = lambda e: (setattr(self._chat_placeholder.controls[0], 'scale', 1.08 if e.data == 'true' else 1.0), self._chat_placeholder.controls[0].update())
         return ft.Column(
             [
-                ft.Row([ft.Text("对话", size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), ft.Container(expand=True), ft.Row([self._clock_text], alignment=ft.MainAxisAlignment.END)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=14),
+                ft.Row([ft.Text(_("chat_tab"), size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), ft.Container(expand=True), ft.Row([self._clock_text], alignment=ft.MainAxisAlignment.END)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=14),
                 ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT, opacity=0.3),
                 ft.Container(height=14),
                 ft.Stack(
