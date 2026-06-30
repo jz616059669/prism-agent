@@ -135,3 +135,7 @@ class HookManager:
                     self.register(hook)
             except Exception as exc:
                 logger.warning("invalid hook config: %s", exc)
+
+
+# 全局 hooks 管理器实例
+hook_manager = HookManager()

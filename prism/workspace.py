@@ -137,3 +137,7 @@ class WorkspaceManager:
                 del self._agents[name]
             self._save_workspaces()
             logger.info("workspace deleted: %s", name)
+
+
+# 全局工作区管理器实例
+workspace_manager = WorkspaceManager()
