@@ -181,6 +181,7 @@ def _send(self, retry_text: str = ""):
     # scroll_to removed for Flet 0.85.3 compatibility
     self.input_field.disabled = False
     self.send_btn.visible = True
+    self.send_btn.disabled = False
     self.stop_btn.visible = False
     self.send_btn.update()
     self.stop_btn.update()

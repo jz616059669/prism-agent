@@ -712,6 +712,9 @@ class PrismDesktop:
                     else:
                         self.input_count.color = ft.Colors.ON_SURFACE
                     self.input_count.update()
+                if hasattr(self, "send_btn"):
+                    self.send_btn.disabled = not (self.input_field.value or "").strip()
+                    self.send_btn.update()
             except Exception:
                 pass
         self._on_input_change = _on_input_change
