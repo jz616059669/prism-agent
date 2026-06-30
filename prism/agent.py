@@ -13,6 +13,7 @@ from datetime import datetime
 
 from prism.providers.manager import provider_pool
 from prism.tools.registry import registry
+from prism.hooks import hook_manager
 
 logger = logging.getLogger("prism.agent")
 
@@ -92,6 +93,11 @@ class Agent:
         发送消息并获取回复
         on_stream: 可选回调，逐 token 接收文本
         """
+        # Run before_chat hooks
+        hook_result = hook_manager.run_hooks("before_chat", {"message": user_message, "agent": self})
+        if not hook_result.passed:
+            return f"[blocked by hook: {hook_result.hook.name}] {hook_result.error}"
+
         # 添加用户消息
         self.messages.append(Message(role="user", content=user_message))
         self._trim_messages()
@@ -129,6 +135,13 @@ class Agent:
         # 添加助手回复
         self.messages.append(Message(role="assistant", content=assistant_content))
         self._trim_messages()
+
+        # Run after_chat hooks
+        hook_manager.run_hooks("after_chat", {
+            "message": user_message,
+            "response": assistant_content,
+            "agent": self,
+        })
 
         return assistant_content
 
