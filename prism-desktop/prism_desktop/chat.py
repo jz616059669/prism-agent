@@ -98,7 +98,11 @@ def _append(
         alignment=align,
         expand=True,
     )
-    self.chat_list.controls.append(message_row)
+    message_container = ft.GestureDetector(
+        content=message_row,
+        on_long_press=lambda e, row=message_row: self._show_message_menu(e, row, text),
+    )
+    self.chat_list.controls.append(message_container)
     max_chat_items = 500
     if len(self.chat_list.controls) > max_chat_items:
         self.chat_list.controls = self.chat_list.controls[-max_chat_items:]
@@ -124,12 +128,63 @@ def _clear_chat(self):
 
 
 def _show_message_menu(self, e, target, message_text: str):
+    def _close(_):
+        try:
+            self.page.close_dialog()
+        except Exception:
+            pass
+    def _copy(_):
+        try:
+            self.page.set_clipboard(message_text)
+            self._set_status("已复制", ft.Colors.GREEN_400)
+            self.page.close_dialog()
+        except Exception:
+            pass
+    def _delete(_):
+        try:
+            self._delete_message(target)
+            self._set_status("已删除", ft.Colors.GREEN_400)
+            self.page.close_dialog()
+        except Exception:
+            pass
+    def _pin(_):
+        try:
+            self._pin_message(target)
+            self._set_status("已置顶", ft.Colors.GREEN_400)
+            self.page.close_dialog()
+        except Exception:
+            pass
+    self.page.dialog = ft.AlertDialog(
+        title=ft.Text("消息操作"),
+        content=ft.Text(message_text[:100] + ("..." if len(message_text) > 100 else ""), max_lines=3, overflow=ft.TextOverflow.ELLIPSIS),
+        actions=[
+            ft.TextButton("复制", on_click=_copy),
+            ft.TextButton("删除", on_click=_delete),
+            ft.TextButton("置顶", on_click=_pin),
+            ft.TextButton("关闭", on_click=_close),
+        ],
+    )
+    self.page.dialog.open = True
+    self.page.update()
+
+
+def _delete_message(self, message_row):
     try:
-        self.page.set_clipboard(message_text)
-        self._set_status("已复制", ft.Colors.GREEN_400)
+        if message_row in self.chat_list.controls:
+            self.chat_list.controls.remove(message_row)
+            self.chat_list.update()
     except Exception:
         pass
 
+def _pin_message(self, message_row):
+    try:
+        # Pin by prepending to controls (visual top)
+        if message_row in self.chat_list.controls:
+            self.chat_list.controls.remove(message_row)
+            self.chat_list.controls.insert(0, message_row)
+            self.chat_list.update()
+    except Exception:
+        pass
 
 def _on_input_change(self):
     try:
