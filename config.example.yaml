@@ -1,45 +1,39 @@
-# PRISM Agent 示例配置
-
-# 模型提供商
-providers:
-  stepfun:
-    base_url: "https://api.stepfun.com/step_plan/v1"
-    api_key: "YOUR_STEPFUN_API_KEY"
-    model: "step-3.7-flash"
-
-  openai:
-    base_url: "https://api.openai.com/v1"
-    api_key: "YOUR_OPENAI_API_KEY"
-    model: "gpt-4o"
-
-# 主模型与降级链
 model:
-  default: "step-3.7-flash"
-  provider: "stepfun"
-  base_url: "https://api.stepfun.com/step_plan/v1"
+  provider: stepfun
+  base_url: https://api.stepfun.com/step_plan/v1
+  api_key: ""
+  model.default: step-3.7-flash
 
-fallback:
-  chain:
-    - "stepfun/step-3.7-flash"
-    - "openai/gpt-4o"
-
-# Gateway
 gateway:
-  telegram:
-    token: ""
-  feishu:
-    app_id: ""
-    app_secret: ""
-    encrypt_key: ""
-    verification_token: ""
+  platforms: []
 
-# MCP
-mcpServers:
-  filesystem:
-    transport: "stdio"
-    command: "npx"
-    args:
-      - "-y"
-      - "@modelcontextprotocol/server-filesystem"
-      - "C:/Users/zd"
-    enabled: true
+# Hooks 系统配置（借鉴 Codex CLI）
+# 在关键节点注入自定义逻辑
+hooks:
+  - name: "log-all-chats"
+    event: "after_chat"
+    pattern: "*"
+    action: "run"
+    command: "echo '[PRISM] chat completed' >> ~/.prism/logs/hooks.log"
+    timeout: 5
+
+  - name: "block-dangerous-commands"
+    event: "before_command"
+    pattern: "rm -rf *"
+    action: "block"
+    command: "False"  # 阻止危险命令
+    timeout: 5
+
+  - name: "validate-before-write"
+    event: "before_file_write"
+    pattern: "*.py"
+    action: "run"
+    command: "python -m py_compile {file}"
+    timeout: 10
+
+# Workspace 配置（借鉴 OpenClaw）
+workspaces:
+  - name: "default"
+    path: "~/.prism/sessions"
+    description: "Default workspace"
+    tags: ["main"]
