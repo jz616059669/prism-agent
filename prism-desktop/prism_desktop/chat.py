@@ -146,6 +146,7 @@ def _send(self, retry_text: str = ""):
     self.input_field.disabled = True
     self.send_btn.visible = False
     self.stop_btn.visible = True
+    self._generating = True
     self.input_field.update()
     self.send_btn.update()
     self.stop_btn.update()
@@ -154,6 +155,8 @@ def _send(self, retry_text: str = ""):
     stream_text = [""]
 
     def on_chunk(chunk: str):
+        if not getattr(self, "_generating", True):
+            return
         stream_text[0] += chunk
         try:
             placeholder.controls[0].content.controls[1] = ft.Text(
@@ -167,7 +170,7 @@ def _send(self, retry_text: str = ""):
             pass
 
     try:
-        result = self.agent.chat(text, on_stream=on_chunk) or "(无回复)"
+        result = self.agent.chat(text, on_stream=on_chunk, stop_callback=lambda: not getattr(self, "_generating", True)) or "(无回复)"
         reply = result if isinstance(result, str) else result.get("content", "(无回复)")
     except Exception as e:
         reply = f"Error: {e}"
@@ -181,6 +184,7 @@ def _send(self, retry_text: str = ""):
     self.stop_btn.visible = False
     self.send_btn.update()
     self.stop_btn.update()
+    self._generating = False
     self._set_status("就绪", ft.Colors.GREEN_400)
     try:
         self.input_field.focus()

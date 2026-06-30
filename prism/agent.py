@@ -87,7 +87,7 @@ class Agent:
 - 安全第一，危险操作先确认
 """
     
-    def chat(self, user_message: str, on_stream=None) -> str:
+    def chat(self, user_message: str, on_stream=None, **kwargs) -> str:
         """
         发送消息并获取回复
         on_stream: 可选回调，逐 token 接收文本
@@ -104,7 +104,7 @@ class Agent:
 
         # 如果有流式回调，使用流式请求
         if on_stream is not None:
-            result = provider_pool.stream_chat(api_messages, on_chunk=on_stream)
+            result = provider_pool.stream_chat(api_messages, on_chunk=on_stream, **kwargs)
         else:
             result = provider_pool.chat(api_messages)
 

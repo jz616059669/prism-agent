@@ -70,7 +70,7 @@ class OpenAIProvider(Provider):
                 'provider': self.name,
             }
 
-    def stream_chat(self, messages: List[Dict], on_chunk, **kwargs) -> Dict[str, Any]:
+    def stream_chat(self, messages: List[Dict], on_chunk, stop_callback=None, **kwargs) -> Dict[str, Any]:
         """流式聊天请求，逐 chunk 回调"""
         try:
             stream = self.client.chat.completions.create(
@@ -81,6 +81,8 @@ class OpenAIProvider(Provider):
             )
             full_content = []
             for chunk in stream:
+                if stop_callback and stop_callback():
+                    break
                 delta = chunk.choices[0].delta if chunk.choices else None
                 content = delta.content if delta and delta.content else ''
                 if content:
