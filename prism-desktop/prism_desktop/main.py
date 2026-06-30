@@ -110,6 +110,16 @@ class PrismDesktop:
         except Exception:
             pass
 
+    def _log_to_file(self, level: str, event: str, **fields) -> None:
+        try:
+            entry = {"ts": __import__("datetime").datetime.now().isoformat(timespec="seconds"), "level": level, "event": event, **fields}
+            log_path = Path.home() / ".prism" / "prism-desktop.log"
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(log_path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        except Exception:
+            pass
+
     def _on_keyboard_event(self, e: ft.KeyboardEvent):
         try:
             if e.ctrl and e.key == "Enter":
@@ -1320,6 +1330,10 @@ class PrismDesktop:
         self.stop_btn.update()
         self.send_btn.update()
         self._set_status("已停止", ft.Colors.AMBER_400)
+        try:
+            self._log_to_file("info", "stream_stopped", chunks=getattr(self, "_chunk_count", 0))
+        except Exception:
+            pass
 
 
     @staticmethod

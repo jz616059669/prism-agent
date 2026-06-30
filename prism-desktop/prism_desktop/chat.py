@@ -212,6 +212,10 @@ def _send(self, retry_text: str = ""):
     self.send_btn.update()
     self.stop_btn.update()
     self._set_status("PRISM 正在思考...", ft.Colors.AMBER_400)
+    try:
+        self._log_to_file("info", "stream_start", model=getattr(self, "model_dropdown", None) and self.model_dropdown.value, provider=getattr(self, "provider_textfield", None) and self.provider_textfield.value)
+    except Exception:
+        pass
     placeholder = _append(self, "PRISM", "", placeholder=True)
     stream_text = [""]
 
@@ -219,6 +223,10 @@ def _send(self, retry_text: str = ""):
         if not getattr(self, "_generating", True):
             return
         stream_text[0] += chunk
+        try:
+            self._chunk_count = getattr(self, "_chunk_count", 0) + 1
+        except Exception:
+            pass
         try:
             placeholder.controls[0].content.controls[1] = ft.Text(
                 stream_text[0],
@@ -248,6 +256,10 @@ def _send(self, retry_text: str = ""):
     self.stop_btn.update()
     self._generating = False
     self._set_status("就绪", ft.Colors.GREEN_400)
+    try:
+        self._log_to_file("info", "stream_complete", chunks=getattr(self, "_chunk_count", 0))
+    except Exception:
+        pass
     try:
         self.input_field.focus()
     except Exception:
