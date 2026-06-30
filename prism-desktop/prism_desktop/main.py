@@ -49,12 +49,17 @@ class PrismDesktop:
             border_radius=4,
         )
         self.status_text = ft.Text("就绪", size=12, color=ft.Colors.ON_SURFACE, weight=ft.FontWeight.W_600)
+        self.perf_text = ft.Text("", size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.8, weight=ft.FontWeight.W_500)
         self._input_accent = None
         self.browser_status_icon = ft.Icon(ft.Icons.LANGUAGE_ROUNDED, size=18, color=ft.Colors.PRIMARY)
         self.browser_status_text = ft.Text("就绪", size=12, color=ft.Colors.ON_SURFACE, opacity=0.9, weight=ft.FontWeight.W_500)
         self.browser_connected = None
         self.messages = []
         self.browser_connected = False
+        self._perf_fps = 0
+        self._perf_frames = 0
+        self._perf_last_ts = None
+        self._perf_mem_mb = 0.0
         self._terminal_lines = ["PRISM Desktop 已启动"]
         try:
             self.agent = create_agent()
@@ -183,6 +188,8 @@ class PrismDesktop:
             def _tick(_):
                 self._update_clock()
             self.page.add_periodic_callback(_tick, 1000)
+            self._start_perf_monitor()
+            self.page.add_periodic_callback(lambda _: self._perf_tick(), 1000)
         # Placeholder opacity handled by animate_opacity on show/hide
         self._maybe_show_setup_wizard()
         self._settings = self._load_settings()
@@ -747,7 +754,7 @@ class PrismDesktop:
                     ft.Icon(ft.Icons.INFO, size=14, color=ft.Colors.PRIMARY),
                     ft.Container(height=14),
                     ft.Row([self.browser_status_icon, self.browser_status_text], spacing=10, alignment=ft.MainAxisAlignment.START),
-                    ft.Row([self.status_text, ft.Container(expand=True), self._clock_text], spacing=10),
+                    ft.Row([self.status_text, self.perf_text, ft.Container(expand=True), self._clock_text], spacing=10),
                 ], tight=True, spacing=6),
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 
@@ -1355,6 +1362,41 @@ class PrismDesktop:
         except Exception as e:
             status["error"] = f"Chromium 检查失败: {e}"
         return status
+
+    def _start_perf_monitor(self) -> None:
+        try:
+            import time, psutil
+            from collections import deque
+            self._perf_samples = deque(maxlen=30)
+            self._perf_last_ts = time.perf_counter()
+            self._perf_frames = 0
+            self._perf_proc = psutil.Process()
+            self._perf_log_counter = 0
+        except Exception:
+            pass
+
+    def _perf_tick(self) -> None:
+        try:
+            import time
+            self._perf_frames += 1
+            now = time.perf_counter()
+            dt = now - (self._perf_last_ts or now)
+            if dt >= 1.0:
+                fps = self._perf_frames / dt
+                mem = self._perf_proc.memory_info().rss / (1024 * 1024)
+                self._perf_samples.append((fps, mem))
+                self._perf_frames = 0
+                self._perf_last_ts = now
+                self.perf_text.value = f"FPS:{fps:.0f} | MEM:{mem:.0f}MB"
+                self.perf_text.update()
+                self._perf_log_counter += 1
+                if self._perf_log_counter % 5 == 0:
+                    try:
+                        self._log_to_file("debug", "perf_tick", fps=round(fps, 1), mem_mb=round(mem, 1))
+                    except Exception:
+                        pass
+        except Exception:
+            pass
 
     def _set_browser_status(self, connected: bool, title: str = ""):
         self.browser_connected = connected
