@@ -758,7 +758,7 @@ class PrismDesktop:
             [
                 ft.Row([self.terminal_input, terminal_run_btn], spacing=8),
                 ft.Row([clear_terminal_btn], alignment=ft.MainAxisAlignment.END),
-                ft.Container(self.terminal_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=34, padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE, shadow=ft.BoxShadow(blur_radius=8, color=ft.Colors.with_opacity(0.08, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 1))),
+                ft.Container(self.terminal_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=34, padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE),
             ],
             expand=True,
             spacing=8,
@@ -767,7 +767,7 @@ class PrismDesktop:
             [
                 ft.Text("MCP", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, opacity=0.9),
                 ft.Row([clear_mcp_btn], alignment=ft.MainAxisAlignment.END),
-                ft.Container(self.mcp_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=34, padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE, shadow=ft.BoxShadow(blur_radius=8, color=ft.Colors.with_opacity(0.08, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 1))),
+                ft.Container(self.mcp_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=34, padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE),
             ],
             expand=True,
             spacing=8,
@@ -834,7 +834,6 @@ class PrismDesktop:
                 border_radius=34,
                 padding=ft.Padding(22, 20, 22, 20),
                 shadow=ft.BoxShadow(blur_radius=14, color=ft.Colors.with_opacity(0.22, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 2)),
-                animate=ft.Animation(200, ft.AnimationCurve.EASE_IN_OUT),
             )
         else:
             content_widget = ft.Column(
@@ -853,7 +852,6 @@ class PrismDesktop:
                 border_radius=34,
                 padding=ft.Padding(22, 20, 22, 20),
                 shadow=ft.BoxShadow(blur_radius=12, color=ft.Colors.with_opacity(0.2, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 1)),
-                animate=ft.Animation(200, ft.AnimationCurve.EASE_IN_OUT),
             )
 
         message_row = ft.Row(
