@@ -322,8 +322,8 @@ uv run twine check dist/*
 ```
 
 产物：
-- `dist/prism_agent-1.0.1.tar.gz`
-- `dist/prism_agent-1.0.1-py3-none-any.whl`
+- `dist/prism_agent-2.0.2.tar.gz`
+- `dist/prism_agent-2.0.2-py3-none-any.whl`
 
 ### 上传到 PyPI
 ```bash

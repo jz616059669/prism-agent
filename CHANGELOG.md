@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.0.2 - 2026-06-30
+
+### Added
+- Desktop client test suite (`prism-desktop/tests/test_desktop.py`) covering debounced save, stop send, browser dep check, terminal command, startup fallback
+- Real backend streaming chat in desktop: `_send` now iterates provider chunks and stops on button press
+- Window position/size persistence: restores geometry on restart
+
+### Changed
+- Unified version to `2.0.2` across package, packaging script, and README
+- Desktop save settings debounced to 0.5s to avoid frequent disk writes
+
+### Fixed
+- Browser control now shows actionable error when `playwright` or `Chromium` is missing
+- Right-side terminal/MCP tabs actually switch panels instead of being dead `on_change=lambda e: None`
+- Desktop startup no longer hard-crashes when `create_agent()` or `prism_config` fails; falls back to usable empty UI
+- Removed duplicate `_build_appbar`, `_toggle_sidebar`, `_cycle_theme`, `_build_ui` definitions in `main.py`
+- Terminal log path initialized before `create_agent()` so startup errors are visible
+- Streaming send sets `_generating` flag and respects stop button
+
 ## 0.2.1 - 2026-06-24
 
 ### Added
