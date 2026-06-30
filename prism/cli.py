@@ -123,6 +123,37 @@ def doctor():
 
     console.print(table)
 
+
+@cli.command()
+@click.argument('prompt')
+@click.option('--stream/--no-stream', default=True, help='Stream response')
+@click.option('--model', default=None, help='Override model')
+@click.option('--json', 'output_json', is_flag=True, help='Output as JSON')
+def ask(prompt: str, stream: bool, model: Optional[str], output_json: bool):
+    """非交互模式：直接提问并输出结果（适合脚本/管道）"""
+    from prism.agent import create_agent
+    from prism.providers.manager import provider_pool
+    
+    agent = create_agent()
+    
+    if model:
+        provider_pool.set_default_model(model)
+    
+    if output_json:
+        result = agent.chat(prompt)
+        import json
+        click.echo(json.dumps({"content": result}, ensure_ascii=False))
+    elif stream:
+        full_response = []
+        def on_chunk(chunk):
+            full_response.append(chunk)
+            click.echo(chunk, nl=False)
+        agent.chat(prompt, on_stream=on_chunk)
+        click.echo()
+    else:
+        result = agent.chat(prompt)
+        click.echo(result)
+
 @cli.group()
 def acp():
     """ACP 协议通信命令"""
