@@ -6,15 +6,11 @@ PRISM Agent - MCP HTTP/SSE 传输
 import json
 import time
 import threading
+import urllib.request
+import urllib.error
 from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
 from pathlib import Path
-
-try:
-    import requests
-    _REQUESTS_AVAILABLE = True
-except Exception:
-    _REQUESTS_AVAILABLE = False
 
 
 class MCPHTTPClient:
@@ -22,7 +18,7 @@ class MCPHTTPClient:
     
     def __init__(self, base_url: str):
         self.base_url = base_url.rstrip('/')
-        self.session = requests.Session() if _REQUESTS_AVAILABLE else None
+        # Use urllib instead of requests to avoid import-time hangs
         self._initialized = False
     
     def _headers(self) -> Dict[str, str]:
@@ -30,6 +26,24 @@ class MCPHTTPClient:
             'Content-Type': 'application/json',
             'Accept': 'application/json, text/event-stream',
         }
+
+    def _request(self, method: str, path: str, payload: dict, timeout: int = 30) -> Dict[str, Any]:
+        """Make HTTP request using urllib"""
+        url = f"{self.base_url}{path}"
+        data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
+        req = urllib.request.Request(url, data=data, headers=self._headers(), method=method)
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                raw = resp.read().decode('utf-8')
+                return json.loads(raw)
+        except urllib.error.HTTPError as e:
+            body = e.read().decode('utf-8', errors='replace')
+            try:
+                return json.loads(body)
+            except Exception:
+                return {'error': {'message': str(e), 'body': body[:200]}}
+        except Exception as e:
+            return {'error': {'message': str(e)}}
     
     def initialize(self) -> Dict[str, Any]:
         if self._initialized:
@@ -47,13 +61,9 @@ class MCPHTTPClient:
         }
         
         try:
-            resp = self.session.post(
-                f"{self.base_url}/mcp",
-                headers=self._headers(),
-                json=payload,
-                timeout=30,
-            )
-            data = resp.json()
+            data = self._request('POST', '/mcp', payload, timeout=30)
+            if 'error' in data:
+                return {'success': False, 'error': data['error'].get('message', 'Unknown error')}
             self._initialized = 'result' in data
             return {'success': self._initialized, 'result': data.get('result')}
         except Exception as e:
@@ -72,17 +82,13 @@ class MCPHTTPClient:
         }
         
         try:
-            resp = self.session.post(
-                f"{self.base_url}/mcp",
-                headers=self._headers(),
-                json=payload,
-                timeout=30,
-            )
-            data = resp.json()
+            data = self._request('POST', '/mcp', payload, timeout=30)
+            if 'error' in data:
+                return {'success': False, 'error': data['error'].get('message', 'Unknown error')}
             if 'result' in data:
                 tools = data['result'].get('tools', [])
                 return {'success': True, 'tools': tools}
-            return {'success': False, 'error': data.get('error', {}).get('message', 'Unknown error')}
+            return {'success': False, 'error': 'Unknown error'}
         except Exception as e:
             return {'success': False, 'error': str(e)}
     
@@ -102,23 +108,14 @@ class MCPHTTPClient:
         }
         
         try:
-            resp = self.session.post(
-                f"{self.base_url}/mcp",
-                headers=self._headers(),
-                json=payload,
-                timeout=30,
-            )
-            data = resp.json()
+            data = self._request('POST', '/mcp', payload, timeout=30)
+            if 'error' in data:
+                return {'success': False, 'error': data['error'].get('message', 'Unknown error')}
             if 'result' in data:
                 return {'success': True, 'result': data['result']}
-            return {'success': False, 'error': data.get('error', {}).get('message', 'Unknown error')}
+            return {'success': False, 'error': 'Unknown error'}
         except Exception as e:
             return {'success': False, 'error': str(e)}
     
     def close(self):
-        if self.session:
-            try:
-                self.session.close()
-            except Exception:
-                pass
         self._initialized = False
