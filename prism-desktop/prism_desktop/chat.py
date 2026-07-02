@@ -80,11 +80,6 @@ def _markdown_to_ft(self, text: str):
         selectable=True,
         extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
         code_theme="monokai",
-        code_block_style=ft.CodeBlockStyle(
-            bgcolor=ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE),
-            border_radius=12,
-            padding=ft.Padding(12, 10, 12, 10),
-        ),
         on_tap_link=lambda e: self.page.launch_url(e.data),
     )
 
