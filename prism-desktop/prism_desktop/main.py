@@ -24,6 +24,9 @@ import subprocess
 import threading
 from prism_desktop.i18n import gettext as _
 
+from prism.logging import logger
+import traceback
+
 from prism.config import config as prism_config
 from prism.agent import create_agent
 from prism.tools.browser_bridge import open_page, page_snapshot, close_browser
@@ -73,6 +76,7 @@ class PrismDesktop:
             try:
                 self._set_status(f"初始化失败：{exc}", ft.Colors.RED_400)
             except Exception:
+                logger.debug('desktop exception: %s', traceback.format_exc())
                 pass
         self._mcp_logs = []
         self._skill_list_cache = []
@@ -130,15 +134,18 @@ class PrismDesktop:
             try:
                 INIT_ERROR_LOG.write_text(tb, encoding="utf-8")
             except Exception:
+                logger.debug('desktop exception: %s', traceback.format_exc())
                 pass
             print(f"[INIT ERROR] {exc}\n{tb}", flush=True)
             try:
                 self._append_terminal(f"init error: {exc}")
             except Exception:
+                logger.debug('desktop exception: %s', traceback.format_exc())
                 pass
             try:
                 self.page.add(ft.Text(f"初始化失败: {exc}", color=ft.Colors.ERROR))
             except Exception:
+                logger.debug('desktop exception: %s', traceback.format_exc())
                 pass
         # Update clock every second
         if hasattr(self.page, 'add_periodic_callback'):
@@ -169,6 +176,7 @@ class PrismDesktop:
         try:
             self._append_terminal(f"[ERROR] {context}: {exc}")
         except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
             pass
 
     def _structured_log(self, level: str, event: str, **fields) -> None:
@@ -176,6 +184,7 @@ class PrismDesktop:
             line = {"ts": __import__("datetime").datetime.now().isoformat(timespec="seconds"), "level": level, "event": event, **fields}
             self._append_terminal(f"[{line['level']}] {line['event']} | {fields}")
         except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
             pass
 
     def _log_to_file(self, level: str, event: str, **fields) -> None:
@@ -186,6 +195,7 @@ class PrismDesktop:
             with open(log_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(entry, ensure_ascii=False) + "\n")
         except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
             pass
 
     def _on_keyboard_event(self, e: ft.KeyboardEvent):
@@ -224,6 +234,7 @@ class PrismDesktop:
                 self._set_status(f"发现新版本 {latest}", ft.Colors.AMBER_400)
                 self._append_terminal(f"update available: {latest} (current {current})")
         except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
             pass
 
     def _validate_config(self) -> bool:
@@ -245,10 +256,12 @@ class PrismDesktop:
                 try:
                     self._set_status(f"配置缺失：{', '.join(missing)}", ft.Colors.RED_400)
                 except Exception:
+                    logger.debug('desktop exception: %s', traceback.format_exc())
                     pass
                 return False
             return True
         except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
             return False
 
     def _validate_and_create_agent(self) -> bool:
@@ -351,6 +364,7 @@ class PrismDesktop:
                         self._set_status("就绪", ft.Colors.GREEN_400)
                         self.page.update()
                     except Exception:
+                        logger.debug('desktop exception: %s', traceback.format_exc())
                         pass
 
                 def _on_exit(icon, item):
@@ -358,6 +372,7 @@ class PrismDesktop:
                     try:
                         self.page.window_close()
                     except Exception:
+                        logger.debug('desktop exception: %s', traceback.format_exc())
                         pass
 
                 menu = pystray.Menu(
@@ -462,6 +477,7 @@ class PrismDesktop:
                     card.update()
                     time.sleep(0.05)
         except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
             pass
 
     def _cycle_theme(self):
@@ -479,6 +495,7 @@ class PrismDesktop:
             self.page.window_hide()
             self._append_terminal("minimized to tray")
         except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
             pass
 
     def _build_ui(self):
@@ -891,6 +908,7 @@ class PrismDesktop:
                     self.send_btn.disabled = not (self.input_field.value or "").strip()
                     self.send_btn.update()
             except Exception:
+                logger.debug('desktop exception: %s', traceback.format_exc())
                 pass
         self._on_input_change = _on_input_change
         clear_chat_btn = ft.TextButton("清屏", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED, animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
@@ -1409,6 +1427,7 @@ class PrismDesktop:
                     self.status_text.update()
             threading.Thread(target=_clear, daemon=True).start()
         except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
             pass
 
     def _save_config(self):
@@ -1436,6 +1455,7 @@ class PrismDesktop:
         try:
             self._log_to_file("info", "stream_stopped", chunks=getattr(self, "_chunk_count", 0))
         except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
             pass
 
 
@@ -1469,6 +1489,7 @@ class PrismDesktop:
             self._perf_proc = psutil.Process()
             self._perf_log_counter = 0
         except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
             pass
 
     def _perf_tick(self) -> None:
@@ -1490,8 +1511,10 @@ class PrismDesktop:
                     try:
                         self._log_to_file("debug", "perf_tick", fps=round(fps, 1), mem_mb=round(mem, 1))
                     except Exception:
+                        logger.debug('desktop exception: %s', traceback.format_exc())
                         pass
         except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
             pass
 
     def _set_browser_status(self, connected: bool, title: str = ""):
@@ -1563,6 +1586,7 @@ class PrismDesktop:
                     self._terminal_history = self._terminal_history[-200:]
             self._terminal_history_index = len(self._terminal_history)
         except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
             pass
         self._append_terminal(f"$ {command}")
         self.terminal_input.value = ""

@@ -8,6 +8,9 @@ from pathlib import Path
 
 import flet as ft
 
+from prism.logging import logger
+import traceback
+
 
 def _bind_tray(self):
     tray_dir = Path(__file__).parent
@@ -27,10 +30,12 @@ def _bind_tray(self):
         try:
             self.page.window_close()
         except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
             pass
         try:
             self.page.window_destroy()
         except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
             pass
         try:
             if sys.platform == "win32":
@@ -38,6 +43,7 @@ def _bind_tray(self):
             else:
                 raise SystemExit
         except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
             pass
 
     try:
@@ -48,10 +54,12 @@ def _bind_tray(self):
                 from PIL import ImageGrab
                 image = ImageGrab.grab()
             except Exception:
+                logger.debug("tray icon ImageGrab failed: %s", traceback.format_exc())
                 try:
                     from PIL import Image
                     image = Image.new("RGB", (64, 64), color=(73, 109, 137))
                 except Exception:
+                    logger.debug("tray icon Image.new failed: %s", traceback.format_exc())
                     image = None
         if image is not None:
             menu = pystray.Menu(
@@ -72,6 +80,7 @@ def _minimize_to_tray(self):
     try:
         self.page.set_window_state("minimized")
     except Exception:
+        logger.debug('desktop exception: %s', traceback.format_exc())
         pass
     self._append_terminal("minimize to tray")
 

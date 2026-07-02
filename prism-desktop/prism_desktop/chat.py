@@ -15,6 +15,9 @@ from prism_desktop.i18n import gettext as _
 import markdown
 import subprocess
 
+from prism.logging import logger
+import traceback
+
 DRAFTS_PATH = Path.home() / '.prism' / 'drafts.json'
 
 # 让桌面端可直接导入上层 prism 包和同目录 prism_desktop 包
@@ -103,9 +106,11 @@ def _append(
         import markdown
         rendered = markdown.markdown(text, extensions=["fenced_code", "tables", "nl2br", "pymdownx.arithmatex"])
     except Exception:
+        logger.debug("markdown render failed: %s", traceback.format_exc())
         try:
             rendered = markdown.markdown(text, extensions=["fenced_code", "tables", "nl2br"])
         except Exception:
+            logger.debug("markdown fallback render failed: %s", traceback.format_exc())
             rendered = text
     is_error = not is_user and (text.startswith("Error:") or text.startswith("请求超时") or text.startswith("失败"))
     display_color = ft.Colors.ERROR if is_error else text_color
@@ -185,6 +190,7 @@ def _apply_prompt_template(self, prompt: str):
         if hasattr(self, "_update_input_count"):
             self._update_input_count()
     except Exception:
+        logger.debug('desktop exception: %s', traceback.format_exc())
         pass
 
 def _clear_chat(self):
@@ -201,6 +207,7 @@ def _show_message_menu(self, e, target, message_text: str):
         try:
             self.page.close_dialog()
         except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
             pass
     def _copy(_):
         try:
@@ -208,6 +215,7 @@ def _show_message_menu(self, e, target, message_text: str):
             self._set_status("已复制", ft.Colors.GREEN_400)
             self.page.close_dialog()
         except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
             pass
     def _delete(_):
         try:
@@ -215,6 +223,7 @@ def _show_message_menu(self, e, target, message_text: str):
             self._set_status("已删除", ft.Colors.GREEN_400)
             self.page.close_dialog()
         except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
             pass
     def _pin(_):
         try:
@@ -222,6 +231,7 @@ def _show_message_menu(self, e, target, message_text: str):
             self._set_status("已置顶", ft.Colors.GREEN_400)
             self.page.close_dialog()
         except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
             pass
     self.page.dialog = ft.AlertDialog(
         title=ft.Text("消息操作"),
@@ -243,6 +253,7 @@ def _delete_message(self, message_row):
             self.chat_list.controls.remove(message_row)
             self.chat_list.update()
     except Exception:
+        logger.debug('desktop exception: %s', traceback.format_exc())
         pass
 
 def _pin_message(self, message_row):
@@ -253,6 +264,7 @@ def _pin_message(self, message_row):
             self.chat_list.controls.insert(0, message_row)
             self.chat_list.update()
     except Exception:
+        logger.debug('desktop exception: %s', traceback.format_exc())
         pass
 
 
@@ -273,13 +285,16 @@ def _pin_message(self, message_row):
                     try:
                         control.bgcolor = ft.Colors.with_opacity(0.18, ft.Colors.PRIMARY)
                     except Exception:
+                        logger.debug('desktop exception: %s', traceback.format_exc())
                         pass
                 else:
                     try:
                         control.bgcolor = None
                     except Exception:
+                        logger.debug('desktop exception: %s', traceback.format_exc())
                         pass
             except Exception:
+                logger.debug('desktop exception: %s', traceback.format_exc())
                 pass
         self.chat_list.update()
         self._set_status(f"搜索完成：找到 {found} 条", ft.Colors.GREEN_400 if found else ft.Colors.AMBER_400)
@@ -305,6 +320,7 @@ def _pin_message(self, message_row):
                     self._set_status(f"定位到第 {idx + 1} 条", ft.Colors.GREEN_400)
                     return
             except Exception:
+                logger.debug('desktop exception: %s', traceback.format_exc())
                 pass
         self._set_status("已到最后一条", ft.Colors.AMBER_400)
 
@@ -329,6 +345,7 @@ def _pin_message(self, message_row):
                     self._set_status(f"定位到第 {idx + 1} 条", ft.Colors.GREEN_400)
                     return
             except Exception:
+                logger.debug('desktop exception: %s', traceback.format_exc())
                 pass
         self._set_status("已到第一条", ft.Colors.AMBER_400)
 
@@ -342,8 +359,10 @@ def _on_input_change(self):
         try:
             DRAFTS_PATH.write_text(text, encoding="utf-8")
         except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
             pass
     except Exception:
+        logger.debug('desktop exception: %s', traceback.format_exc())
         pass
 
 def _terminal_history_up(self):
@@ -360,6 +379,7 @@ def _terminal_history_up(self):
         self.input_field.value = self._terminal_history[self._terminal_history_index]
         self.input_field.update()
     except Exception:
+        logger.debug('desktop exception: %s', traceback.format_exc())
         pass
 
 def _terminal_history_down(self):
@@ -377,6 +397,7 @@ def _terminal_history_down(self):
             self.input_field.value = self._terminal_history[self._terminal_history_index]
         self.input_field.update()
     except Exception:
+        logger.debug('desktop exception: %s', traceback.format_exc())
         pass
 
 
@@ -384,6 +405,7 @@ def _send(self, retry_text: str = ""):
     try:
         text = retry_text or (self.input_field.value or "").strip()
     except Exception:
+        logger.debug('desktop exception: %s', traceback.format_exc())
         return
     if getattr(self, "_generating", False):
         return
@@ -396,6 +418,7 @@ def _send(self, retry_text: str = ""):
                 self.input_field.value = ""
                 self.input_field.update()
         except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
             pass
     if not text:
         return
@@ -411,6 +434,7 @@ def _send(self, retry_text: str = ""):
     try:
         self._log_to_file("info", "stream_start", model=getattr(self, "model_dropdown", None) and self.model_dropdown.value, provider=getattr(self, "provider_textfield", None) and self.provider_textfield.value)
     except Exception:
+        logger.debug('desktop exception: %s', traceback.format_exc())
         pass
     placeholder = _append(self, "PRISM", "", placeholder=True)
     stream_text = [""]
@@ -422,6 +446,7 @@ def _send(self, retry_text: str = ""):
         try:
             self._chunk_count = getattr(self, "_chunk_count", 0) + 1
         except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
             pass
         try:
             # Typewriter effect: render full accumulated text through markdown
@@ -429,6 +454,7 @@ def _send(self, retry_text: str = ""):
             placeholder.controls[0].content.controls[1] = _markdown_to_ft(self, rendered)
             placeholder.update()
         except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
             pass
 
     try:
@@ -452,9 +478,10 @@ def _send(self, retry_text: str = ""):
     try:
         self._log_to_file("info", "stream_complete", chunks=getattr(self, "_chunk_count", 0))
     except Exception:
+        logger.debug('desktop exception: %s', traceback.format_exc())
         pass
     try:
         self.input_field.focus()
     except Exception:
+        logger.debug('desktop exception: %s', traceback.format_exc())
         pass
-

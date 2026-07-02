@@ -7,6 +7,9 @@ from typing import TYPE_CHECKING
 
 import flet as ft
 
+from prism.logging import logger
+import traceback
+
 if TYPE_CHECKING:
     from prism_desktop.main import PrismDesktop
 
@@ -17,6 +20,7 @@ def _load_settings(self: PrismDesktop) -> dict:
         try:
             return json.loads(self._settings_path.read_text(encoding="utf-8"))
         except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
             return {}
     return {}
 
@@ -72,10 +76,12 @@ def _apply_settings(self: PrismDesktop) -> None:
         if model:
             prism_config.set("model.default", model)
     except Exception:
+        logger.debug('desktop exception: %s', traceback.format_exc())
         pass
     current_session = settings.get("current_session")
     if current_session:
         try:
             self._load_session(current_session)
         except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
             pass

@@ -6,6 +6,9 @@ from typing import TYPE_CHECKING
 import flet as ft
 from prism_desktop.i18n import gettext as _
 
+from prism.logging import logger
+import traceback
+
 from prism.config import config as prism_config
 
 if TYPE_CHECKING:
@@ -18,6 +21,7 @@ def _refresh_mcp(self: PrismDesktop):
     try:
         raw = prism_config.get("mcp.servers") or []
     except Exception:
+        logger.debug("mcp config get failed: %s", traceback.format_exc())
         raw = []
     if not raw:
         self.mcp_server_list.controls.append(
