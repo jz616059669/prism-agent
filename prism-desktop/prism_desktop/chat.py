@@ -1,6 +1,7 @@
 """PRISM Desktop - 聊天与消息 UI"""
 from __future__ import annotations
 
+import datetime
 import json
 from typing import TYPE_CHECKING, List, Tuple
 
@@ -16,7 +17,6 @@ if TYPE_CHECKING:
 
 class ChatMixin:
     def _format_time(self) -> str:
-        import datetime
         return datetime.datetime.now().strftime("%H:%M")
 
     def _markdown_to_ft(self, text: str) -> List[ft.Control]:
@@ -42,7 +42,6 @@ class ChatMixin:
         is_user = role == "你"
         align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
         text_color = ft.Colors.ON_PRIMARY_CONTAINER if is_user else ft.Colors.ON_SURFACE
-        import datetime
         timestamp = datetime.datetime.now().strftime("%H:%M")
         try:
             role_text = ft.Text(role, size=11, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_500)

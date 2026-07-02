@@ -171,23 +171,43 @@ class Agent:
         ))
         
         # 浏览器事件回传给消息流
-        if tool_name in {"browser_navigate", "browser_snapshot", "browser_disconnect"}:
-            try:
+        self._append_tool_message(tool_name, result)
+        
+        return result
+    
+    def _append_tool_message(self, tool_name: str, result: Dict[str, Any]) -> None:
+        """将工具调用结果写入消息流，保证会话保存/回溯有完整上下文。"""
+        try:
+            if tool_name.startswith("browser_"):
                 content = ""
                 if result.get("success"):
                     if tool_name == "browser_navigate":
                         content = f"[browser] opened: {result.get('url')} | title={result.get('title')}"
                     elif tool_name == "browser_snapshot":
                         content = f"[browser] snapshot: {result.get('title')} | len={len(result.get('content') or '')}"
-                    else:
+                    elif tool_name == "browser_disconnect":
                         content = "[browser] closed"
+                    else:
+                        content = f"[browser] {tool_name}: success"
                 else:
                     content = f"[browser] error: {result.get('error')}"
-                self.messages.append(Message(role="tool", content=content))
-            except Exception:
-                logger.debug("browser tool message append failed: %s", traceback.format_exc())
-        
-        return result
+            elif tool_name == "terminal":
+                content = f"[terminal] exit={result.get('exit_code')} len={len(result.get('output') or '')}"
+                if not result.get('success') and result.get('error'):
+                    content += f" error={result.get('error')[:100]}"
+            elif tool_name == "file_read":
+                content = f"[file_read] path={result.get('path')} lines={result.get('total_lines')}"
+            elif tool_name == "file_write":
+                content = f"[file_write] path={result.get('path')}"
+            elif tool_name == "file_patch":
+                content = f"[file_patch] path={result.get('path')} success={result.get('success')}"
+            else:
+                content = f"[{tool_name}] success={result.get('success')}"
+                if not result.get('success') and result.get('error'):
+                    content += f" error={str(result.get('error'))[:120]}"
+            self.messages.append(Message(role="tool", content=content))
+        except Exception:
+            logger.debug("tool message append failed: %s", traceback.format_exc())
     
     def list_tools(self) -> List[Dict[str, str]]:
         """列出可用工具"""
