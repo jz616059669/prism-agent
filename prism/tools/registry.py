@@ -231,7 +231,7 @@ def _register_browser_tools(registry):
         description = "在输入框中输入文本"
         
         def execute(self, selector: str, text: str) -> Dict[str, Any]:
-            return browser_api.type(selector, text)
+            return browser_api.type_text(selector, text)
     
     class BrowserScreenshotTool(Tool):
         name = "browser_screenshot"

@@ -12,10 +12,14 @@ from prism.logging import logger
 import traceback
 from prism.paths import PRISM_HOME
 
-from prism.mcp import MCPServer, mcp_client
+
+def _load_mcp_module():
+    """延迟导入 prism.mcp，避免模块结构变化时顶层 ImportError。"""
+    from prism.mcp import MCPServer, mcp_client
+    return MCPServer, mcp_client
 
 
-def load_mcp_config(config_path: Optional[str] = None) -> List[MCPServer]:
+def load_mcp_config(config_path: Optional[str] = None) -> List[Any]:
     """
     加载 MCP 服务器配置
     
@@ -25,6 +29,8 @@ def load_mcp_config(config_path: Optional[str] = None) -> List[MCPServer]:
     Returns:
         MCPServer 列表
     """
+    MCPServer, _ = _load_mcp_module()
+    
     if not config_path:
         config_path = str(PRISM_HOME / "mcp.json")
     
@@ -62,6 +68,8 @@ def setup_mcp_servers(config_path: Optional[str] = None):
     Args:
         config_path: 配置文件路径
     """
+    _, mcp_client = _load_mcp_module()
+    
     servers = load_mcp_config(config_path)
     
     for server in servers:

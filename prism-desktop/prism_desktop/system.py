@@ -59,12 +59,11 @@ class SystemMixin:
             image = None
             if icon_path:
                 try:
-                    from PIL import ImageGrab
-                    image = ImageGrab.grab()
+                    from PIL import Image
+                    image = Image.open(icon_path)
                 except Exception:
-                    logger.debug("tray icon ImageGrab failed: %s", traceback.format_exc())
+                    logger.debug("tray icon open failed: %s", traceback.format_exc())
                     try:
-                        from PIL import Image
                         image = Image.new("RGB", (64, 64), color=(73, 109, 137))
                     except Exception:
                         logger.debug("tray icon Image.new failed: %s", traceback.format_exc())
