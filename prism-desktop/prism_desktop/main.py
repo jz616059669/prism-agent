@@ -38,7 +38,12 @@ from prism_desktop import system as system_ui
 INIT_ERROR_LOG = Path.home() / '.prism' / 'init-error.log'
 
 
-class PrismDesktop:
+from prism_desktop.sidebar import SidebarMixin
+from prism_desktop.chat import ChatMixin
+from prism_desktop.terminal import TerminalMixin
+
+
+class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin):
     def __init__(self, page: ft.Page):
         self.page = page
         self.page.title = "PRISM Agent"
@@ -94,12 +99,12 @@ class PrismDesktop:
         self.base_url_textfield = ft.TextField(label=_("base_url"), value=prism_config.get("model.base_url", "https://api.stepfun.com/step_plan/v1") or "https://api.stepfun.com/step_plan/v1", width=280)
         self.api_key_textfield = ft.TextField(label=_("api_key"), password=True, can_reveal_password=True, value=prism_config.get("model.api_key", "") or "", width=280)
 
-        self._format_time = lambda: chat_ui._format_time(self)
-        self._markdown_to_ft = lambda text: chat_ui._markdown_to_ft(self, text)
-        self._append = lambda *args, **kwargs: chat_ui._append(self, *args, **kwargs)
-        self._clear_chat = lambda: chat_ui._clear_chat(self)
-        self._show_message_menu = lambda e, target, message_text: chat_ui._show_message_menu(self, e, target, message_text)
-        self._send = lambda retry_text="": chat_ui._send(self, retry_text)
+        self._format_time = lambda: self._format_time()
+        self._markdown_to_ft = lambda text: self._markdown_to_ft(text)
+        self._append = lambda *args, **kwargs: self._append(*args, **kwargs)
+        self._clear_chat = lambda: self._clear_chat()
+        self._show_message_menu = lambda e, target, message_text: self._show_message_menu(e, target, message_text)
+        self._send = lambda retry_text="": self._send(retry_text)
         self._load_settings = lambda: settings_ui._load_settings(self)
         self._save_settings = lambda: settings_ui._save_settings(self)
         self._apply_settings = lambda: settings_ui._apply_settings(self)
@@ -110,7 +115,7 @@ class PrismDesktop:
         self._bind_tray = lambda: system_ui._bind_tray(self)
         self._bind_context_menu = lambda: system_ui._bind_context_menu(self)
         self._minimize_to_tray = lambda: system_ui._minimize_to_tray(self)
-        self._build_prompt_templates = lambda: chat_ui._build_prompt_templates(self)
+        self._build_prompt_templates = lambda: self._build_prompt_templates()
         self._save_settings_timer = None
         self._save_settings_delay = 0.5  # seconds
         self.page.on_keyboard_event = self._on_keyboard_event

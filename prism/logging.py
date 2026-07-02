@@ -41,6 +41,9 @@ def get_logger(name: str = "prism") -> logging.Logger:
     return logger
 
 
-def log_exception(logger: logging.Logger, msg: str = "unhandled exception") -> None:
-    logger.debug("%s: %s", msg, traceback.format_exc())
+logger = get_logger()
+
+
+def log_exception(log: logging.Logger, msg: str = "unhandled exception") -> None:
+    log.debug("%s: %s", msg, traceback.format_exc())
 

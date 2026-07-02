@@ -148,3 +148,4 @@ class PersistentMemory:
 
 # 全局记忆实例
 memory = PersistentMemory()
+persistent_memory = memory
