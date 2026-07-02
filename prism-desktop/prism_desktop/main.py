@@ -98,31 +98,9 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.base_url_textfield = ft.TextField(label=_("base_url"), value=prism_config.get("model.base_url", "https://api.stepfun.com/step_plan/v1") or "https://api.stepfun.com/step_plan/v1", width=280)
         self.api_key_textfield = ft.TextField(label=_("api_key"), password=True, can_reveal_password=True, value=prism_config.get("model.api_key", "") or "", width=280)
 
-        self._format_time = lambda: self._format_time()
-        self._markdown_to_ft = lambda text: self._markdown_to_ft(text)
-        self._append = lambda *args, **kwargs: self._append(*args, **kwargs)
-        self._clear_chat = lambda: self._clear_chat()
-        self._send = lambda retry_text="": self._send(retry_text)
-        self._load_settings = lambda: self._load_settings()
-        self._save_settings = lambda: self._save_settings()
-        self._apply_settings = lambda: self._apply_settings()
-        self._refresh_mcp = lambda: self._refresh_mcp()
-        self._toggle_mcp_server = lambda name, button: self._toggle_mcp_server(name, button)
-        self._show_mcp_log = lambda name: self._show_mcp_log(name)
-        self._show_mcp_tools = lambda name: self._show_mcp_tools(name)
-        self._bind_tray = lambda: self._bind_tray()
-        self._bind_context_menu = lambda: self._bind_context_menu()
-        self._minimize_to_tray = lambda: self._minimize_to_tray()
-        self._build_prompt_templates = lambda: self._build_prompt_templates()
+
         self._save_settings_timer = None
         self._save_settings_delay = 0.5  # seconds
-        self.page.on_keyboard_event = self._on_keyboard_event
-
-        self._open_config_dir = lambda e: self._open_config_dir(e)
-        self._open_terminal_here = lambda e: self._open_terminal_here(e)
-        self._about = lambda e: self._about(e)
-        self._open_github_releases = lambda e: self._open_github_releases(e)
-        self._restore_layout_defaults = lambda: self._restore_layout_defaults()
 
         try:
             self._build_ui()
@@ -236,10 +214,10 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
 
     def _validate_config(self) -> bool:
         try:
-            provider = (self.provider_textfield.value or "").strip()
-            base_url = (self.base_url_textfield.value or "").strip()
-            api_key = (self.api_key_textfield.value or "").strip()
-            model = (self.model_dropdown.value or "").strip()
+            provider = (getattr(self, "provider_textfield", None) or type("T", (), {"value": ""})()).value or ""
+            base_url = (getattr(self, "base_url_textfield", None) or type("T", (), {"value": ""})()).value or ""
+            api_key = (getattr(self, "api_key_textfield", None) or type("T", (), {"value": ""})()).value or ""
+            model = (getattr(self, "model_dropdown", None) or type("T", (), {"value": ""})()).value or ""
             missing = []
             if not provider:
                 missing.append("模型提供商")

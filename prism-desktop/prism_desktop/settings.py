@@ -1,6 +1,7 @@
 """PRISM Desktop - 设置面板逻辑"""
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict
 
 import flet as ft

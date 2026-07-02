@@ -25,7 +25,17 @@ def desktop():
     page.window_top = 100
     page.window_left = 100
     page.session_id = "test-session"
-    d = PrismDesktop(page)
+    with patch.object(PrismDesktop, "_set_status", MagicMock()), \
+         patch.object(PrismDesktop, "_append_terminal", MagicMock()), \
+         patch.object(PrismDesktop, "_append_mcp", MagicMock()), \
+         patch.object(PrismDesktop, "_apply_theme", MagicMock()), \
+         patch.object(PrismDesktop, "_build_ui", MagicMock()), \
+         patch.object(PrismDesktop, "_bind_context_menu", MagicMock()), \
+         patch.object(PrismDesktop, "_bind_tray", MagicMock()), \
+         patch.object(PrismDesktop, "_maybe_show_setup_wizard", MagicMock()), \
+         patch.object(PrismDesktop, "_start_update_check", MagicMock()), \
+         patch("prism_desktop.main.create_agent", return_value=MagicMock()):
+        d = PrismDesktop(page)
     d._set_status = MagicMock()
     return d
 
