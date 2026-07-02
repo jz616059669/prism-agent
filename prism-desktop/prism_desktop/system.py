@@ -110,7 +110,7 @@ def _about(self, e):
         [
             ft.Text("PRISM Agent", size=20, weight=ft.FontWeight.BOLD),
             ft.Divider(height=12),
-            ft.Text("版本：1.0.1", size=14),
+            ft.Text("版本：2.1.0", size=14),
             ft.Text("配置目录：", size=12, weight=ft.FontWeight.BOLD),
             ft.Text(config_path, size=11, color=ft.Colors.ON_SURFACE_VARIANT),
             ft.TextButton("打开配置目录", on_click=lambda e: _open_config_dir(self, e)),
