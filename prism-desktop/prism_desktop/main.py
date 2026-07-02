@@ -82,7 +82,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 self._set_status(f"初始化失败：{exc}", ft.Colors.RED_400)
             except Exception:
                 logger.debug('desktop exception: %s', traceback.format_exc())
-                pass
         self._mcp_logs = []
         self._skill_list_cache = []
         self._mcp_server_status = {}
@@ -103,7 +102,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._markdown_to_ft = lambda text: self._markdown_to_ft(text)
         self._append = lambda *args, **kwargs: self._append(*args, **kwargs)
         self._clear_chat = lambda: self._clear_chat()
-        self._show_message_menu = lambda e, target, message_text: self._show_message_menu(e, target, message_text)
         self._send = lambda retry_text="": self._send(retry_text)
         self._load_settings = lambda: self._load_settings()
         self._save_settings = lambda: self._save_settings()
@@ -124,6 +122,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._open_terminal_here = lambda e: self._open_terminal_here(e)
         self._about = lambda e: self._about(e)
         self._open_github_releases = lambda e: self._open_github_releases(e)
+        self._restore_layout_defaults = lambda: self._restore_layout_defaults()
 
         try:
             self._build_ui()
@@ -140,18 +139,15 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 INIT_ERROR_LOG.write_text(tb, encoding="utf-8")
             except Exception:
                 logger.debug('desktop exception: %s', traceback.format_exc())
-                pass
             print(f"[INIT ERROR] {exc}\n{tb}", flush=True)
             try:
                 self._append_terminal(f"init error: {exc}")
             except Exception:
                 logger.debug('desktop exception: %s', traceback.format_exc())
-                pass
             try:
                 self.page.add(ft.Text(f"初始化失败: {exc}", color=ft.Colors.ERROR))
             except Exception:
                 logger.debug('desktop exception: %s', traceback.format_exc())
-                pass
         # Update clock every second
         if hasattr(self.page, 'add_periodic_callback'):
             def _tick(_):
@@ -182,7 +178,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self._append_terminal(f"[ERROR] {context}: {exc}")
         except Exception:
             logger.debug('desktop exception: %s', traceback.format_exc())
-            pass
 
     def _structured_log(self, level: str, event: str, **fields) -> None:
         try:
@@ -190,7 +185,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self._append_terminal(f"[{line['level']}] {line['event']} | {fields}")
         except Exception:
             logger.debug('desktop exception: %s', traceback.format_exc())
-            pass
 
     def _log_to_file(self, level: str, event: str, **fields) -> None:
         try:
@@ -201,7 +195,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 f.write(json.dumps(entry, ensure_ascii=False) + "\n")
         except Exception:
             logger.debug('desktop exception: %s', traceback.format_exc())
-            pass
 
     def _on_keyboard_event(self, e: ft.KeyboardEvent):
         try:
@@ -240,7 +233,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 self._append_terminal(f"update available: {latest} (current {current})")
         except Exception:
             logger.debug('desktop exception: %s', traceback.format_exc())
-            pass
 
     def _validate_config(self) -> bool:
         try:
@@ -262,7 +254,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     self._set_status(f"配置缺失：{', '.join(missing)}", ft.Colors.RED_400)
                 except Exception:
                     logger.debug('desktop exception: %s', traceback.format_exc())
-                    pass
                 return False
             return True
         except Exception:
@@ -370,7 +361,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                         self.page.update()
                     except Exception:
                         logger.debug('desktop exception: %s', traceback.format_exc())
-                        pass
 
                 def _on_exit(icon, item):
                     icon.stop()
@@ -378,7 +368,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                         self.page.window_close()
                     except Exception:
                         logger.debug('desktop exception: %s', traceback.format_exc())
-                        pass
 
                 menu = pystray.Menu(
                     pystray.MenuItem(_("open_main"), _on_tray_click),
@@ -483,7 +472,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     time.sleep(0.05)
         except Exception:
             logger.debug('desktop exception: %s', traceback.format_exc())
-            pass
 
     def _cycle_theme(self):
         current = self._settings.get("theme", "Dark")
@@ -501,7 +489,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self._append_terminal("minimized to tray")
         except Exception:
             logger.debug('desktop exception: %s', traceback.format_exc())
-            pass
 
     def _build_ui(self):
         self._clock_text = ft.Text(datetime.now().strftime("%H:%M:%S"), size=11, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_500, opacity=0.95)
@@ -914,7 +901,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     self.send_btn.update()
             except Exception:
                 logger.debug('desktop exception: %s', traceback.format_exc())
-                pass
         self._on_input_change = _on_input_change
         clear_chat_btn = ft.TextButton("清屏", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED, animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         clear_chat_btn.on_click = lambda e: self._clear_chat()
@@ -1433,7 +1419,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             threading.Thread(target=_clear, daemon=True).start()
         except Exception:
             logger.debug('desktop exception: %s', traceback.format_exc())
-            pass
 
     def _save_config(self):
         prism_config.set("model.default", self.model_dropdown.value)
@@ -1461,10 +1446,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self._log_to_file("info", "stream_stopped", chunks=getattr(self, "_chunk_count", 0))
         except Exception:
             logger.debug('desktop exception: %s', traceback.format_exc())
-            pass
 
 
-    @staticmethod
     def _check_browser_dependencies(self) -> dict:
         status = {"playwright": False, "chromium": False, "error": ""}
         try:
@@ -1494,7 +1477,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self._perf_log_counter = 0
         except Exception:
             logger.debug('desktop exception: %s', traceback.format_exc())
-            pass
 
     def _perf_tick(self) -> None:
         try:
@@ -1516,10 +1498,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                         self._log_to_file("debug", "perf_tick", fps=round(fps, 1), mem_mb=round(mem, 1))
                     except Exception:
                         logger.debug('desktop exception: %s', traceback.format_exc())
-                        pass
         except Exception:
             logger.debug('desktop exception: %s', traceback.format_exc())
-            pass
 
     def _set_browser_status(self, connected: bool, title: str = ""):
         self.browser_connected = connected
@@ -1552,7 +1532,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self._terminal_history_index = len(self._terminal_history)
         except Exception:
             logger.debug('desktop exception: %s', traceback.format_exc())
-            pass
         self._append_terminal(f"$ {command}")
         self.terminal_input.value = ""
         self.terminal_input.update()
