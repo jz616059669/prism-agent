@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.1.0 - 2026-07-02
+## 2.1.1 - 2026-07-02
 
 ### Added
 - Desktop client test suite (`prism-desktop/tests/test_desktop.py`) covering debounced save, stop send, browser dep check, terminal command, startup fallback
