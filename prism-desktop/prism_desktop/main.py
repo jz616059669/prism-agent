@@ -40,9 +40,10 @@ from prism_desktop.terminal import TerminalMixin
 from prism_desktop.settings import SettingsMixin
 from prism_desktop.system import SystemMixin
 from prism_desktop.mcp import MCPMixin
+from prism_desktop.browser import BrowserMixin
 
 
-class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, SystemMixin, MCPMixin):
+class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, SystemMixin, MCPMixin, BrowserMixin):
     def __init__(self, page: ft.Page):
         self.page = page
         self.page.title = "PRISM Agent"
@@ -1536,44 +1537,9 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.browser_status_icon.update()
         self.browser_status_text.update()
 
-    def _browser_open(self):
-        url = self.url_field.value.strip() if hasattr(self, 'url_field') else ""
-        if not url:
-            self._set_status("请输入网址", ft.Colors.RED_400)
-            return
-        self._append_terminal(f"browser open {url}")
-        try:
-            from prism.tools.browser import browser as browser_api
-            result = browser_api.navigate(url, headless=True)
-            if result.get('success'):
-                self._set_browser_status(True, result.get('title', url))
-                self._append_terminal(f"opened: {result.get('title', url)}")
-            else:
-                self._set_status(f"打开失败: {result.get('error', 'unknown')}", ft.Colors.RED_400)
-        except Exception as e:
-            self._append_terminal(f"browser error: {e}")
-            self._set_status("浏览器异常", ft.Colors.RED_400)
-
-    def _browser_snapshot(self):
-        self._append_terminal("browser snapshot ...")
-        try:
-            from prism.tools.browser import browser as browser_api
-            result = browser_api.snapshot()
-            if result.get('success'):
-                self._append(result.get('role', 'PRISM'), result.get('content', '(no content)'))
-            else:
-                self._set_status("快照失败", ft.Colors.RED_400)
-        except Exception as e:
-            self._append_terminal(f"snapshot error: {e}")
-
-    def _browser_close(self):
-        self._append_terminal("browser close")
-        try:
-            from prism.tools.browser import browser as browser_api
-            browser_api.disconnect()
-        except Exception as exc:
-            self._log_error("browser disconnect", exc)
-        self._set_browser_status(False, "未连接")
+        self._browser_open = lambda: self._browser_open()
+        self._browser_snapshot = lambda: self._browser_snapshot()
+        self._browser_close = lambda: self._browser_close()
 
     def _run_terminal_command(self):
         command = self.terminal_input.value.strip() if hasattr(self, 'terminal_input') else ""
