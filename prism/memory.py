@@ -28,6 +28,8 @@ class Memory:
     updated_at: str = ""
     embedding: Optional[List[float]] = None
     embedding_model: str = ""
+    access_count: int = 0
+    last_accessed_at: str = ""
 
 
 class _EmbeddingClient:
@@ -141,6 +143,8 @@ class PersistentMemory:
         self.base_dir.mkdir(parents=True, exist_ok=True)
         self._index: Dict[str, Memory] = {}
         self._embedding_index = MemoryEmbeddingIndex(self.base_dir)
+        self.decay_half_life_days: Optional[float] = None
+        self.decay_min_confidence: float = 0.1
         self._load()
 
     def _load(self) -> None:
@@ -160,6 +164,8 @@ class PersistentMemory:
                     updated_at=item.get("updated_at", ""),
                     embedding=item.get("embedding"),
                     embedding_model=item.get("embedding_model", ""),
+                    access_count=int(item.get("access_count", 0)),
+                    last_accessed_at=item.get("last_accessed_at", ""),
                 )
                 self._index[memory.key] = memory
                 if memory.embedding:
@@ -181,6 +187,8 @@ class PersistentMemory:
                     "updated_at": m.updated_at,
                     "embedding": m.embedding,
                     "embedding_model": m.embedding_model,
+                    "access_count": m.access_count,
+                    "last_accessed_at": m.last_accessed_at,
                 }
                 for m in self._index.values()
             ]
@@ -219,7 +227,11 @@ class PersistentMemory:
                 source=source,
                 created_at=now,
                 updated_at=now,
+                access_count=0,
+                last_accessed_at="",
             )
+        memory.access_count = int(memory.access_count) + 1
+        memory.last_accessed_at = now
         self._index[key] = memory
         self._embedding_index.upsert(key, f"{key}: {value}")
         self._save()
@@ -227,7 +239,12 @@ class PersistentMemory:
 
     def recall(self, key: str) -> Optional[str]:
         memory = self._index.get(key)
-        return memory.value if memory else None
+        if memory:
+            memory.access_count = int(memory.access_count) + 1
+            from datetime import datetime
+            memory.last_accessed_at = datetime.now().isoformat()
+            return memory.value
+        return None
 
     def forget(self, key: str) -> bool:
         if key in self._index:
@@ -237,12 +254,37 @@ class PersistentMemory:
             return True
         return False
 
+    def _apply_decay(self) -> None:
+        """按时间衰减调整 confidence。"""
+        if self.decay_half_life_days is None:
+            return
+        from datetime import datetime
+        now = datetime.now()
+        for memory in self._index.values():
+            if memory.confidence <= self.decay_min_confidence:
+                continue
+            created = memory.created_at or memory.updated_at
+            if not created:
+                continue
+            try:
+                created_dt = datetime.fromisoformat(created)
+                days = max((now - created_dt).total_seconds() / 86400.0, 0.0)
+            except Exception:
+                continue
+            if days <= 0:
+                continue
+            decay = 2 ** (-days / float(self.decay_half_life_days))
+            memory.confidence = max(self.decay_min_confidence, memory.confidence * decay)
+            if memory.confidence < 1.0:
+                memory.updated_at = now.isoformat()
+
     def search(
         self,
         query: str,
         category: Optional[str] = None,
         limit: int = 10,
     ) -> List[Memory]:
+        self._apply_decay()
         query_lower = query.lower()
         candidates: List[Memory] = []
         for memory in self._index.values():
@@ -268,7 +310,7 @@ class PersistentMemory:
                 continue
             candidates.append(memory)
 
-        candidates.sort(key=lambda m: m.confidence, reverse=True)
+        candidates.sort(key=lambda m: (m.confidence, m.access_count), reverse=True)
         return candidates[:limit]
 
     def summarize(self, category: Optional[str] = None, max_chars: int = 800) -> str:
