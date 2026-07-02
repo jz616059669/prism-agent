@@ -66,11 +66,14 @@ class PrismDesktop:
         self._perf_mem_mb = 0.0
         self._terminal_lines = ["PRISM Desktop 已启动"]
         try:
-            self.agent = create_agent()
+            self._validate_and_create_agent()
         except Exception as exc:
             self.agent = None
-            self._log_error("agent init", exc)
-            self._set_status(f"初始化失败：{exc}", ft.Colors.RED_400)
+            self._log_error("agent init fallback", exc)
+            try:
+                self._set_status(f"初始化失败：{exc}", ft.Colors.RED_400)
+            except Exception:
+                pass
         self._mcp_logs = []
         self._skill_list_cache = []
         self._mcp_server_status = {}
