@@ -69,8 +69,8 @@ class ChatMixin:
             logger.debug("append message failed: %s", traceback.format_exc())
             try:
                 self._append_terminal(f"[CHAT ERROR] {role}: {text[:200]}")
-            except Exception:
-                pass
+            except Exception as ex:
+                logger.debug("append message fallback failed: %s", ex)
 
     def _clear_chat(self):
         try:
@@ -79,7 +79,7 @@ class ChatMixin:
             self.chat_list.update()
         except Exception:
             logger.debug("clear chat failed: %s", traceback.format_exc())
-            pass
+            logger.warning("clear chat failed", exc_info=True)
 
     def _send(self, retry_text: str = ""):
         text = retry_text or (self.input_field.value or "").strip()
@@ -100,8 +100,8 @@ class ChatMixin:
             try:
                 self.stop_btn.visible = False
                 self.stop_btn.update()
-            except Exception:
-                pass
+            except Exception as ex:
+                logger.debug("hide stop button failed: %s", ex)
 
     def _stop_send(self):
         self._generating = False
@@ -117,13 +117,13 @@ class ChatMixin:
                     for ctrl in item.content.content.controls:
                         if hasattr(ctrl, "value"):
                             text += str(ctrl.value)
-                except Exception:
-                    pass
+                except Exception as ex:
+                    logger.debug("search message read failed: %s", ex)
             if query in text:
                 try:
                     self.chat_list.scroll_to(delta=99999, duration=200)
-                except Exception:
-                    pass
+                except Exception as ex:
+                    logger.debug("search scroll failed: %s", ex)
                 return
 
     def _jump_to_next_match(self, query: str):
