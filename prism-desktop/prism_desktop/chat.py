@@ -390,6 +390,8 @@ def _send(self, retry_text: str = ""):
         text = retry_text or (self.input_field.value or "").strip()
     except Exception:
         return
+    if getattr(self, "_generating", False):
+        return
     if not text:
         # Try restore from draft
         try:
@@ -404,7 +406,6 @@ def _send(self, retry_text: str = ""):
         return
     _append(self, "你", text)
     self.input_field.value = ""
-    self.input_field.disabled = True
     self.send_btn.visible = False
     self.stop_btn.visible = True
     self._generating = True

@@ -252,6 +252,7 @@ class PrismDesktop:
             return False
 
     def _validate_and_create_agent(self) -> bool:
+        self.agent = None
         if not self._validate_config():
             return False
         try:
