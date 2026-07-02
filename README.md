@@ -116,7 +116,7 @@ prism --help
 prism-desktop
 ```
 
-> PyPI 已发布：`https://pypi.org/project/prism-agent/2.0.2/`
+> PyPI 已发布：`https://pypi.org/project/prism-agent/2.1.0/`
 
 ## 外部用户使用说明
 
@@ -322,8 +322,8 @@ uv run twine check dist/*
 ```
 
 产物：
-- `dist/prism_agent-2.0.2.tar.gz`
-- `dist/prism_agent-2.0.2-py3-none-any.whl`
+- `dist/prism_agent-2.1.0.tar.gz`
+- `dist/prism_agent-2.1.0-py3-none-any.whl`
 
 ### 上传到 PyPI
 ```bash

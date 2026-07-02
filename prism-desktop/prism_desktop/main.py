@@ -246,7 +246,19 @@ class PrismDesktop:
                 return False
             return True
         except Exception:
+            return False
+
+    def _validate_and_create_agent(self) -> bool:
+        if not self._validate_config():
+            return False
+        try:
+            self.agent = create_agent()
             return True
+        except Exception as exc:
+            self.agent = None
+            self._log_error("agent init", exc)
+            self._set_status(f"初始化失败：{exc}", ft.Colors.RED_400)
+            return False
 
     def _maybe_show_setup_wizard(self):
         try:
@@ -1408,7 +1420,7 @@ class PrismDesktop:
             self.agent = None
             self._log_error("agent init", exc)
             self._set_status(f"初始化失败：{exc}", ft.Colors.RED_400)
-            self._append_terminal(f"agent recreate failed: {e}")
+            self._append_terminal(f"agent recreate failed: {exc}")
 
     def _stop_send(self):
         self._generating = False

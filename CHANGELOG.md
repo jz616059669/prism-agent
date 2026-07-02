@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.0.2 - 2026-06-30
+## 2.1.0 - 2026-07-02
 
 ### Added
 - Desktop client test suite (`prism-desktop/tests/test_desktop.py`) covering debounced save, stop send, browser dep check, terminal command, startup fallback
@@ -8,7 +8,7 @@
 - Window position/size persistence: restores geometry on restart
 
 ### Changed
-- Unified version to `2.0.2` across package, packaging script, and README
+- Unified version to `2.1.0` across package, packaging script, and README
 - Desktop save settings debounced to 0.5s to avoid frequent disk writes
 
 ### Fixed
