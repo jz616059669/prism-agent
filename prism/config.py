@@ -8,6 +8,8 @@ import yaml
 from pathlib import Path
 from typing import Optional
 
+from prism.paths import PRISM_HOME, ensure_dirs
+
 
 class ConfigError(Exception):
     """配置校验失败"""
@@ -18,7 +20,8 @@ class Config:
     """统一配置管理"""
     
     def __init__(self):
-        self.config_dir = Path.home() / ".prism"
+        self.config_dir = PRISM_HOME
+        ensure_dirs()
         self.config_file = self.config_dir / "config.yaml"
         self.env_file = self.config_dir / ".env"
         self._config = {}
@@ -162,7 +165,7 @@ class Config:
             # 创建默认工作区
             workspaces_cfg = [{
                 'name': 'default',
-                'path': str(Path.home() / '.prism' / 'sessions'),
+                'path': str(PRISM_HOME / 'sessions'),
                 'description': 'Default workspace',
                 'tags': ['main'],
             }]

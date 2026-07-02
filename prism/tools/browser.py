@@ -10,17 +10,14 @@ from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
 from pathlib import Path
 
+from prism.logging import logger
+import traceback
+
 try:
     from playwright.async_api import async_playwright, Page, Browser, BrowserContext
     PLAYWRIGHT_AVAILABLE = True
 except ImportError:
     PLAYWRIGHT_AVAILABLE = False
-
-try:
-    import nest_asyncio
-    nest_asyncio.apply()
-except Exception:
-    pass
 
 
 @dataclass
@@ -130,6 +127,7 @@ class BrowserController:
                 'status': response.status if response else None,
             }
         except Exception as e:
+            logger.debug("navigate failed: %s", traceback.format_exc())
             return {'success': False, 'error': str(e)}
     
     async def snapshot(self, full: bool = False) -> Dict[str, Any]:
@@ -172,6 +170,7 @@ class BrowserController:
             }
             
         except Exception as e:
+            logger.debug("snapshot failed: %s", traceback.format_exc())
             return {'success': False, 'error': str(e)}
     
     async def click(self, selector: str) -> Dict[str, Any]:
@@ -189,6 +188,7 @@ class BrowserController:
                 'selector': selector,
             }
         except Exception as e:
+            logger.debug("click failed: %s", traceback.format_exc())
             return {'success': False, 'error': str(e)}
     
     async def type_text(self, selector: str, text: str) -> Dict[str, Any]:
@@ -205,6 +205,7 @@ class BrowserController:
                 'text': text,
             }
         except Exception as e:
+            logger.debug("type_text failed: %s", traceback.format_exc())
             return {'success': False, 'error': str(e)}
     
     async def screenshot(self, path: Optional[str] = None) -> Dict[str, Any]:
@@ -225,6 +226,7 @@ class BrowserController:
                 'url': self.state.url,
             }
         except Exception as e:
+            logger.debug("screenshot failed: %s", traceback.format_exc())
             return {'success': False, 'error': str(e)}
     
     async def evaluate(self, script: str) -> Dict[str, Any]:
@@ -239,6 +241,7 @@ class BrowserController:
                 'result': str(result)[:2000],
             }
         except Exception as e:
+            logger.debug("evaluate failed: %s", traceback.format_exc())
             return {'success': False, 'error': str(e)}
     
     async def scroll(self, direction: str = "down") -> Dict[str, Any]:
@@ -256,6 +259,7 @@ class BrowserController:
             
             return {'success': True, 'action': 'scroll', 'direction': direction}
         except Exception as e:
+            logger.debug("scroll failed: %s", traceback.format_exc())
             return {'success': False, 'error': str(e)}
     
     async def disconnect(self) -> Dict[str, Any]:
@@ -265,28 +269,28 @@ class BrowserController:
                 try:
                     await self.page.close()
                 except Exception:
-                    pass
+                    logger.debug("page close failed: %s", traceback.format_exc())
                 self.page = None
             
             if self.context:
                 try:
                     await self.context.close()
                 except Exception:
-                    pass
+                    logger.debug("context close failed: %s", traceback.format_exc())
                 self.context = None
             
             if self.browser:
                 try:
                     await self.browser.close()
                 except Exception:
-                    pass
+                    logger.debug("browser close failed: %s", traceback.format_exc())
                 self.browser = None
             
             if self.playwright:
                 try:
                     await self.playwright.stop()
                 except Exception:
-                    pass
+                    logger.debug("playwright stop failed: %s", traceback.format_exc())
                 self.playwright = None
             
             self.connected = False
@@ -294,6 +298,7 @@ class BrowserController:
             
             return {'success': True, 'message': 'Browser disconnected'}
         except Exception as e:
+            logger.debug("scroll failed: %s", traceback.format_exc())
             return {'success': False, 'error': str(e)}
     
     def _check_connection(self) -> bool:

@@ -8,6 +8,10 @@ import os
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
+from prism.logging import logger
+import traceback
+from prism.paths import PRISM_HOME
+
 from prism.mcp import MCPServer, mcp_client
 
 
@@ -22,7 +26,7 @@ def load_mcp_config(config_path: Optional[str] = None) -> List[MCPServer]:
         MCPServer 列表
     """
     if not config_path:
-        config_path = str(Path.home() / ".prism" / "mcp.json")
+        config_path = str(PRISM_HOME / "mcp.json")
     
     path = Path(config_path)
     if not path.exists():
@@ -46,6 +50,7 @@ def load_mcp_config(config_path: Optional[str] = None) -> List[MCPServer]:
         
         return servers
     except Exception as e:
+        logger.debug("load mcp config failed: %s", traceback.format_exc())
         print(f"[MCP] 加载配置失败: {e}")
         return []
 
@@ -69,7 +74,7 @@ def setup_mcp_servers(config_path: Optional[str] = None):
 
 def create_default_mcp_config() -> str:
     """创建默认 MCP 配置文件"""
-    config_dir = Path.home() / ".prism"
+    config_dir = PRISM_HOME
     config_dir.mkdir(parents=True, exist_ok=True)
     
     config_path = config_dir / "mcp.json"

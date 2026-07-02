@@ -11,6 +11,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from prism.paths import memory_dir
+
 logger = logging.getLogger("prism.memory")
 
 
@@ -30,7 +32,7 @@ class PersistentMemory:
     """持久化记忆系统"""
 
     def __init__(self, base_dir: Optional[Path] = None) -> None:
-        self.base_dir = base_dir or Path.home() / ".prism" / "memory"
+        self.base_dir = base_dir or memory_dir()
         self.base_dir.mkdir(parents=True, exist_ok=True)
         self._index: Dict[str, Memory] = {}
         self._load()

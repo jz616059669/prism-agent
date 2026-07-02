@@ -11,12 +11,13 @@ from typing import List, Dict, Any, Optional, Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from prism.logging import logger
+import traceback
+
 from prism.providers.manager import provider_pool
 from prism.tools.registry import registry
 from prism.hooks import hook_manager
-from prism.memory import memory as persistent_memory
-
-logger = logging.getLogger("prism.agent")
+from prism.memory import persistent_memory
 
 
 @dataclass
@@ -181,7 +182,7 @@ class Agent:
                     content = f"[browser] error: {result.get('error')}"
                 self.messages.append(Message(role="tool", content=content))
             except Exception:
-                pass
+                logger.debug("browser tool message append failed: %s", traceback.format_exc())
         
         return result
     
@@ -236,6 +237,7 @@ class Agent:
                 ))
             return True
         except Exception:
+            logger.debug("load session failed: %s", traceback.format_exc())
             return False
 
     def search_sessions(self, query: str) -> List[Dict[str, Any]]:
@@ -273,6 +275,7 @@ class Agent:
                         "timestamp": payload.get("created_at"),
                     })
             except Exception:
+                logger.debug("search session failed: %s", traceback.format_exc())
                 continue
         
         return results[:50]  # 最多返回50条
@@ -294,6 +297,7 @@ class Agent:
                     "message_count": len(payload.get("messages", [])),
                 })
             except Exception:
+                logger.debug("search session failed: %s", traceback.format_exc())
                 continue
         return sessions
 

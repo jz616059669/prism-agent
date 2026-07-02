@@ -11,6 +11,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from prism.paths import workspaces_dir, sessions_dir
+
 logger = logging.getLogger("prism.workspace")
 
 
@@ -27,7 +29,7 @@ class WorkspaceManager:
     """管理多个工作区，每个工作区有独立的 Agent 和会话。"""
 
     def __init__(self, base_dir: Optional[Path] = None) -> None:
-        self.base_dir = base_dir or Path.home() / ".prism" / "workspaces"
+        self.base_dir = base_dir or workspaces_dir()
         self.base_dir.mkdir(parents=True, exist_ok=True)
         self._workspaces: Dict[str, Workspace] = {}
         self._agents: Dict[str, Agent] = {}
@@ -41,7 +43,7 @@ class WorkspaceManager:
             # 创建默认工作区
             self.create_workspace(
                 name="default",
-                path=Path.home() / ".prism" / "sessions",
+                path=sessions_dir(),
                 description="Default workspace",
             )
             return

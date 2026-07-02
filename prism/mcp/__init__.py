@@ -12,11 +12,15 @@ from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
 from pathlib import Path
 
+from prism.logging import logger
+import traceback
+
 try:
     from prism.mcp.http_client import MCPHTTPClient
     _HTTP_CLIENT_AVAILABLE = True
 except Exception:
     _HTTP_CLIENT_AVAILABLE = False
+    logger.debug("HTTP client import failed: %s", traceback.format_exc())
 
 
 @dataclass
@@ -127,6 +131,7 @@ class MCPClient:
             try:
                 line = process.stdout.readline()
             except Exception:
+                logger.debug("read stdio line failed: %s", traceback.format_exc())
                 return None
             if not line:
                 return None

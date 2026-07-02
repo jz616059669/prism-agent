@@ -14,6 +14,9 @@ from typing import Optional
 
 import click
 import logging
+
+from prism.logging import logger
+import traceback
 from rich.console import Console
 from rich.panel import Panel
 from rich.markdown import Markdown
@@ -305,7 +308,7 @@ def start(platform: Optional[str], token: Optional[str], app_id: Optional[str],
         return
     
     # 保存配置到 config
-    config_path = Path.home() / ".prism" / "config.yaml"
+    config_path = PRISM_HOME / "config.yaml"
     config_path.parent.mkdir(parents=True, exist_ok=True)
     
     import yaml
@@ -519,6 +522,7 @@ def search(query: str):
     try:
         matched = skills.search_hub(query)
     except Exception:
+        logger.debug("search hub failed: %s", traceback.format_exc())
         matched = []
     if matched:
         console.print("[yellow]远程 Hub 结果：[/yellow]\n")

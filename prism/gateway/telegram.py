@@ -10,6 +10,9 @@ from dataclasses import dataclass
 
 from prism.gateway import PlatformAdapter, Message
 
+from prism.logging import logger
+import traceback
+
 
 @dataclass
 class TelegramConfig:
@@ -218,6 +221,7 @@ class TelegramAdapter(PlatformAdapter):
                         self.end_headers()
                         self.wfile.write(b'error')
                     except Exception:
+                        logger.debug("telegram send error response failed: %s", traceback.format_exc())
                         pass
 
             def log_message(self, format, *args):

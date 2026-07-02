@@ -19,6 +19,9 @@ from lark_oapi.api.im.v1 import (
     ReplyMessageRequest,
     ReplyMessageRequestBody,
 )
+
+from prism.logging import logger
+import traceback
 from lark_oapi.api.im.v1.model.p2_im_message_receive_v1 import (
     P2ImMessageReceiveV1,
 )
@@ -165,11 +168,13 @@ class FeishuAdapter(PlatformAdapter):
             try:
                 self._ws_client.stop()
             except Exception:
+                logger.debug("feishu ws_client stop failed: %s", traceback.format_exc())
                 pass
         if self._loop is not None and not self._loop.is_closed():
             try:
                 self._loop.call_soon_threadsafe(self._loop.stop)
             except Exception:
+                logger.debug("feishu loop stop failed: %s", traceback.format_exc())
                 pass
         if self._thread is not None:
             self._thread.join(timeout=5)

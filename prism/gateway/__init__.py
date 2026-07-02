@@ -6,6 +6,9 @@ PRISM Agent - 统一 Gateway
 from prism.gateway.base import Message, PlatformAdapter
 from typing import Callable, Optional
 
+from prism.logging import logger
+import traceback
+
 
 __all__ = ['Gateway', 'gateway', 'Message', 'PlatformAdapter']
 
@@ -87,6 +90,7 @@ class Gateway:
                 if platform and platform not in registered:
                     registered.append(platform)
         except Exception:
+            logger.debug("list platforms failed: %s", traceback.format_exc())
             pass
         return registered
 
