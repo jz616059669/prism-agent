@@ -55,6 +55,9 @@ class Agent:
         self.max_turns = 150
         self.max_messages = 200  # 防止上下文无限增长
         self.tools_enabled = True
+        self._memory_context = persistent_memory.get_context(max_items=5)
+        if self._memory_context:
+            self.system_prompt = self.system_prompt.rstrip() + "\n\n" + self._memory_context
         
         # 初始化系统消息
         self.messages.append(Message(
