@@ -30,20 +30,19 @@ import traceback
 from prism.config import config as prism_config
 from prism.agent import create_agent
 from prism.tools.browser_bridge import open_page, page_snapshot, close_browser
-from prism_desktop import chat as chat_ui
-from prism_desktop import settings as settings_ui
-from prism_desktop import mcp as mcp_ui
-from prism_desktop import system as system_ui
-
+from prism_desktop.i18n import gettext as _
 INIT_ERROR_LOG = Path.home() / '.prism' / 'init-error.log'
 
 
 from prism_desktop.sidebar import SidebarMixin
 from prism_desktop.chat import ChatMixin
 from prism_desktop.terminal import TerminalMixin
+from prism_desktop.settings import SettingsMixin
+from prism_desktop.system import SystemMixin
+from prism_desktop.mcp import MCPMixin
 
 
-class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin):
+class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, SystemMixin, MCPMixin):
     def __init__(self, page: ft.Page):
         self.page = page
         self.page.title = "PRISM Agent"
@@ -105,25 +104,25 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin):
         self._clear_chat = lambda: self._clear_chat()
         self._show_message_menu = lambda e, target, message_text: self._show_message_menu(e, target, message_text)
         self._send = lambda retry_text="": self._send(retry_text)
-        self._load_settings = lambda: settings_ui._load_settings(self)
-        self._save_settings = lambda: settings_ui._save_settings(self)
-        self._apply_settings = lambda: settings_ui._apply_settings(self)
-        self._refresh_mcp = lambda: mcp_ui._refresh_mcp(self)
-        self._toggle_mcp_server = lambda name, button: mcp_ui._toggle_mcp_server(self, name, button)
-        self._show_mcp_log = lambda name: mcp_ui._show_mcp_log(self, name)
-        self._show_mcp_tools = lambda name: mcp_ui._show_mcp_tools(self, name)
-        self._bind_tray = lambda: system_ui._bind_tray(self)
-        self._bind_context_menu = lambda: system_ui._bind_context_menu(self)
-        self._minimize_to_tray = lambda: system_ui._minimize_to_tray(self)
+        self._load_settings = lambda: self._load_settings()
+        self._save_settings = lambda: self._save_settings()
+        self._apply_settings = lambda: self._apply_settings()
+        self._refresh_mcp = lambda: self._refresh_mcp()
+        self._toggle_mcp_server = lambda name, button: self._toggle_mcp_server(name, button)
+        self._show_mcp_log = lambda name: self._show_mcp_log(name)
+        self._show_mcp_tools = lambda name: self._show_mcp_tools(name)
+        self._bind_tray = lambda: self._bind_tray()
+        self._bind_context_menu = lambda: self._bind_context_menu()
+        self._minimize_to_tray = lambda: self._minimize_to_tray()
         self._build_prompt_templates = lambda: self._build_prompt_templates()
         self._save_settings_timer = None
         self._save_settings_delay = 0.5  # seconds
         self.page.on_keyboard_event = self._on_keyboard_event
 
-        self._open_config_dir = lambda e: system_ui._open_config_dir(self, e)
-        self._open_terminal_here = lambda e: system_ui._open_terminal_here(self, e)
-        self._about = lambda e: system_ui._about(self, e)
-        self._open_github_releases = lambda e: system_ui._open_github_releases(self, e)
+        self._open_config_dir = lambda e: self._open_config_dir(e)
+        self._open_terminal_here = lambda e: self._open_terminal_here(e)
+        self._about = lambda e: self._about(e)
+        self._open_github_releases = lambda e: self._open_github_releases(e)
 
         try:
             self._build_ui()
