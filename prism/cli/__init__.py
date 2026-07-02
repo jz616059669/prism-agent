@@ -20,6 +20,7 @@ from rich.markdown import Markdown
 from prism.config import config as prism_config
 from prism.config import ConfigError
 from prism.agent import create_agent
+from typing import Optional
 
 console = Console()
 
@@ -198,20 +199,24 @@ def version():
     console.print("整合 Hermes + Codex + OpenClaw 能力")
 
 
-# Register subcommand groups
-def _register_subcommands():
-    from prism.cli import gateway, session, skill, browser, config_cmds, workspace
-    cli.add_command(gateway.gateway)
-    cli.add_command(session.session)
-    cli.add_command(skill.skill)
-    cli.add_command(browser.browser)
-    cli.add_command(config_cmds.config)
-    cli.add_command(workspace.workspace)
+# Register subcommand groups at module level so tests and imports see them
+from prism.cli.gateway import gateway  # noqa: E402
+from prism.cli.session import session  # noqa: E402
+from prism.cli.skill import skill  # noqa: E402
+from prism.cli.browser import browser  # noqa: E402
+from prism.cli.config_cmds import config  # noqa: E402
+from prism.cli.workspace import workspace  # noqa: E402
+
+cli.add_command(gateway)
+cli.add_command(session)
+cli.add_command(skill)
+cli.add_command(browser)
+cli.add_command(config)
+cli.add_command(workspace)
 
 
 def main():
     """主入口"""
-    _register_subcommands()
     cli()
 
 

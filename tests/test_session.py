@@ -32,7 +32,8 @@ def test_session_list_and_delete(tmp_path, monkeypatch):
     agent = create_agent()
     agent.save_session("a")
     agent.save_session("b")
-    assert "a" in agent.list_sessions()
-    assert "b" in agent.list_sessions()
+    names = [s["name"] for s in agent.list_sessions()]
+    assert "a" in names
+    assert "b" in names
     assert agent.delete_session("a") is True
-    assert "a" not in agent.list_sessions()
+    assert "a" not in [s["name"] for s in agent.list_sessions()]
