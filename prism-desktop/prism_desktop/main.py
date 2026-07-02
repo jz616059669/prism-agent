@@ -1465,7 +1465,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
 
 
     @staticmethod
-    def _check_browser_dependencies() -> dict:
+    def _check_browser_dependencies(self) -> dict:
         status = {"playwright": False, "chromium": False, "error": ""}
         try:
             import playwright
@@ -1474,12 +1474,11 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             status["error"] = f"playwright 未安装: {e}"
             return status
         try:
-            import subprocess
-            result = subprocess.run(["playwright", "install", "--help"], capture_output=True, text=True, timeout=5)
-            if result.returncode == 0:
-                status["chromium"] = True
-            else:
-                status["error"] = "Chromium 未安装"
+            from playwright.sync_api import sync_playwright
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                browser.close()
+            status["chromium"] = True
         except Exception as e:
             status["error"] = f"Chromium 检查失败: {e}"
         return status
@@ -1536,10 +1535,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self.browser_status_text.color = ft.Colors.ON_SURFACE_VARIANT
         self.browser_status_icon.update()
         self.browser_status_text.update()
-
-        self._browser_open = lambda: self._browser_open()
-        self._browser_snapshot = lambda: self._browser_snapshot()
-        self._browser_close = lambda: self._browser_close()
 
     def _run_terminal_command(self):
         command = self.terminal_input.value.strip() if hasattr(self, 'terminal_input') else ""

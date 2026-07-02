@@ -218,6 +218,17 @@ class SidebarMixin:
                 ft.Text("会话", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE_VARIANT),
                 ft.Row([self.session_new_btn, self.session_name_field, self.session_save_btn], spacing=8, tight=True),
                 self.session_search,
+                ft.Container(height=10),
+                ft.TextButton(
+                    _("restore_layout_defaults"),
+                    icon=ft.Icons.UNDO_ROUNDED,
+                    style=ft.ButtonStyle(
+                        shape=ft.RoundedRectangleBorder(radius=12),
+                        bgcolor=ft.Colors.SURFACE_CONTAINER,
+                        color=ft.Colors.ON_SURFACE,
+                    ),
+                    on_click=lambda e: self._restore_layout_defaults(),
+                ),
                 ft.Container(content=self.session_list, expand=True),
                 self._session_empty_state,
             ],
@@ -341,3 +352,14 @@ class SidebarMixin:
     def _save_preset(self):
         # kept for compatibility
         pass
+
+    def _restore_layout_defaults(self) -> None:
+        self._settings.pop("sidebar_width", None)
+        self._settings.pop("sidebar_collapsed", None)
+        self._settings.pop("chat_width", None)
+        self._settings.pop("right_width", None)
+        self._save_settings()
+        self._append_terminal("布局已恢复默认")
+        if hasattr(self, "_set_status"):
+            self._set_status("布局已重置", ft.Colors.GREEN_400)
+        self.page.update()

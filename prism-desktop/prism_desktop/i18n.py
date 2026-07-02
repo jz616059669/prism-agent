@@ -83,6 +83,7 @@ zh_CN = {
     "checking_update": "正在检查更新...",
     "validation_failed": "配置校验失败：{error}",
     "validation_ok": "配置校验通过",
+    "restore_layout_defaults": "恢复默认布局",
 }
 
 _translations = {
