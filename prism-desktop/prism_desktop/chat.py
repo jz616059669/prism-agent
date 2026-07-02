@@ -122,7 +122,7 @@ class ChatMixin:
                     pass
             if query in text:
                 try:
-                    self.chat_list.scroll_to(idx=idx, duration=200)
+                    self.chat_list.scroll_to(delta=99999, duration=200)
                 except Exception:
                     pass
                 return
