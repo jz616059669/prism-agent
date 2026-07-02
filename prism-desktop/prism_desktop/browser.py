@@ -21,7 +21,7 @@ class BrowserMixin:
         self._append_terminal(f"browser open {url}")
         try:
             from prism.tools.browser import browser as browser_api
-            result = browser_api.navigate(url, headless=True)
+            result = browser_api.navigate(url)
             if result.get("success"):
                 self._set_browser_status(True, result.get("title", url))
                 self._append_terminal(f"opened: {result.get('title', url)}")
