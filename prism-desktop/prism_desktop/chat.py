@@ -90,6 +90,7 @@ class ChatMixin:
             return
         if not getattr(self, "agent", None):
             self._append("PRISM", "Error: agent 未初始化，请检查配置并保存后重试。")
+            self._log_to_file("warning", "send_blocked", reason="agent is None")
             return
         self.input_field.value = ""
         self.input_field.update()
@@ -103,18 +104,24 @@ class ChatMixin:
                 text,
                 on_chunk=lambda c: self._append("PRISM", c) if getattr(self, "_generating", False) else None,
             )
+            self._log_to_file("info", "chat_result", result_type=type(result).__name__, result_preview=str(result)[:200])
             if isinstance(result, dict):
                 if not result.get("success"):
                     self._append("PRISM", f"Error: {result.get('error', 'Unknown error')}")
                 elif result.get("content"):
                     self._append("PRISM", result["content"])
+                else:
+                    self._append("PRISM", " ")
             elif isinstance(result, str):
                 if result:
                     self._append("PRISM", result)
                 else:
                     self._append("PRISM", " ")
+            else:
+                self._append("PRISM", f"Error: 未知返回类型 {type(result).__name__}")
         except Exception as exc:
             self._append("PRISM", f"Error: {exc}")
+            self._log_to_file("error", "send_exception", error=str(exc))
         finally:
             self._generating = False
             try:
