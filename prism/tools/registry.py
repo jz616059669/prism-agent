@@ -19,16 +19,18 @@ try:
     BROWSER_AVAILABLE = True
 except Exception:
     BROWSER_AVAILABLE = False
+    logger.debug("browser tool import failed: %s", traceback.format_exc())
 
 # 延迟导入代码执行器
 try:
     from prism.tools.code_executor import CodeExecutor
+
     CODE_EXECUTOR_AVAILABLE = True
     _code_executor = CodeExecutor()
 except Exception:
     CODE_EXECUTOR_AVAILABLE = False
     _code_executor = None
-
+    logger.debug("code executor import failed: %s", traceback.format_exc())
 
 class Tool(ABC):
     """工具基类"""

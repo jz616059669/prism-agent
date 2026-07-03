@@ -14,7 +14,7 @@ def _ensure_dirs() -> None:
     try:
         LOG_DIR.mkdir(parents=True, exist_ok=True)
     except Exception:
-        pass
+        logger.debug("ensure log dir failed: %s", traceback.format_exc())
 
 
 def get_logger(name: str = "prism") -> logging.Logger:
@@ -37,7 +37,7 @@ def get_logger(name: str = "prism") -> logging.Logger:
         fh.setFormatter(fmt)
         logger.addHandler(fh)
     except Exception:
-        pass
+        logger.debug("file handler init failed: %s", traceback.format_exc())
     return logger
 
 

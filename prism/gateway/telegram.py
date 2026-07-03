@@ -222,7 +222,6 @@ class TelegramAdapter(PlatformAdapter):
                         self.wfile.write(b'error')
                     except Exception:
                         logger.debug("telegram send error response failed: %s", traceback.format_exc())
-                        pass
 
             def log_message(self, format, *args):
                 print(f"[Telegram] {args[0]}")

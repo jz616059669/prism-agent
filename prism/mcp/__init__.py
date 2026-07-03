@@ -278,7 +278,7 @@ class MCPClient:
             if response and "result" in response:
                 return response["result"].get("tools", [])
         except Exception:
-            pass
+            logger.debug("list stdio tools failed: %s", traceback.format_exc())
         return []
 
     def _list_http_tools(self, server_name: str) -> List[Dict[str, Any]]:
@@ -299,7 +299,7 @@ class MCPClient:
                 process.terminate()
                 process.wait(timeout=5)
             except Exception:
-                pass
+                logger.debug("mcp process cleanup failed: %s", traceback.format_exc())
         self.processes.clear()
         self._stdio_initialized.clear()
 
@@ -307,7 +307,7 @@ class MCPClient:
             try:
                 client.close()
             except Exception:
-                pass
+                logger.debug("mcp http client cleanup failed: %s", traceback.format_exc())
         self.http_clients.clear()
         self.tools.clear()
 

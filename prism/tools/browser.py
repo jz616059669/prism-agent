@@ -70,7 +70,7 @@ class BrowserController:
                     try:
                         await self.browser.close()
                     except Exception:
-                        pass
+                        logger.debug("browser close failed: %s", traceback.format_exc())
             
             # 启动浏览器
             if self.browser is None or self.browser.is_connected() is False:

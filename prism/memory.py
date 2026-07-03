@@ -86,6 +86,7 @@ class MemoryEmbeddingIndex:
             data = json.loads(self._index_path.read_text(encoding="utf-8"))
             self._vectors = {k: v for k, v in data.get("vectors", {}).items() if isinstance(v, list)}
         except Exception:
+            logger.debug("load memory index failed: %s", traceback.format_exc())
             self._vectors = {}
 
     def _save(self) -> None:
@@ -95,7 +96,7 @@ class MemoryEmbeddingIndex:
                 encoding="utf-8",
             )
         except Exception:
-            pass
+            logger.debug("memory index save failed: %s", traceback.format_exc())
 
     @staticmethod
     def _cosine(a: List[float], b: List[float]) -> float:

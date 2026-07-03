@@ -91,7 +91,6 @@ class Gateway:
                     registered.append(platform)
         except Exception:
             logger.debug("list platforms failed: %s", traceback.format_exc())
-            pass
         return registered
 
 

@@ -61,6 +61,7 @@ def doctor():
         providers = provider_pool.list_providers()
         table.add_row("Provider", "[green]✓[/green]", ", ".join(providers))
     except Exception:
+        logger.debug("list providers failed: %s", traceback.format_exc())
         table.add_row("Provider", "[yellow]![/yellow]", "未配置")
 
     # Check browser

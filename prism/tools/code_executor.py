@@ -138,7 +138,7 @@ class CodeExecutor:
             try:
                 os.unlink(temp_file)
             except Exception:
-                pass
+                logger.debug("temp file cleanup failed: %s", traceback.format_exc())
     
     def _security_check(self, code: str) -> Dict[str, Any]:
         """

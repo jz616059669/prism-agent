@@ -59,5 +59,5 @@ class ACPClient:
                 self.process.terminate()
                 self.process.wait(timeout=5)
             except Exception:
-                pass
+                logger.debug("acp client close failed: %s", traceback.format_exc())
             self.process = None
