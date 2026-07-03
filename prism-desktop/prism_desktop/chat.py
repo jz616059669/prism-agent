@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 class ChatMixin:
     def _format_time(self) -> str:
-        return datetime.datetime.now().strftime("%H:%M")
+        return datetime.now().strftime("%H:%M")
 
     def _markdown_to_ft(self, text: str) -> List[ft.Control]:
         is_error = False
@@ -42,7 +42,7 @@ class ChatMixin:
         is_user = role == "你"
         align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
         text_color = ft.Colors.ON_PRIMARY_CONTAINER if is_user else ft.Colors.ON_SURFACE
-        timestamp = datetime.datetime.now().strftime("%H:%M")
+        timestamp = datetime.now().strftime("%H:%M")
         try:
             role_text = ft.Text(role, size=11, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_500)
             time_text = ft.Text(timestamp, size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.8)

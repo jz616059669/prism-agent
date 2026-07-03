@@ -25,3 +25,4 @@ prism-desktop/main.spec
 prism-desktop/dist/
 prism-desktop/build/
 prism-desktop/run_prism.bat
+scripts/build-windows-new/

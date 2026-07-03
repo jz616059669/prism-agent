@@ -159,14 +159,14 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
 
     def _structured_log(self, level: str, event: str, **fields) -> None:
         try:
-            line = {"ts": __import__("datetime").datetime.now().isoformat(timespec="seconds"), "level": level, "event": event, **fields}
+            line = {"ts": datetime.now().isoformat(timespec="seconds"), "level": level, "event": event, **fields}
             self._append_terminal(f"[{line['level']}] {line['event']} | {fields}")
         except Exception:
             logger.debug('desktop exception: %s', traceback.format_exc())
 
     def _log_to_file(self, level: str, event: str, **fields) -> None:
         try:
-            entry = {"ts": __import__("datetime").datetime.now().isoformat(timespec="seconds"), "level": level, "event": event, **fields}
+            entry = {"ts": datetime.now().isoformat(timespec="seconds"), "level": level, "event": event, **fields}
             log_path = Path.home() / ".prism" / "prism-desktop.log"
             log_path.parent.mkdir(parents=True, exist_ok=True)
             with open(log_path, "a", encoding="utf-8") as f:
@@ -1022,7 +1022,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         is_user = role == "你"
         align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
         text_color = ft.Colors.ON_PRIMARY_CONTAINER if is_user else ft.Colors.ON_SURFACE
-        timestamp = datetime.datetime.now().strftime("%H:%M")
+        timestamp = datetime.now().strftime("%H:%M")
         try:
             role_text = ft.Text(role, size=11, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_500)
             time_text = ft.Text(timestamp, size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.8)
