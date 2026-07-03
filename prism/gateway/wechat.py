@@ -11,6 +11,7 @@ except Exception:  # pragma: no cover - optional dependency
     requests = None  # type: ignore
 
 from prism.gateway import PlatformAdapter, Message
+from prism.logging import logger
 
 
 @dataclass
@@ -78,12 +79,14 @@ class WechatAdapter(PlatformAdapter):
 
         raise RuntimeError(f"发送消息失败: {data}")
 
-    def start_polling(self, handler: Callable[[Message], None]):
+    def start_polling(self, handler: Callable[[Message], None]) -> None:
         """启动接收（企业微信需部署回调服务）"""
+        if not callable(handler):
+            raise TypeError("handler must be callable")
         self.handler = handler
         self.running = True
-        # TODO: 最小回调服务占位，后续可独立为 prism/gateway/wechat_http.py
+        logger.info("wechat adapter started; waiting for callback service")
 
-    def stop(self):
+    def stop(self) -> None:
         self.running = False
         self.handler = None
