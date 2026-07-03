@@ -22,7 +22,7 @@ class ChatMixin:
     def _markdown_to_ft(self, text: str) -> List[ft.Control]:
         is_error = False
         try:
-            rendered = markdown.markdown(text, extensions=["fenced_code", "tables", "nl2br", "pymdownx.arithmatex"])
+            rendered = markdown.markdown(text, extensions=["fenced_code", "tables", "nl2br"])
         except Exception:
             logger.debug("markdown render failed: %s", traceback.format_exc())
             try:
@@ -51,19 +51,17 @@ class ChatMixin:
                 [role_text, ft.Container(expand=True), time_text],
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             )
-            bubble = ft.Container(
+            message_widget = ft.Container(
                 content=ft.Column(
                     [row, ft.Container(height=4), *content],
                     tight=True,
                     spacing=0,
+                    horizontal_alignment=align,
                 ),
                 padding=ft.Padding(14, 10, 14, 10),
-                bgcolor=ft.Colors.PRIMARY_CONTAINER if is_user else ft.Colors.SURFACE_CONTAINER,
-                border_radius=ft.RoundedRectangleBorder(radius=18),
-                border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT),
-                width=420,
+                alignment=align,
             )
-            self.chat_list.controls.append(ft.Container(bubble, alignment=align))
+            self.chat_list.controls.append(message_widget)
             self.chat_list.update()
         except Exception:
             logger.debug("append message failed: %s", traceback.format_exc())
@@ -92,7 +90,12 @@ class ChatMixin:
         self.stop_btn.update()
         self._append("你", text)
         try:
-            self.agent.chat(text, on_chunk=lambda c: self._append("PRISM", c) if not getattr(self, "_generating", False) else None)
+            result = self.agent.chat(
+                text,
+                on_chunk=lambda c: self._append("PRISM", c) if getattr(self, "_generating", False) else None,
+            )
+            if isinstance(result, str) and result.startswith("Error:"):
+                self._append("PRISM", result)
         except Exception as exc:
             self._append("PRISM", f"Error: {exc}")
         finally:

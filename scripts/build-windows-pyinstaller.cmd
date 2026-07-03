@@ -34,7 +34,7 @@ if %ERRORLEVEL% neq 0 (
 
 echo.
 echo [2/3] 生成发布清单...
-set VERSION=2.1.1
+set VERSION=2.1.2
 (
 echo # PRISM Desktop Windows 本地发布包
 echo.

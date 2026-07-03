@@ -26,7 +26,7 @@ echo [3/4] 生成发布清单...
 echo # PRISM Agent 本地发布包 > dist\RELEASE.txt
 echo. >> dist\RELEASE.txt
 echo 构建时间：%date% %time% >> dist\RELEASE.txt
-echo 版本：2.1.1 >> dist\RELEASE.txt
+echo 版本：2.1.2 >> dist\RELEASE.txt
 echo. >> dist\RELEASE.txt
 echo 文件： >> dist\RELEASE.txt
 uv run python -c "

@@ -21,7 +21,7 @@ class SidebarMixin:
                 [
                     ft.Text("PRISM", size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
                     ft.Container(height=6),
-                    ft.Text("v2.1.1", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.85),
+                    ft.Text("v2.1.2", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.85),
                 ],
                 tight=True,
                 spacing=6,

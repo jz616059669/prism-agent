@@ -621,7 +621,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 [
                     ft.Text("PRISM", size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
                     ft.Container(height=6),
-                    ft.Text("v2.1.1", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.85),
+                    ft.Text("v2.1.2", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.85),
                 ],
                 tight=True,
                 spacing=6,
@@ -843,9 +843,9 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             max_lines=6,
             shift_enter=True,
             border_radius=34,
-            focused_border_color=ft.Colors.PRIMARY,
-            focused_border_width=2.5,
             border_color=ft.Colors.OUTLINE_VARIANT,
+            focused_border_color=ft.Colors.OUTLINE_VARIANT,
+            focused_border_width=1,
             suffix=ft.IconButton(icon=ft.Icons.CLEAR_ROUNDED, tooltip="清空终端", icon_color=ft.Colors.ON_SURFACE_VARIANT, on_click=lambda e: self.input_field.clear()),
         )
         self.input_count = ft.Text("0 字", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.95)
@@ -867,12 +867,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 if hasattr(self, "input_count") and self.input_count:
                     count = len(self.input_field.value or "")
                     self.input_count.value = f"{count} 字"
-                    if count > 1000:
-                        self.input_count.color = ft.Colors.ERROR
-                    elif count > 500:
-                        self.input_count.color = ft.Colors.AMBER_400
-                    else:
-                        self.input_count.color = ft.Colors.ON_SURFACE
                     self.input_count.update()
                 if hasattr(self, "send_btn"):
                     self.send_btn.disabled = not (self.input_field.value or "").strip()
@@ -1028,84 +1022,33 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         is_user = role == "你"
         align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
         text_color = ft.Colors.ON_PRIMARY_CONTAINER if is_user else ft.Colors.ON_SURFACE
-        import datetime
         timestamp = datetime.datetime.now().strftime("%H:%M")
-
         try:
-            import markdown
-            rendered = markdown.markdown(text, extensions=["fenced_code", "tables", "nl2br"])
-        except Exception as exc:
-            self._log_error("markdown render", exc)
-            rendered = text
-
-        is_error = not is_user and (text.startswith("Error:") or text.startswith("请求超时") or text.startswith("失败"))
-        display_color = ft.Colors.ERROR if is_error else text_color
-
-        if is_user:
-            content_widget = ft.Column(
-                [
-                    self._markdown_to_ft(rendered),
-                    ft.Text(timestamp, size=11, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.END, opacity=0.9),
-                ],
-                tight=True,
-                spacing=3,
-                horizontal_alignment=ft.CrossAxisAlignment.END,
+            role_text = ft.Text(role, size=11, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_500)
+            time_text = ft.Text(timestamp, size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.8)
+            content = self._markdown_to_ft(text)
+            row = ft.Row(
+                [role_text, ft.Container(expand=True), time_text],
+                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             )
-            bubble = ft.Container(
-                content=content_widget,
-                bgcolor=ft.Colors.PRIMARY_CONTAINER,
-                border_radius=34,
-                padding=ft.Padding(22, 20, 22, 20),
-                shadow=ft.BoxShadow(blur_radius=14, color=ft.Colors.with_opacity(0.22, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 2)),
+            message_widget = ft.Container(
+                content=ft.Column(
+                    [row, ft.Container(height=4), *content],
+                    tight=True,
+                    spacing=0,
+                    horizontal_alignment=align,
+                ),
+                padding=ft.Padding(14, 10, 14, 10),
+                alignment=align,
             )
-        else:
-            content_widget = ft.Column(
-                [
-                    self._markdown_to_ft(rendered),
-                    ft.Text(timestamp, size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.9),
-                ],
-                tight=True,
-                spacing=3,
-                horizontal_alignment=ft.CrossAxisAlignment.START,
-            )
-            bubble_bg = ft.Colors.ERROR_CONTAINER if is_error else ft.Colors.SURFACE_CONTAINER
-            bubble = ft.Container(
-                content=content_widget,
-                bgcolor=bubble_bg,
-                border_radius=34,
-                padding=ft.Padding(22, 20, 22, 20),
-                shadow=ft.BoxShadow(blur_radius=12, color=ft.Colors.with_opacity(0.2, ft.Colors.BLACK), spread_radius=0, offset=ft.Offset(0, 1)),
-            )
-
-        message_row = ft.Row(
-            [bubble],
-            alignment=align,
-            expand=True,
-        )
-
-        self.chat_list.controls.append(message_row)
-        
-        # Retry button for error messages
-        if is_error and retry_text:
-            retry_btn = ft.TextButton(
-                "重试",
-                icon=ft.Icons.REFRESH_ROUNDED,
-                style=ft.ButtonStyle(color=ft.Colors.ERROR, shape=ft.RoundedRectangleBorder(radius=10), bgcolor=ft.Colors.ERROR_CONTAINER),
-                on_click=lambda e, t=retry_text: self._send(t),
-            )
-            retry_row = ft.Row(
-                [retry_btn],
-                alignment=ft.MainAxisAlignment.START,
-                expand=True,
-            )
-            self.chat_list.controls.append(retry_row)
-        
-        max_chat_items = 500
-        if len(self.chat_list.controls) > max_chat_items:
-            self.chat_list.controls = self.chat_list.controls[-max_chat_items:]
-        # scroll_to removed for Flet 0.85.3 compatibility
-        self.chat_list.update()
-        return message_row
+            self.chat_list.controls.append(message_widget)
+            self.chat_list.update()
+        except Exception:
+            logger.debug("append message failed: %s", traceback.format_exc())
+            try:
+                self._append_terminal(f"[CHAT ERROR] {role}: {text[:200]}")
+            except Exception as ex:
+                logger.debug("append message fallback failed: %s", ex)
 
 
     def _new_session(self):
@@ -1382,19 +1325,15 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self._set_status("Skill 安装异常", ft.Colors.RED_400)
 
     def _set_status(self, text: str, color=ft.Colors.GREEN_400):
-        self.status_text.value = text
-        self.status_text.color = color
-        self.status_text.update()
         try:
-            import threading
-            def _clear():
-                import time
-                time.sleep(3)
-                if self.status_text.value == text:
-                    self.status_text.value = "就绪"
-                    self.status_text.color = ft.Colors.GREEN_400
-                    self.status_text.update()
-            threading.Thread(target=_clear, daemon=True).start()
+            if not hasattr(self, "status_text") or self.status_text is None:
+                return
+            page = getattr(self.status_text, "page", None)
+            if page is None:
+                return
+            self.status_text.value = text
+            self.status_text.color = color
+            self.status_text.update()
         except Exception:
             logger.debug('desktop exception: %s', traceback.format_exc())
 

@@ -6,7 +6,7 @@ echo "  PRISM Desktop Linux 打包"
 echo "========================================"
 echo ""
 
-VERSION="2.1.1"
+VERSION="2.1.2"
 OUTPUT_NAME="prism-desktop-${VERSION}-linux-amd64"
 
 # 检查依赖
