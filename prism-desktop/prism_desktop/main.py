@@ -1328,7 +1328,10 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         try:
             if not hasattr(self, "status_text") or self.status_text is None:
                 return
-            page = getattr(self.status_text, "page", None)
+            try:
+                page = self.status_text.page
+            except RuntimeError:
+                return
             if page is None:
                 return
             try:
