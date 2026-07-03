@@ -88,6 +88,9 @@ class ChatMixin:
         text = retry_text or (self.input_field.value or "").strip()
         if not text:
             return
+        if not getattr(self, "agent", None):
+            self._append("PRISM", "Error: agent 未初始化，请检查配置并保存后重试。")
+            return
         self.input_field.value = ""
         self.input_field.update()
         self._generating = True
@@ -95,6 +98,7 @@ class ChatMixin:
         self.stop_btn.update()
         self._append("你", text)
         try:
+            self._log_to_file("info", "stream_start", text=text, model=getattr(self.agent, "model", "unknown"))
             result = self.agent.chat(
                 text,
                 on_chunk=lambda c: self._append("PRISM", c) if getattr(self, "_generating", False) else None,
