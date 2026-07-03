@@ -94,8 +94,16 @@ class ChatMixin:
                 text,
                 on_chunk=lambda c: self._append("PRISM", c) if getattr(self, "_generating", False) else None,
             )
-            if isinstance(result, str) and result.startswith("Error:"):
-                self._append("PRISM", result)
+            if isinstance(result, dict):
+                if not result.get("success"):
+                    self._append("PRISM", f"Error: {result.get('error', 'Unknown error')}")
+                elif result.get("content"):
+                    self._append("PRISM", result["content"])
+            elif isinstance(result, str):
+                if result:
+                    self._append("PRISM", result)
+                else:
+                    self._append("PRISM", " ")
         except Exception as exc:
             self._append("PRISM", f"Error: {exc}")
         finally:
