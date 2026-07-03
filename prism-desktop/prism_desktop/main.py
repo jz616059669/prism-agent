@@ -166,7 +166,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
 
     def _log_to_file(self, level: str, event: str, **fields) -> None:
         try:
-            entry = {"ts": datetime.now().isoformat(timespec="seconds"), "level": level, "event": event, **fields}
+            safe_fields = {k: (str(v) if not isinstance(v, (str, int, float, bool, type(None))) else v) for k, v in fields.items()}
+            entry = {"ts": datetime.now().isoformat(timespec="seconds"), "level": level, "event": event, **safe_fields}
             log_path = Path.home() / ".prism" / "prism-desktop.log"
             log_path.parent.mkdir(parents=True, exist_ok=True)
             with open(log_path, "a", encoding="utf-8") as f:
