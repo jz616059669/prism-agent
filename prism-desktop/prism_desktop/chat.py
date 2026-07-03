@@ -19,9 +19,9 @@ class ChatMixin:
     def _format_time(self) -> str:
         return datetime.now().strftime("%H:%M")
 
-    def _markdown_to_ft(self, text: str) -> List[ft.Control]:
+    def _markdown_to_ft(self, text: str, text_color=ft.Colors.ON_SURFACE) -> List[ft.Control]:
         if not text or not text.strip():
-            return [ft.Text(" ", selectable=True, color=ft.Colors.ON_SURFACE)]
+            return [ft.Text(" ", selectable=True, color=text_color)]
         is_error = False
         try:
             rendered = markdown.markdown(text, extensions=["fenced_code", "tables", "nl2br"])
@@ -33,7 +33,7 @@ class ChatMixin:
                 logger.debug("markdown fallback render failed: %s", traceback.format_exc())
                 rendered = text
         is_error = text.startswith("Error:") or text.startswith("请求超时") or text.startswith("失败")
-        display_color = ft.Colors.ERROR if is_error else ft.Colors.ON_SURFACE
+        display_color = ft.Colors.ERROR if is_error else text_color
         if not rendered or not rendered.strip():
             rendered = text or " "
         return [
@@ -45,12 +45,12 @@ class ChatMixin:
             self.chat_list.controls.remove(self._chat_placeholder)
         is_user = role == "你"
         align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
-        text_color = ft.Colors.ON_PRIMARY_CONTAINER if is_user else ft.Colors.ON_SURFACE
+        text_color = ft.Colors.ON_SURFACE
         timestamp = datetime.now().strftime("%H:%M")
         try:
             role_text = ft.Text(role, size=11, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_500)
             time_text = ft.Text(timestamp, size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.8)
-            content = self._markdown_to_ft(text)
+            content = self._markdown_to_ft(text, text_color=text_color)
             row = ft.Row(
                 [role_text, ft.Container(expand=True), time_text],
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
@@ -64,6 +64,7 @@ class ChatMixin:
                 ),
                 padding=ft.Padding(14, 10, 14, 10),
                 alignment=align,
+                bgcolor=ft.Colors.SURFACE_CONTAINER if not is_user else ft.Colors.PRIMARY_CONTAINER,
             )
             self.chat_list.controls.append(message_widget)
             self.chat_list.update()
