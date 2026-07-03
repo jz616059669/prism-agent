@@ -14,7 +14,9 @@ def _ensure_dirs() -> None:
     try:
         LOG_DIR.mkdir(parents=True, exist_ok=True)
     except Exception:
-        logger.debug("ensure log dir failed: %s", traceback.format_exc())
+        logging.getLogger("prism").debug(
+            "ensure log dir failed: %s", traceback.format_exc()
+        )
 
 
 def get_logger(name: str = "prism") -> logging.Logger:

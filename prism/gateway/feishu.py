@@ -164,11 +164,6 @@ class FeishuAdapter(PlatformAdapter):
 
     def stop(self) -> None:
         self.running = False
-        if self._ws_client is not None:
-            try:
-                self._ws_client.stop()
-            except Exception:
-                logger.debug("feishu ws_client stop failed: %s", traceback.format_exc())
         if self._loop is not None and not self._loop.is_closed():
             try:
                 self._loop.call_soon_threadsafe(self._loop.stop)
