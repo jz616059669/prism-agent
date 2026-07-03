@@ -20,6 +20,8 @@ class ChatMixin:
         return datetime.now().strftime("%H:%M")
 
     def _markdown_to_ft(self, text: str) -> List[ft.Control]:
+        if not text or not text.strip():
+            return [ft.Text(" ", selectable=True, color=ft.Colors.ON_SURFACE)]
         is_error = False
         try:
             rendered = markdown.markdown(text, extensions=["fenced_code", "tables", "nl2br"])
@@ -32,6 +34,8 @@ class ChatMixin:
                 rendered = text
         is_error = text.startswith("Error:") or text.startswith("请求超时") or text.startswith("失败")
         display_color = ft.Colors.ERROR if is_error else ft.Colors.ON_SURFACE
+        if not rendered or not rendered.strip():
+            rendered = text or " "
         return [
             ft.Text(rendered, selectable=True, color=display_color),
         ]
