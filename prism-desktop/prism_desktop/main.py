@@ -1331,9 +1331,17 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             page = getattr(self.status_text, "page", None)
             if page is None:
                 return
-            self.status_text.value = text
-            self.status_text.color = color
-            self.status_text.update()
+            try:
+                self.status_text.value = text
+                self.status_text.color = color
+                self.status_text.update()
+            except Exception:
+                try:
+                    self.status_text.value = text
+                    self.status_text.color = color
+                    page.update([self.status_text])
+                except Exception:
+                    pass
         except Exception:
             logger.debug('desktop exception: %s', traceback.format_exc())
 
