@@ -45,7 +45,7 @@ class ChatMixin:
             self.chat_list.controls.remove(self._chat_placeholder)
         is_user = role == "你"
         align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
-        text_color = ft.Colors.ON_SURFACE
+        text_color = ft.Colors.ON_PRIMARY_CONTAINER if is_user else ft.Colors.ON_SURFACE
         timestamp = datetime.now().strftime("%H:%M")
         try:
             role_text = ft.Text(role, size=11, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_500)
