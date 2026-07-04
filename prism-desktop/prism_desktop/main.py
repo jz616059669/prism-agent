@@ -1074,7 +1074,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     horizontal_alignment=align,
                 ),
                 padding=ft.Padding(14, 10, 14, 10),
-                alignment=align,
                 bgcolor=ft.Colors.PRIMARY_CONTAINER if is_user else ft.Colors.SURFACE_CONTAINER,
             )
             self.chat_list.controls.append(message_widget)

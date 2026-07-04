@@ -70,7 +70,6 @@ class ChatMixin:
                     horizontal_alignment=align,
                 ),
                 padding=ft.Padding(14, 10, 14, 10),
-                alignment=align,
                 bgcolor=ft.Colors.SURFACE_CONTAINER if not is_user else ft.Colors.PRIMARY_CONTAINER,
             )
             self.chat_list.controls.append(message_widget)
