@@ -1060,6 +1060,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 if parent is not None:
                     parent.visible = False
                     parent.update()
+                if self._chat_placeholder in self.chat_list.controls:
+                    self.chat_list.controls.remove(self._chat_placeholder)
             except Exception:
                 logger.debug("hide placeholder failed: %s", traceback.format_exc())
         is_user = role == "你"
