@@ -1089,7 +1089,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             try:
                 self.chat_list.update()
             except Exception:
-                pass
+                logger.debug("chat_list update failed: %s", traceback.format_exc())
             try:
                 self.page.update()
             except Exception:
