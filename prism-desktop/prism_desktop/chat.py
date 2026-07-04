@@ -125,12 +125,59 @@ class ChatMixin:
         self.stop_btn.update()
         self._append("你", text)
 
+        stream_widget = None
+        stream_text = ""
+
+        def _ensure_stream_widget():
+            nonlocal stream_widget
+            if stream_widget is None:
+                role_text = ft.Text("PRISM", size=11, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_500)
+                timestamp = datetime.now().strftime("%H:%M")
+                time_text = ft.Text(timestamp, size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.8)
+                stream_content = ft.Text("", selectable=True, color=ft.Colors.ON_SURFACE)
+                row = ft.Row(
+                    [role_text, ft.Container(expand=True), time_text],
+                    alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                )
+                stream_widget = ft.Container(
+                    content=ft.Column(
+                        [row, ft.Container(height=4), stream_content],
+                        tight=True,
+                        spacing=0,
+                        horizontal_alignment=ft.MainAxisAlignment.START,
+                    ),
+                    padding=ft.Padding(14, 10, 14, 10),
+                    bgcolor=ft.Colors.SURFACE_CONTAINER,
+                )
+                self.chat_list.controls.append(stream_widget)
+                try:
+                    self.chat_list.update()
+                except Exception:
+                    logger.debug("chat_list update failed: %s", traceback.format_exc())
+                try:
+                    self.page.update()
+                except Exception:
+                    logger.debug("page update failed: %s", traceback.format_exc())
+            return stream_widget
+
+        def _stream_chunk(c: str):
+            nonlocal stream_text
+            stream_text += c
+            try:
+                w = _ensure_stream_widget()
+                stream_content = w.content.controls[2]
+                stream_content.value = stream_text
+                w.update()
+            except Exception:
+                logger.debug("stream chunk update failed: %s", traceback.format_exc())
+
         def _run_chat():
+            nonlocal stream_widget, stream_text
             try:
                 self._log_to_file("info", "stream_start", text=text, model=getattr(self.agent, "model", "unknown"))
                 result = self.agent.chat(
                     text,
-                    on_chunk=lambda c: self._append("PRISM", c) if getattr(self, "_generating", False) else None,
+                    on_chunk=lambda c: _stream_chunk(c) if getattr(self, "_generating", False) else None,
                 )
                 self._log_to_file("info", "chat_result", result_type=type(result).__name__, result_preview=str(result)[:200])
                 if isinstance(result, dict):
