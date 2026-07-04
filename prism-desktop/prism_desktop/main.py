@@ -1087,11 +1087,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             )
             self.chat_list.controls.append(message_widget)
             self.page.update(self.chat_list)
-            try:
-                if hasattr(self.chat_list, "scroll_to"):
-                    self.chat_list.scroll_to(delta=99999, duration=150)
-            except Exception:
-                logger.debug("chat scroll failed: %s", traceback.format_exc())
         except Exception:
             logger.debug("append message failed: %s", traceback.format_exc())
             try:

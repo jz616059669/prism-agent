@@ -43,6 +43,13 @@ class ChatMixin:
     def _append(self, role: str, text: str, retry: bool = False, retry_text: str = "", placeholder: bool = False):
         if hasattr(self, "_chat_placeholder") and self._chat_placeholder and self._chat_placeholder in self.chat_list.controls:
             self.chat_list.controls.remove(self._chat_placeholder)
+        if hasattr(self, "_chat_placeholder") and self._chat_placeholder:
+            try:
+                self._chat_placeholder.visible = False
+                if hasattr(self._chat_placeholder, "parent") and self._chat_placeholder.parent:
+                    self._chat_placeholder.update()
+            except Exception:
+                logger.debug("hide placeholder failed: %s", traceback.format_exc())
         is_user = role == "你"
         align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
         text_color = ft.Colors.ON_PRIMARY_CONTAINER if is_user else ft.Colors.ON_SURFACE
