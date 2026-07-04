@@ -316,7 +316,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 import pystray
                 from PIL import Image, ImageDraw
 
-                def _create_tray_image():
+                def _create_tray_image() -> Image.Image:
                     img = Image.new("RGB", (64, 64), (0, 0, 0))
                     d = ImageDraw.Draw(img)
                     d.text((16, 16), "P", fill=(255, 255, 255))
@@ -324,27 +324,55 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
 
                 def _on_tray_click(icon, item):
                     try:
-                        self.page.window_show()
-                        if hasattr(self, "input_field"):
-                            self.input_field.focus()
-                        try:
-                            if hasattr(self, "_refresh_sessions"):
-                                self._refresh_sessions()
-                            if hasattr(self, "_refresh_mcp"):
-                                self._refresh_mcp()
-                            if hasattr(self, "_refresh_skills"):
-                                self._refresh_skills()
-                        except Exception as exc:
-                            self._log_error("stream chunk refresh", exc)
-                        self._set_status("就绪", ft.Colors.GREEN_400)
-                        self.page.update()
+                        if hasattr(self, "page") and self.page is not None:
+                            def _ui_show():
+                                try:
+                                    self.page.window_show()
+                                    if hasattr(self, "input_field") and self.input_field is not None:
+                                        try:
+                                            self.input_field.focus()
+                                        except Exception:
+                                            pass
+                                    if hasattr(self, "_refresh_sessions"):
+                                        try:
+                                            self._refresh_sessions()
+                                        except Exception:
+                                            pass
+                                    if hasattr(self, "_refresh_mcp"):
+                                        try:
+                                            self._refresh_mcp()
+                                        except Exception:
+                                            pass
+                                    if hasattr(self, "_refresh_skills"):
+                                        try:
+                                            self._refresh_skills()
+                                        except Exception:
+                                            pass
+                                    try:
+                                        self._set_status("就绪", ft.Colors.GREEN_400)
+                                    except Exception:
+                                        pass
+                                    try:
+                                        self.page.update()
+                                    except Exception:
+                                        pass
+                                except Exception:
+                                    logger.debug('desktop exception: %s', traceback.format_exc())
+                            try:
+                                self.page.run_task(_ui_show)
+                            except Exception:
+                                _ui_show()
                     except Exception:
                         logger.debug('desktop exception: %s', traceback.format_exc())
 
                 def _on_exit(icon, item):
                     icon.stop()
                     try:
-                        self.page.window_close()
+                        if hasattr(self, "page") and self.page is not None:
+                            try:
+                                self.page.window_close()
+                            except Exception:
+                                pass
                     except Exception:
                         logger.debug('desktop exception: %s', traceback.format_exc())
 
@@ -442,13 +470,20 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
 
     def _animate_sidebar_cards(self):
         try:
-            import time
-            time.sleep(0.1)
-            for card in self._sidebar_container.content.controls:
-                if hasattr(card, 'animate_opacity'):
-                    card.opacity = 1
-                    card.update()
-                    time.sleep(0.05)
+            def _run():
+                try:
+                    time.sleep(0.1)
+                    for card in self._sidebar_container.content.controls:
+                        if hasattr(card, 'animate_opacity'):
+                            card.opacity = 1
+                            card.update()
+                            time.sleep(0.05)
+                except Exception:
+                    logger.debug('desktop exception: %s', traceback.format_exc())
+            try:
+                self.page.run_task(_run)
+            except Exception:
+                _run()
         except Exception:
             logger.debug('desktop exception: %s', traceback.format_exc())
 
