@@ -3,6 +3,8 @@ PRISM Desktop - 国际化（i18n）
 当前仅内置中文，后续可扩展英文/日文等
 """
 
+from prism.logging import logger
+
 zh_CN = {
     "app_title": "PRISM Desktop",
     "ready": "就绪",
@@ -98,6 +100,6 @@ def gettext(key: str, **kwargs) -> str:
     if kwargs:
         try:
             text = text.format(**kwargs)
-        except (KeyError, IndexError, ValueError):
-            pass
+        except (KeyError, IndexError, ValueError) as exc:
+            logger.debug("gettext format failed for key=%s: %s", key, exc)
     return text

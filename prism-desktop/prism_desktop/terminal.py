@@ -33,8 +33,8 @@ class TerminalMixin:
             finally:
                 try:
                     self._set_status("就绪")
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug("set status ready in terminal failed: %s", exc)
 
         try:
             self.page.run_task(_run)

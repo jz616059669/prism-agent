@@ -85,7 +85,7 @@ def start(command: str, arg: tuple):
                 proc.stdin.write((line + "\n").encode())
                 proc.stdin.flush()
         except KeyboardInterrupt:
-            pass
+            logger.debug("acp session interrupted")
         finally:
             proc.terminate()
     except Exception as e:

@@ -84,7 +84,7 @@ class ChatMixin:
             try:
                 self.chat_list.update()
             except Exception:
-                pass
+                logger.debug("chat_list update failed: %s", traceback.format_exc())
             try:
                 self.page.update()
             except Exception:
@@ -157,10 +157,6 @@ class ChatMixin:
                     self.stop_btn.update()
                 except Exception as ex:
                     logger.debug("hide stop button failed: %s", ex)
-                try:
-                    pass
-                except Exception:
-                    pass
 
         try:
             self.page.run_task(_run_chat)

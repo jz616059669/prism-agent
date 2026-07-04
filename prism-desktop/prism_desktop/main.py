@@ -331,31 +331,31 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                                     if hasattr(self, "input_field") and self.input_field is not None:
                                         try:
                                             self.input_field.focus()
-                                        except Exception:
-                                            pass
+                                        except Exception as exc:
+                                            logger.debug("input focus failed: %s", exc)
                                     if hasattr(self, "_refresh_sessions"):
                                         try:
                                             self._refresh_sessions()
-                                        except Exception:
-                                            pass
+                                        except Exception as exc:
+                                            logger.debug("refresh sessions failed: %s", exc)
                                     if hasattr(self, "_refresh_mcp"):
                                         try:
                                             self._refresh_mcp()
-                                        except Exception:
-                                            pass
+                                        except Exception as exc:
+                                            logger.debug("refresh mcp failed: %s", exc)
                                     if hasattr(self, "_refresh_skills"):
                                         try:
                                             self._refresh_skills()
-                                        except Exception:
-                                            pass
+                                        except Exception as exc:
+                                            logger.debug("refresh skills failed: %s", exc)
                                     try:
                                         self._set_status("就绪", ft.Colors.GREEN_400)
-                                    except Exception:
-                                        pass
+                                    except Exception as exc:
+                                        logger.debug("set status ready failed: %s", exc)
                                     try:
                                         self.page.update()
-                                    except Exception:
-                                        pass
+                                    except Exception as exc:
+                                        logger.debug("page update failed: %s", exc)
                                 except Exception:
                                     logger.debug('desktop exception: %s', traceback.format_exc())
                             try:
@@ -1392,8 +1392,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     self.status_text.value = text
                     self.status_text.color = color
                     page.update([self.status_text])
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug("status fallback update failed: %s", exc)
         except Exception:
             logger.debug('desktop exception: %s', traceback.format_exc())
 
