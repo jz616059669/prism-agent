@@ -1,7 +1,6 @@
 """PRISM Desktop - 聊天与消息 UI"""
 from __future__ import annotations
 
-import asyncio
 import datetime
 import json
 from typing import TYPE_CHECKING, List, Tuple

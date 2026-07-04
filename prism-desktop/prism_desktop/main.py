@@ -1053,8 +1053,15 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self._log_error("right tab change", exc)
 
     def _append(self, role: str, text: str, retry: bool = False, retry_text: str = "", placeholder: bool = False):
-        if hasattr(self, "_chat_placeholder") and self._chat_placeholder and self._chat_placeholder in self.chat_list.controls:
-            self.chat_list.controls.remove(self._chat_placeholder)
+        try:
+            if hasattr(self, "_chat_placeholder") and self._chat_placeholder:
+                self._chat_placeholder.visible = False
+                if self._chat_placeholder in self.chat_list.controls:
+                    self.chat_list.controls.remove(self._chat_placeholder)
+                if hasattr(self._chat_placeholder, "parent") and self._chat_placeholder.parent:
+                    self._chat_placeholder.update()
+        except Exception:
+            logger.debug("hide placeholder failed: %s", traceback.format_exc())
         is_user = role == "你"
         align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
         text_color = ft.Colors.ON_PRIMARY_CONTAINER if is_user else ft.Colors.ON_SURFACE
@@ -1079,6 +1086,11 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             )
             self.chat_list.controls.append(message_widget)
             self.chat_list.update()
+            try:
+                if hasattr(self.chat_list, "scroll_to"):
+                    self.chat_list.scroll_to(delta=99999, duration=150)
+            except Exception:
+                logger.debug("chat scroll failed: %s", traceback.format_exc())
         except Exception:
             logger.debug("append message failed: %s", traceback.format_exc())
             try:
