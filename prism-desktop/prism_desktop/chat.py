@@ -5,7 +5,6 @@ import datetime
 import json
 from typing import TYPE_CHECKING, List, Tuple
 
-import markdown
 import flet as ft
 
 from prism.logging import logger
@@ -22,31 +21,7 @@ class ChatMixin:
     def _markdown_to_ft(self, text: str, text_color=ft.Colors.ON_SURFACE) -> List[ft.Control]:
         if not text or not text.strip():
             return [ft.Text(" ", selectable=True, color=text_color)]
-        is_error = False
-        try:
-            rendered = markdown.markdown(text, extensions=["fenced_code", "tables", "nl2br"])
-        except Exception:
-            logger.debug("markdown render failed: %s", traceback.format_exc())
-            try:
-                rendered = markdown.markdown(text, extensions=["fenced_code", "tables", "nl2br"])
-            except Exception:
-                logger.debug("markdown fallback render failed: %s", traceback.format_exc())
-                rendered = text
-        is_error = text.startswith("Error:") or text.startswith("请求超时") or text.startswith("失败")
-        display_color = ft.Colors.ERROR if is_error else text_color
-        if not rendered or not rendered.strip():
-            rendered = text or " "
-        return [
-            ft.Markdown(
-                rendered,
-                selectable=True,
-                extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
-                code_theme="monokai",
-                auto_follow_links=False,
-                shrink_wrap=True,
-                fit_content=True,
-            ),
-        ]
+        return [ft.Text(text, selectable=True, color=text_color)]
 
     def _append(self, role: str, text: str, retry: bool = False, retry_text: str = "", placeholder: bool = False):
         if hasattr(self, "_chat_placeholder") and self._chat_placeholder and self._chat_placeholder in self.chat_list.controls:
