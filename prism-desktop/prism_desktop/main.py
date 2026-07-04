@@ -1086,7 +1086,14 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 bgcolor=ft.Colors.PRIMARY_CONTAINER if is_user else ft.Colors.SURFACE_CONTAINER,
             )
             self.chat_list.controls.append(message_widget)
-            self.page.update(self.chat_list)
+            try:
+                self.chat_list.update()
+            except Exception:
+                pass
+            try:
+                self.page.update()
+            except Exception:
+                logger.debug("page update failed: %s", traceback.format_exc())
         except Exception:
             logger.debug("append message failed: %s", traceback.format_exc())
             try:

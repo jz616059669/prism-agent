@@ -74,7 +74,14 @@ class ChatMixin:
                 bgcolor=ft.Colors.SURFACE_CONTAINER if not is_user else ft.Colors.PRIMARY_CONTAINER,
             )
             self.chat_list.controls.append(message_widget)
-            self.page.update(self.chat_list)
+            try:
+                self.chat_list.update()
+            except Exception:
+                pass
+            try:
+                self.page.update()
+            except Exception:
+                logger.debug("page update failed: %s", traceback.format_exc())
             try:
                 if hasattr(self.chat_list, "scroll_to"):
                     self.chat_list.scroll_to(delta=99999, duration=150)
