@@ -26,7 +26,7 @@ console = Console()
 
 
 @click.group()
-@click.version_option(version="1.0.1", prog_name="PRISM")
+@click.version_option(version="2.1.2", prog_name="PRISM")
 def cli():
     """
     PRISM Agent - 统一 AI Agent CLI
@@ -120,7 +120,7 @@ def chat():
         console.print(f"[red]配置错误：{e}[/red]")
         return
     console.print(Panel.fit(
-        "[bold cyan]PRISM Agent[/bold cyan] [dim]v1.0.1[/dim]\n"
+        "[bold cyan]PRISM Agent[/bold cyan] [dim]v2.1.2[/dim]\n"
         "整合 Hermes + Codex + OpenClaw 能力\n"
         "输入 /help 查看命令，/exit 退出",
         border_style="cyan"
@@ -196,7 +196,7 @@ def model():
 @cli.command()
 def version():
     """显示版本信息"""
-    console.print("PRISM Agent v1.0.1")
+    console.print("PRISM Agent v2.1.2")
     console.print("整合 Hermes + Codex + OpenClaw 能力")
 
 

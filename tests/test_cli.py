@@ -17,7 +17,7 @@ from click.testing import CliRunner
 from prism.cli import cli
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def runner():
     return CliRunner()
 
@@ -25,7 +25,7 @@ def runner():
 def test_cli_version(runner):
     result = runner.invoke(cli, ["version"])
     assert result.exit_code == 0
-    assert "1.0.1" in result.output
+    assert "2.1.2" in result.output
 
 
 def test_cli_doctor(runner):
