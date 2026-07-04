@@ -67,7 +67,7 @@ class ChatMixin:
                 bgcolor=ft.Colors.SURFACE_CONTAINER if not is_user else ft.Colors.PRIMARY_CONTAINER,
             )
             self.chat_list.controls.append(message_widget)
-            self.chat_list.update()
+            self.page.update(self.chat_list)
         except Exception:
             logger.debug("append message failed: %s", traceback.format_exc())
             try:
@@ -79,7 +79,7 @@ class ChatMixin:
         try:
             self.chat_list.controls.clear()
             self.chat_list.controls.append(self._chat_placeholder)
-            self.chat_list.update()
+            self.page.update(self.chat_list)
         except Exception:
             logger.debug("clear chat failed: %s", traceback.format_exc())
             logger.warning("clear chat failed", exc_info=True)
@@ -132,8 +132,7 @@ class ChatMixin:
                 except Exception as ex:
                     logger.debug("hide stop button failed: %s", ex)
                 try:
-                    if hasattr(self, "chat_list"):
-                        self.chat_list.scroll_to(delta=99999, duration=200)
+                    pass
                 except Exception:
                     pass
 
