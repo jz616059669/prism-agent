@@ -98,37 +98,49 @@ class ChatMixin:
         self.stop_btn.visible = True
         self.stop_btn.update()
         self._append("你", text)
-        try:
-            self._log_to_file("info", "stream_start", text=text, model=getattr(self.agent, "model", "unknown"))
-            result = self.agent.chat(
-                text,
-                on_chunk=lambda c: self._append("PRISM", c) if getattr(self, "_generating", False) else None,
-            )
-            self._log_to_file("info", "chat_result", result_type=type(result).__name__, result_preview=str(result)[:200])
-            if isinstance(result, dict):
-                if not result.get("success"):
-                    self._append("PRISM", f"Error: {result.get('error', 'Unknown error')}")
-                elif result.get("content"):
-                    self._append("PRISM", result["content"])
-                else:
-                    self._append("PRISM", " ")
-            elif isinstance(result, str):
-                if result:
-                    self._append("PRISM", result)
-                else:
-                    self._append("PRISM", " ")
-            else:
-                self._append("PRISM", f"Error: 未知返回类型 {type(result).__name__}")
-        except Exception as exc:
-            self._append("PRISM", f"Error: {exc}")
-            self._log_to_file("error", "send_exception", error=str(exc))
-        finally:
-            self._generating = False
+
+        def _run_chat():
             try:
-                self.stop_btn.visible = False
-                self.stop_btn.update()
-            except Exception as ex:
-                logger.debug("hide stop button failed: %s", ex)
+                self._log_to_file("info", "stream_start", text=text, model=getattr(self.agent, "model", "unknown"))
+                result = self.agent.chat(
+                    text,
+                    on_chunk=lambda c: self._append("PRISM", c) if getattr(self, "_generating", False) else None,
+                )
+                self._log_to_file("info", "chat_result", result_type=type(result).__name__, result_preview=str(result)[:200])
+                if isinstance(result, dict):
+                    if not result.get("success"):
+                        self._append("PRISM", f"Error: {result.get('error', 'Unknown error')}")
+                    elif result.get("content"):
+                        self._append("PRISM", result["content"])
+                    else:
+                        self._append("PRISM", " ")
+                elif isinstance(result, str):
+                    if result:
+                        self._append("PRISM", result)
+                    else:
+                        self._append("PRISM", " ")
+                else:
+                    self._append("PRISM", f"Error: 未知返回类型 {type(result).__name__}")
+            except Exception as exc:
+                self._append("PRISM", f"Error: {exc}")
+                self._log_to_file("error", "send_exception", error=str(exc))
+            finally:
+                self._generating = False
+                try:
+                    self.stop_btn.visible = False
+                    self.stop_btn.update()
+                except Exception as ex:
+                    logger.debug("hide stop button failed: %s", ex)
+                try:
+                    if hasattr(self, "chat_list"):
+                        self.chat_list.scroll_to(delta=99999, duration=200)
+                except Exception:
+                    pass
+
+        try:
+            self.page.run_task(_run_chat)
+        except Exception:
+            _run_chat()
 
     def _stop_send(self):
         self._generating = False
