@@ -37,7 +37,15 @@ class ChatMixin:
         if not rendered or not rendered.strip():
             rendered = text or " "
         return [
-            ft.Text(rendered, selectable=True, color=display_color),
+            ft.Markdown(
+                rendered,
+                selectable=True,
+                extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
+                code_theme="monokai",
+                auto_follow_links=False,
+                shrink_wrap=True,
+                fit_content=True,
+            ),
         ]
 
     def _append(self, role: str, text: str, retry: bool = False, retry_text: str = "", placeholder: bool = False):
