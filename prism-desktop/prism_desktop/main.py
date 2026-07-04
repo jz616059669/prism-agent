@@ -1086,7 +1086,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 bgcolor=ft.Colors.PRIMARY_CONTAINER if is_user else ft.Colors.SURFACE_CONTAINER,
             )
             self.chat_list.controls.append(message_widget)
-            self.chat_list.update()
+            self.page.update(self.chat_list)
             try:
                 if hasattr(self.chat_list, "scroll_to"):
                     self.chat_list.scroll_to(delta=99999, duration=150)
