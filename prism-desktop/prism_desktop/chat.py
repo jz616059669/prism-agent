@@ -171,7 +171,8 @@ class ChatMixin:
                     logger.debug("search message read failed: %s", ex)
             if query in text:
                 try:
-                    self.chat_list.scroll_to(delta=99999, duration=200)
+                    if hasattr(self.chat_list, "scroll_to"):
+                        self.chat_list.scroll_to(delta=99999, duration=200)
                 except Exception as ex:
                     logger.debug("search scroll failed: %s", ex)
                 return
