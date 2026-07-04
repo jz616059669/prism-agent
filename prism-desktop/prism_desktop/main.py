@@ -1083,6 +1083,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 ),
                 padding=ft.Padding(14, 10, 14, 10),
                 alignment=align,
+                bgcolor=ft.Colors.PRIMARY_CONTAINER if is_user else ft.Colors.SURFACE_CONTAINER,
             )
             self.chat_list.controls.append(message_widget)
             self.chat_list.update()
@@ -1104,6 +1105,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._settings["current_session"] = None
         self.chat_list.controls.clear()
         if hasattr(self, "_chat_placeholder") and self._chat_placeholder:
+            self._chat_placeholder.visible = True
             self.chat_list.controls.append(self._chat_placeholder)
         self.chat_list.update()
         self.input_field.value = ""
