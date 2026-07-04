@@ -1101,118 +1101,122 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._append_terminal("new session")
 
     def _save_session(self):
-        name = self._current_session_name or f"session_{int(time.time())}"
+        def _run():
+            try:
+                name = self._current_session_name or f"session_{int(time.time())}"
+                path = self.agent.save_session(name)
+                self._append_terminal(f"session saved: {path}")
+                self._set_status("会话已保存", ft.Colors.GREEN_400)
+                self._settings["current_session"] = name
+                self._refresh_sessions()
+            except Exception as e:
+                self._append_terminal(f"session save failed: {e}")
+                self._set_status("会话保存失败", ft.Colors.RED_400)
         try:
-            path = self.agent.save_session(name)
-            self._append_terminal(f"session saved: {path}")
-            self._set_status("会话已保存", ft.Colors.GREEN_400)
-            self._settings["current_session"] = name
-            self._refresh_sessions()
-        except Exception as e:
-            self._append_terminal(f"session save failed: {e}")
-            self._set_status("会话保存失败", ft.Colors.RED_400)
-
+            self.page.run_task(_run)
+        except Exception:
+            _run()
 
     def _refresh_sessions(self):
-        self.session_list.controls.clear()
-        try:
-            names = self.agent.list_sessions()
-        except Exception as exc:
-            self._log_error("list sessions", exc)
-            names = []
-        # Sort: pinned first, then alphabetical
-        pinned = self._settings.get("pinned_sessions", {}) or {}
-        names = sorted(names, key=lambda n: (not pinned.get(n, False), n))
-        if not names:
-            self.session_list.controls.append(self._session_empty_state)
-        else:
-            for name in names:
-                is_current = name == self._current_session_name
-                # Pin button
-                pin_btn = ft.IconButton(
-                    icon=ft.Icons.PUSH_PIN_ROUNDED if self._settings.get("pinned_sessions", {}).get(name) else ft.Icons.PUSH_PIN_OUTLINE_ROUNDED,
-                    tooltip="置顶" if self._settings.get("pinned_sessions", {}).get(name) else "取消置顶",
-                    icon_color=ft.Colors.ON_SURFACE_VARIANT,
-                    width=36,
-                    height=36,
-                )
-                pin_btn.on_click = lambda e, n=name: self._toggle_pin_session(n)
-
-                # Rename button
-                rename_btn = ft.IconButton(icon=ft.Icons.EDIT_OUTLINE, tooltip="重命名", icon_color=ft.Colors.ON_SURFACE_VARIANT, width=36, height=36)
-                rename_btn.on_click = lambda e, n=name: self._rename_session(n)
-
-                load_btn = ft.Button(
-                    name,
-                    expand=True,
-                    style=ft.ButtonStyle(
-                        bgcolor=ft.Colors.PRIMARY_CONTAINER if is_current else None,
-                        color=ft.Colors.ON_PRIMARY_CONTAINER if is_current else None,
-                        shape=ft.RoundedRectangleBorder(radius=8),
-                        padding=ft.Padding(22, 20, 22, 20),
-                    ),
-                )
-                load_btn.on_click = lambda e, n=name: self._load_session(n)
-                del_btn = ft.IconButton(icon=ft.Icons.DELETE_OUTLINE, tooltip="删除会话", icon_color=ft.Colors.ERROR, width=36, height=36)
-                del_btn.on_click = lambda e, n=name: self._delete_session(n)
-                export_btn = ft.IconButton(icon=ft.Icons.DOWNLOAD_OUTLINED, tooltip="导出 Markdown", icon_color=ft.Colors.ON_SURFACE_VARIANT, width=36, height=36)
-                export_btn.on_click = lambda e, n=name: self._export_session(n)
-                session_row = ft.Row([pin_btn, load_btn, rename_btn, export_btn, del_btn], spacing=6, tight=True)
-                session_row._session_name = name
-                self._session_all_items.append(session_row)
-                self.session_list.controls.append(session_row)
-        self.session_list.update()
-
-    def _filter_sessions(self, query: str):
-        query = (query or "").strip().lower()
-        for row in getattr(self, "_session_all_items", []):
-            name = getattr(row, "_session_name", "")
-            if not query or query in name.lower():
-                row.visible = True
+        def _run():
+            self.session_list.controls.clear()
+            try:
+                names = self.agent.list_sessions()
+            except Exception as exc:
+                self._log_error("list sessions", exc)
+                names = []
+            pinned = self._settings.get("pinned_sessions", {}) or {}
+            names = sorted(names, key=lambda n: (not pinned.get(n, False), n))
+            if not names:
+                self.session_list.controls.append(self._session_empty_state)
             else:
-                row.visible = False
-        self.session_list.update()
+                for name in names:
+                    is_current = name == self._current_session_name
+                    pin_btn = ft.IconButton(
+                        icon=ft.Icons.PUSH_PIN_ROUNDED if pinned.get(name) else ft.Icons.PUSH_PIN_OUTLINE_ROUNDED,
+                        tooltip="置顶" if pinned.get(name) else "取消置顶",
+                        icon_color=ft.Colors.ON_SURFACE_VARIANT,
+                        width=36,
+                        height=36,
+                    )
+                    pin_btn.on_click = lambda e, n=name: self._toggle_pin_session(n)
+                    rename_btn = ft.IconButton(icon=ft.Icons.EDIT_OUTLINE, tooltip="重命名", icon_color=ft.Colors.ON_SURFACE_VARIANT, width=36, height=36)
+                    rename_btn.on_click = lambda e, n=name: self._rename_session(n)
+                    load_btn = ft.Button(
+                        name,
+                        expand=True,
+                        style=ft.ButtonStyle(
+                            bgcolor=ft.Colors.PRIMARY_CONTAINER if is_current else None,
+                            color=ft.Colors.ON_PRIMARY_CONTAINER if is_current else None,
+                            shape=ft.RoundedRectangleBorder(radius=8),
+                            padding=ft.Padding(22, 20, 22, 20),
+                        ),
+                    )
+                    load_btn.on_click = lambda e, n=name: self._load_session(n)
+                    del_btn = ft.IconButton(icon=ft.Icons.DELETE_OUTLINE, tooltip="删除会话", icon_color=ft.Colors.ERROR, width=36, height=36)
+                    del_btn.on_click = lambda e, n=name: self._delete_session(n)
+                    export_btn = ft.IconButton(icon=ft.Icons.DOWNLOAD_OUTLINED, tooltip="导出 Markdown", icon_color=ft.Colors.ON_SURFACE_VARIANT, width=36, height=36)
+                    export_btn.on_click = lambda e, n=name: self._export_session(n)
+                    session_row = ft.Row([pin_btn, load_btn, rename_btn, export_btn, del_btn], spacing=6, tight=True)
+                    session_row._session_name = name
+                    self._session_all_items.append(session_row)
+                    self.session_list.controls.append(session_row)
+            self.session_list.update()
+        try:
+            self.page.run_task(_run)
+        except Exception:
+            _run()
 
     def _delete_session(self, name: str):
+        def _run():
+            try:
+                ok = self.agent.delete_session(name)
+                if ok and name == self._current_session_name:
+                    self._current_session_name = None
+                self._append_terminal(f"session delete {name}: {'ok' if ok else 'failed'}")
+                self._set_status("会话已删除" if ok else "删除失败", ft.Colors.GREEN_400 if ok else ft.Colors.RED_400)
+            except Exception as e:
+                self._append_terminal(f"session delete error: {e}")
+                self._set_status("删除异常", ft.Colors.RED_400)
+            self._refresh_sessions()
         try:
-            ok = self.agent.delete_session(name)
-            if ok and name == self._current_session_name:
-                self._current_session_name = None
-            self._append_terminal(f"session delete {name}: {'ok' if ok else 'failed'}")
-            self._set_status("会话已删除" if ok else "删除失败", ft.Colors.GREEN_400 if ok else ft.Colors.RED_400)
-        except Exception as e:
-            self._append_terminal(f"session delete error: {e}")
-            self._set_status("删除异常", ft.Colors.RED_400)
-        self._refresh_sessions()
+            self.page.run_task(_run)
+        except Exception:
+            _run()
 
     def _export_session(self, name: str):
+        def _run():
+            try:
+                session = self.agent.load_session(name)
+                messages = getattr(session, "messages", [])
+                lines = [f"# PRISM Session: {name}", ""]
+                for m in messages:
+                    role = m.role if hasattr(m, "role") else getattr(m, "role", "unknown")
+                    content = m.content if hasattr(m, "content") else getattr(m, "content", "")
+                    if role == "system":
+                        continue
+                    label = "你" if role == "user" else ("PRISM" if role == "assistant" else role)
+                    lines.append(f"## {label}")
+                    lines.append(content or "")
+                    lines.append("")
+                path = os.path.join(self.agent.session_dir, f"{name}.md")
+                with open(path, "w", encoding="utf-8") as f:
+                    f.write("\n".join(lines))
+                self._append_terminal(f"session exported: {path}")
+                self._set_status("会话已导出", ft.Colors.GREEN_400)
+            except Exception as exc:
+                self._log_error("session export", exc)
+                self._set_status("导出失败", ft.Colors.RED_400)
         try:
-            session = self.agent.load_session(name)
-            messages = getattr(session, "messages", [])
-            lines = [f"# PRISM Session: {name}", ""]
-            for m in messages:
-                role = m.role if hasattr(m, "role") else getattr(m, "role", "unknown")
-                content = m.content if hasattr(m, "content") else getattr(m, "content", "")
-                if role == "system":
-                    continue
-                label = "你" if role == "user" else ("PRISM" if role == "assistant" else role)
-                lines.append(f"## {label}")
-                lines.append(content or "")
-                lines.append("")
-            path = os.path.join(self.agent.session_dir, f"{name}.md")
-            with open(path, "w", encoding="utf-8") as f:
-                f.write("\n".join(lines))
-            self._append_terminal(f"session exported: {path}")
-            self._set_status("会话已导出", ft.Colors.GREEN_400)
-        except Exception as exc:
-            self._log_error("session export", exc)
-            self._set_status("导出失败", ft.Colors.RED_400)
+            self.page.run_task(_run)
+        except Exception:
+            _run()
 
     def _toggle_pin_session(self, name: str):
         pinned = self._settings.get("pinned_sessions", {}) or {}
         pinned[name] = not pinned.get(name, False)
         self._settings["pinned_sessions"] = pinned
-        self._save_settings()
+        self._save_settings_debounced()
         self._refresh_sessions()
 
     def _rename_session(self, name: str):
