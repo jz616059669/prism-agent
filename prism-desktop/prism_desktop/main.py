@@ -935,17 +935,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 ], spacing=4, tight=True),
                 ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT, opacity=0.3),
                 ft.Container(height=14),
-                ft.Stack(
-                    [
-                        self.chat_list,
-                        ft.Container(
-                            content=self._chat_placeholder,
-                            alignment=ft.Alignment(0, 0),
-                            expand=True,
-                        ),
-                    ],
-                    expand=True,
-                ),
+                self.chat_list,
                 ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT, opacity=0.3),
                 ft.Container(
                     content=ft.Row([self.input_field, self.send_btn, self.stop_btn], spacing=10, expand=True),
