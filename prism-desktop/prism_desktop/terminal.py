@@ -21,14 +21,25 @@ class TerminalMixin:
         self._append_terminal(f"$ {command}")
         self.terminal_input.value = ""
         self.terminal_input.update()
+
+        def _run():
+            try:
+                result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=30)
+                output = result.stdout or result.stderr or "(no output)"
+                self._append_terminal(output)
+                self._append_mcp(f"[terminal] {command[:80]}")
+            except Exception as e:
+                self._append_terminal(f"终端执行失败：{e}")
+            finally:
+                try:
+                    self._set_status("就绪")
+                except Exception:
+                    pass
+
         try:
-            result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=30)
-            output = result.stdout or result.stderr or '(no output)'
-            self._append_terminal(output)
-            self._append_mcp(f"[terminal] {command[:80]}")
-        except Exception as e:
-            self._append_terminal(f"终端执行失败：{e}")
-        self._set_status("就绪")
+            self.page.run_task(_run)
+        except Exception:
+            _run()
 
     def _append_terminal(self, text: str):
         if not hasattr(self, "_terminal_lines"):
