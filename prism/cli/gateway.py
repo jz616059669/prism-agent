@@ -12,7 +12,7 @@ import traceback
 @click.group()
 def gateway():
     """Gateway 控制命令"""
-    pass
+    click.echo("用法: prism gateway start/stop/status --help")
 
 
 @gateway.command()

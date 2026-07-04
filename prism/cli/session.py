@@ -10,7 +10,7 @@ import traceback
 @click.group()
 def session():
     """会话持久化命令"""
-    pass
+    click.echo("用法: prism session list/save/load/delete --help")
 
 
 @session.command()

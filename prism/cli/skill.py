@@ -13,7 +13,7 @@ console = Console()
 @click.group()
 def skill():
     """Skills 管理命令"""
-    pass
+    click.echo("用法: prism skill list/search/browse/install/remove --help")
 
 
 @skill.command()

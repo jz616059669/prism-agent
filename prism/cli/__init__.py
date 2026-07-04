@@ -25,15 +25,35 @@ from typing import Optional
 console = Console()
 
 
-@click.group()
+@click.group(invoke_without_command=True)
 @click.version_option(version="2.1.2", prog_name="PRISM")
-def cli():
+@click.pass_context
+def cli(ctx):
     """
     PRISM Agent - 统一 AI Agent CLI
 
     整合 Hermes/Codex/OpenClaw 优势的新一代 AI Agent
     """
-    pass
+    if ctx.invoked_subcommand is None:
+        from rich.panel import Panel
+        from prism.config import config as prism_cfg
+        try:
+            model = prism_cfg.get('model.default', 'unknown')
+            provider = prism_cfg.get('model.provider', 'unknown')
+            console.print(Panel.fit(
+                f"[bold cyan]PRISM Agent[/bold cyan] [dim]v2.1.2[/dim]\n"
+                f"整合 Hermes + Codex + OpenClaw 能力\n"
+                f"当前模型: [green]{model}[/green] / [green]{provider}[/green]\n"
+                "输入 [cyan]prism chat[/cyan] 进入交互对话，或 [cyan]prism --help[/cyan] 查看命令",
+                border_style="cyan"
+            ))
+        except Exception:
+            console.print(Panel.fit(
+                "[bold cyan]PRISM Agent[/bold cyan] [dim]v2.1.2[/dim]\n"
+                "整合 Hermes + Codex + OpenClaw 能力\n"
+                "输入 [cyan]prism chat[/cyan] 进入交互对话，或 [cyan]prism --help[/cyan] 查看命令",
+                border_style="cyan"
+            ))
 
 
 @cli.command()

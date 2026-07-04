@@ -10,7 +10,7 @@ import traceback
 @click.group()
 def workspace():
     """工作区命令"""
-    pass
+    click.echo("用法: prism workspace create/list/switch --help")
 
 
 @workspace.command()
@@ -63,7 +63,7 @@ def session_search(query: str):
 @click.group()
 def acp():
     """ACP 协议命令"""
-    pass
+    click.echo("用法: prism acp start/send --help")
 
 
 @acp.command()
