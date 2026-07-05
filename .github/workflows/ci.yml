@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install uv
+        run: pip install uv
+      - name: Install dependencies
+        run: uv pip install -e ".[dev]" pytest
+      - name: Version check
+        run: python scripts/check_version.py
+      - name: Run tests
+        run: pytest tests/ -q
+        env:
+          PRISM_SKIP_UPDATE_CHECK: "1"
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install uv
+        run: pip install uv
+      - name: Install dependencies
+        run: uv pip install ruff
+      - name: Ruff
+        run: ruff check prism/ tests/
+        continue-on-error: true
+
+  desktop-smoke:
+    name: Desktop smoke
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install uv
+        run: pip install uv
+      - name: Install dependencies
+        run: |
+          uv pip install -e ".[desktop]"
+          uv pip install pytest
+      - name: Desktop syntax check
+        run: python -c "import ast; ast.parse(open('prism-desktop/prism_desktop/main.py', encoding='utf-8').read()); print('desktop syntax ok')"

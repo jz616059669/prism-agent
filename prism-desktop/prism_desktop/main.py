@@ -309,7 +309,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
     def _validate_and_create_agent(self) -> bool:
         self.agent = None
         if not self._validate_config():
-            return False
+            raise RuntimeError("configuration validation failed")
         try:
             self.agent = create_agent()
             return True
@@ -317,7 +317,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self.agent = None
             self._log_error("agent init", exc)
             self._set_status(f"初始化失败：{exc}", ft.Colors.RED_400)
-            return False
+            raise
 
     def _maybe_show_setup_wizard(self):
         try:

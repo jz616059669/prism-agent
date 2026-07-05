@@ -105,3 +105,55 @@ def test_startup_create_agent_failure_sets_agent_none():
         page.session_id = "test-session"
         d = PrismDesktop(page)
         assert d.agent is None
+
+
+def test_init_fallback_shows_retry_and_log(monkeypatch):
+    """Init failure should surface fallback UI with retry/log actions."""
+    from prism_desktop.main import PrismDesktop
+
+    with patch.object(PrismDesktop, "_set_status", MagicMock()), \
+         patch.object(PrismDesktop, "_append_terminal", MagicMock()), \
+         patch("prism_desktop.main.create_agent", side_effect=RuntimeError("boom")), \
+         patch.object(PrismDesktop, "_show_init_fallback") as mock_fallback, \
+         patch.object(PrismDesktop, "_build_ui", MagicMock()), \
+         patch.object(PrismDesktop, "_bind_context_menu", MagicMock()), \
+         patch.object(PrismDesktop, "_bind_tray", MagicMock()), \
+         patch.object(PrismDesktop, "_maybe_show_setup_wizard", MagicMock()), \
+         patch.object(PrismDesktop, "_load_settings", return_value={}), \
+         patch.object(PrismDesktop, "_start_update_check", MagicMock()):
+        page = MagicMock(spec=ft.Page)
+        page.title = "PRISM Agent"
+        page.theme_mode = ft.ThemeMode.DARK
+        page.padding = 14
+        page.window_width = 1320
+        page.window_height = 800
+        page.window_top = 100
+        page.window_left = 100
+        page.session_id = "test-session"
+        d = PrismDesktop(page)
+        assert d.agent is None
+        mock_fallback.assert_called_once()
+
+
+def test_retry_init_restores_ui(monkeypatch):
+    """Retry init should rebuild UI instead of showing fallback."""
+    from prism_desktop.main import PrismDesktop
+
+    with patch.object(PrismDesktop, "_set_status", MagicMock()) as status_mock, \
+         patch.object(PrismDesktop, "_append_terminal", MagicMock()), \
+         patch.object(PrismDesktop, "_show_init_fallback") as mock_fallback, \
+         patch.object(PrismDesktop, "_build_ui", MagicMock()) as build_mock, \
+         patch.object(PrismDesktop, "_bind_context_menu", MagicMock()), \
+         patch.object(PrismDesktop, "_bind_tray", MagicMock()), \
+         patch.object(PrismDesktop, "_maybe_show_setup_wizard", MagicMock()), \
+         patch.object(PrismDesktop, "_load_settings", return_value={}), \
+         patch.object(PrismDesktop, "_start_update_check", MagicMock()), \
+         patch.object(PrismDesktop, "_save_settings", MagicMock()), \
+         patch.object(PrismDesktop, "_apply_settings", MagicMock()):
+        d = PrismDesktop.__new__(PrismDesktop)
+        d.page = MagicMock(spec=ft.Page)
+        d._settings = {}
+        d._retry_init()
+        build_mock.assert_called_once()
+        mock_fallback.assert_not_called()
+        status_mock.assert_called_once()

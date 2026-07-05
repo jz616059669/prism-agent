@@ -331,3 +331,29 @@ def test_adapter_lifecycle_sync(monkeypatch):
     assert feishu.running is False
     assert feishu.handler is None
 
+
+def test_gateway_health_outputs_platform_statuses(monkeypatch):
+    from click.testing import CliRunner
+    from prism.cli.gateway import gateway
+    from prism.gateway import Gateway
+    from prism.gateway.telegram import TelegramAdapter, TelegramConfig
+    from prism.gateway.discord import DiscordAdapter, DiscordConfig
+
+    import prism.gateway.telegram as telegram_mod
+    import prism.gateway.discord as discord_mod
+
+    telegram_mod.requests.get = lambda url, **kwargs: FakeResp({"ok": True, "result": {"username": "bot"}})
+    discord_mod.requests.get = lambda url, **kwargs: FakeResp({"username": "bot"})
+
+    gw = Gateway()
+    gw.register("telegram", TelegramAdapter(TelegramConfig(bot_token="t")))
+    gw.register("discord", DiscordAdapter(DiscordConfig(bot_token="t")))
+
+    monkeypatch.setattr("prism.gateway.gateway", gw, raising=False)
+
+    runner = CliRunner()
+    result = runner.invoke(gateway, ["health"])
+    assert result.exit_code == 0
+    assert "telegram" in result.output
+    assert "discord" in result.output
+

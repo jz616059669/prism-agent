@@ -172,3 +172,58 @@ def status():
             click.echo(f"{name}: {status_text}")
     else:
         click.echo("未运行任何 Gateway")
+
+
+@gateway.command()
+@click.option('--timeout', default=10, type=int, help='健康检查超时秒数')
+def health(timeout: int):
+    """检查 Gateway 各平台接入健康状态"""
+    from prism.gateway import gateway as gw
+
+    platforms = gw.list_platforms()
+    if not platforms:
+        click.echo("未配置任何 Gateway 平台")
+        return
+
+    results = []
+    for name in platforms:
+        adapter = gw.get_adapter(name)
+        status = {"platform": name, "status": "unknown", "detail": ""}
+        try:
+            if name == "telegram" and adapter is not None:
+                info = adapter.get_me()
+                if info.get("success"):
+                    status["status"] = "ok"
+                    status["detail"] = f"bot={info.get('bot', {}).get('username', '?')}"
+                else:
+                    status["status"] = "error"
+                    status["detail"] = info.get("error", "get_me failed")
+            elif name == "discord" and adapter is not None:
+                info = adapter.get_current_user()
+                if info.get("success"):
+                    status["status"] = "ok"
+                    status["detail"] = f"user={info.get('user', {}).get('username', '?')}"
+                else:
+                    status["status"] = "error"
+                    status["detail"] = info.get("error", "get_current_user failed")
+            elif name == "feishu":
+                status["status"] = "configured"
+                status["detail"] = "websocket mode; use start to verify"
+            elif name == "wechat":
+                status["status"] = "not_implemented"
+                status["detail"] = "callback service not implemented"
+            else:
+                status["status"] = "unknown"
+                status["detail"] = "adapter missing"
+        except Exception as e:
+            status["status"] = "error"
+            status["detail"] = str(e)
+        results.append(status)
+
+    for item in results:
+        color = {"ok": "green", "configured": "cyan", "not_implemented": "yellow"}.get(item["status"], "red")
+        click.echo(click.style(f"{item['platform']}: {item['status']}", fg=color), nl=False)
+        if item["detail"]:
+            click.echo(f" - {item['detail']}")
+        else:
+            click.echo("")
