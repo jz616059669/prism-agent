@@ -60,6 +60,7 @@ def test_cli_tools(runner):
 def test_cli_ask(runner, monkeypatch):
     fake_agent = type("FakeAgent", (), {"chat": lambda self, msg: "fake reply"})()
     monkeypatch.setattr("prism.cli.create_agent", lambda: fake_agent)
+    monkeypatch.setattr("prism.cli.prism_config.validate", lambda: None)
     result = runner.invoke(cli, ["ask", "hello"])
     assert result.exit_code == 0
     assert "hello" in result.output or "fake reply" in result.output or "PRISM" in result.output
@@ -68,8 +69,8 @@ def test_cli_ask(runner, monkeypatch):
 def test_cli_chat_smoke(runner, monkeypatch):
     fake_agent = type("FakeAgent", (), {"chat": lambda self, msg: "fake reply", "clear_history": lambda self: None})()
     monkeypatch.setattr("prism.cli.create_agent", lambda: fake_agent)
-    inputs = iter(["/exit"])
-    monkeypatch.setattr("prism.cli.Prompt.ask", lambda *args, **kwargs: next(inputs))
+    monkeypatch.setattr("prism.cli.Prompt.ask", lambda *args, **kwargs: "/exit")
+    monkeypatch.setattr("prism.cli.prism_config.validate", lambda: None)
     result = runner.invoke(cli, ["chat"])
     assert result.exit_code == 0
     assert "PRISM" in result.output or "再见" in result.output or "配置" in result.output
