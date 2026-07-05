@@ -155,7 +155,7 @@ class Config:
         if missing:
             raise ConfigError(
                 '配置缺失，请先设置：' + ', '.join(missing) +
-                '。可用命令：prism config set <key> <value>，或编辑 ' + str(self.config_file)
+                '。可用命令：prism config set <key> <value>，或编辑 ' + str(getattr(self, 'config_file', 'config.yaml'))
             )
 
     def _resolve_sensitive(self, key: str, value: str) -> str:
