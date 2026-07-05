@@ -417,7 +417,10 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                         if hasattr(self, "page") and self.page is not None:
                             def _ui_show():
                                 try:
-                                    self.page.window_show()
+                                    if hasattr(self.page, "window_show"):
+                                        self.page.window_show()
+                                    else:
+                                        self.page.visible = True
                                     if hasattr(self, "input_field") and self.input_field is not None:
                                         try:
                                             self.input_field.focus()
@@ -591,8 +594,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         try:
             if hasattr(self.page, "window_hide"):
                 self.page.window_hide()
-            elif hasattr(self.page, "window_minimized"):
-                self.page.window_minimized = True
+            else:
+                self.page.visible = False
             self._append_terminal("minimized to tray")
         except Exception:
             logger.debug('desktop exception: %s', traceback.format_exc())
