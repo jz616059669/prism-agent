@@ -5,6 +5,7 @@ PRISM Agent - MCP (Model Context Protocol) 支持
 """
 
 import json
+import os
 import subprocess
 import threading
 import time
@@ -367,7 +368,14 @@ class MCPClient:
                 if process.stdin:
                     process.stdin.close()
                 process.terminate()
-                process.wait(timeout=5)
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    try:
+                        process.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        pass
             except Exception:
                 logger.debug("mcp process cleanup failed: %s", traceback.format_exc())
         self.processes.clear()
@@ -380,6 +388,32 @@ class MCPClient:
                 logger.debug("mcp http client cleanup failed: %s", traceback.format_exc())
         self.http_clients.clear()
         self.tools.clear()
+
+    def get_server_status(self, server_name: Optional[str] = None) -> Dict[str, Any]:
+        """获取服务器连接状态"""
+        result = {}
+        names = [server_name] if server_name else list(self.servers.keys())
+        for name in names:
+            server = self.servers.get(name)
+            if not server:
+                continue
+            status = {
+                "transport": server.transport,
+                "enabled": server.enabled,
+                "connected": False,
+                "tool_count": 0,
+            }
+            if server.transport == "stdio":
+                process = self.processes.get(name)
+                status["connected"] = bool(process and process.poll() is None)
+                status["initialized"] = bool(self._stdio_initialized.get(name))
+                status["tool_count"] = len(self.tools.get(name, []))
+            elif server.transport in ("http", "sse"):
+                client = self.http_clients.get(name)
+                status["connected"] = client is not None
+                status["tool_count"] = len(self.tools.get(name, []))
+            result[name] = status
+        return result
 
 
 # 全局 MCP 客户端
