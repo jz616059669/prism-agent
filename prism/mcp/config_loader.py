@@ -50,6 +50,7 @@ def load_mcp_config(config_path: Optional[str] = None) -> List[Any]:
                 command=cfg.get("command"),
                 url=cfg.get("url"),
                 args=cfg.get("args", []),
+                env=cfg.get("env"),
                 enabled=cfg.get("enabled", True),
             )
             servers.append(server)

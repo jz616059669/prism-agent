@@ -32,10 +32,13 @@ class MCPServer:
     url: Optional[str] = None  # http/sse 模式：服务器地址
     args: List[str] = None  # stdio 模式：参数
     enabled: bool = True
+    env: Optional[Dict[str, str]] = None  # stdio 模式：环境变量
 
     def __post_init__(self):
         if self.args is None:
             self.args = []
+        if self.env is None:
+            self.env = {}
 
 
 class MCPClient:
@@ -64,12 +67,17 @@ class MCPClient:
         """连接到 MCP 服务器"""
         if server.transport == "stdio":
             self._connect_stdio(server)
-        elif server.transport in ["http", "sse"]:
+        elif server.transport == "http":
             self._connect_http(server)
+        elif server.transport == "sse":
+            self._connect_sse(server)
 
     def _connect_stdio(self, server: MCPServer):
         """通过 stdio 连接并完成 MCP 握手"""
         try:
+            env = os.environ.copy()
+            if server.env:
+                env.update(server.env)
             process = subprocess.Popen(
                 [server.command] + server.args,
                 stdin=subprocess.PIPE,
@@ -77,6 +85,7 @@ class MCPClient:
                 stderr=subprocess.PIPE,
                 text=True,
                 bufsize=1,
+                env=env,
             )
             self.processes[server.name] = process
             self._stdio_initialized[server.name] = False
@@ -161,6 +170,23 @@ class MCPClient:
         else:
             print(f"[MCP] HTTP 服务器 {server.name} 初始化失败: {init.get('error')}")
 
+    def _connect_sse(self, server: MCPServer):
+        """通过 SSE 连接（流式）"""
+        if not _HTTP_CLIENT_AVAILABLE or not server.url:
+            print(f"[MCP] SSE 服务器 {server.name} 不可用: {server.url}")
+            return
+        try:
+            from prism.mcp.sse_client import MCPSSEClient
+            client = MCPSSEClient(server.url)
+            init = client.initialize()
+            if init.get('success'):
+                self.http_clients[server.name] = client
+                print(f"[MCP] 已连接 SSE 服务器: {server.name}")
+            else:
+                print(f"[MCP] SSE 服务器 {server.name} 初始化失败: {init.get('error')}")
+        except Exception as e:
+            print(f"[MCP] SSE 连接失败 {server.name}: {e}")
+
     def list_tools(self, server_name: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         列出可用工具
@@ -184,8 +210,10 @@ class MCPClient:
         discovered = []
         if server.transport == "stdio":
             discovered = self._list_stdio_tools(server_name)
-        elif server.transport in ["http", "sse"]:
+        elif server.transport == "http":
             discovered = self._list_http_tools(server_name)
+        elif server.transport == "sse":
+            discovered = self._list_sse_tools(server_name)
         self.tools[server_name] = discovered
 
     def call_tool(self, server_name: str, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
@@ -203,8 +231,10 @@ class MCPClient:
 
         if server.transport == "stdio":
             return self._call_stdio_tool(server, tool_name, arguments)
-        elif server.transport in ["http", "sse"]:
+        elif server.transport == "http":
             return self._call_http_tool(server_name, tool_name, arguments)
+        elif server.transport == "sse":
+            return self._call_sse_tool(server_name, tool_name, arguments)
         else:
             return {'success': False, 'error': f'Unsupported transport: {server.transport}'}
 
@@ -289,6 +319,25 @@ class MCPClient:
         if result.get("success"):
             return result.get("tools", [])
         return []
+
+    def _list_sse_tools(self, server_name: str) -> List[Dict[str, Any]]:
+        client = self.http_clients.get(server_name)
+        if not client:
+            return []
+        try:
+            return client.list_tools().get("tools", [])
+        except Exception:
+            logger.debug("list sse tools failed: %s", traceback.format_exc())
+            return []
+
+    def _call_sse_tool(self, server_name: str, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+        client = self.http_clients.get(server_name)
+        if not client:
+            return {'success': False, 'error': f'SSE client not connected: {server_name}'}
+        try:
+            return client.call_tool(tool_name, arguments)
+        except Exception as exc:
+            return {'success': False, 'error': str(exc)}
 
     def close(self):
         """关闭所有连接"""
