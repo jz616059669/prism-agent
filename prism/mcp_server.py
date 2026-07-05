@@ -151,11 +151,8 @@ class PrismMCPServer:
         if not message:
             return {"error": "message is required"}
         
-        model = args.get("model")
-        if model:
-            from prism.providers.manager import provider_pool
-            provider_pool.set_default_model(model)
-        
+        # Note: provider_pool does not support changing default model at runtime.
+        # If a model override is needed, it should be configured via config or provider selection.
         response = agent.chat(message)
         return {"content": response, "role": "assistant"}
 

@@ -224,6 +224,40 @@ class TerminalTool(Tool):
             return {'success': False, 'error': str(e)}
 
 
+class WebSearchTool(Tool):
+    """网页搜索工具，透传 skills.web_search"""
+    
+    name = "web_search"
+    description = "搜索网页，返回结果摘要"
+    
+    def execute(self, query: str, max_results: int = 5) -> Dict[str, Any]:
+        try:
+            from prism.skills import skills
+            skill = skills.get("web_search")
+            if skill and skill.handler:
+                return skill.handler(query=query, max_results=max_results)
+        except Exception as exc:
+            logger.debug("web_search skill invoke failed: %s", exc)
+        return {"success": False, "error": "Web search is not configured"}
+
+
+class CodeExecutionTool(Tool):
+    """代码执行工具，透传 skills.code_execution"""
+    
+    name = "code_execution"
+    description = "执行 Python 代码，返回结果"
+    
+    def execute(self, code: str, timeout: int = 30, **kwargs) -> Dict[str, Any]:
+        try:
+            from prism.skills import skills
+            skill = skills.get("code_execution")
+            if skill and skill.handler:
+                return skill.handler(code=code, timeout=timeout)
+        except Exception as exc:
+            logger.debug("code_execution skill invoke failed: %s", exc)
+        return {"success": False, "error": "Code execution is not configured"}
+
+
 # 浏览器工具（延迟注册，避免强依赖）
 def _register_browser_tools(registry):
     """注册浏览器相关工具"""
@@ -345,3 +379,7 @@ class ToolRegistry:
 registry = ToolRegistry()
 _register_browser_tools(registry)
 _register_code_tools(registry)
+if "web_search" not in registry._tools:
+    registry.register(WebSearchTool())
+if "code_execution" not in registry._tools:
+    registry.register(CodeExecutionTool())
