@@ -9,6 +9,13 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 
+from prism.mcp.protocol import (
+    MCP_PROTOCOL_VERSION,
+    make_notification,
+    make_request,
+    make_response,
+)
+
 logger = logging.getLogger("prism.mcp_server")
 
 
@@ -126,6 +133,35 @@ class PrismMCPServer:
 
         return tools
 
+    def initialize(self) -> Dict[str, Any]:
+        """返回 MCP 初始化响应"""
+        return {
+            "protocolVersion": MCP_PROTOCOL_VERSION,
+            "capabilities": {"tools": {}},
+            "serverInfo": {"name": "prism", "version": "2.1.2"},
+        }
+
+    def handle_request(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """处理 JSON-RPC 请求"""
+        req_id = payload.get("id")
+        method = payload.get("method")
+        params = payload.get("params", {})
+
+        if method == "initialize":
+            result = self.initialize()
+            return make_response(req_id, result=result)
+        elif method == "initialized":
+            return make_response(req_id, result={})
+        elif method == "tools/list":
+            return make_response(req_id, result={"tools": self.list_tools()})
+        elif method == "tools/call":
+            name = params.get("name")
+            arguments = params.get("arguments", {})
+            result = self.call_tool(name, arguments)
+            return make_response(req_id, result=result)
+        else:
+            return make_response(req_id, error={"code": -32601, "message": f"Method not found: {method}"})
+
     def list_tools(self) -> List[Dict[str, Any]]:
         """列出所有可用工具"""
         return list(self._tools.values())
@@ -227,6 +263,11 @@ class PrismMCPServer:
         if isinstance(result, dict):
             return result
         return {"content": str(result)}
+
+    def handle_notification(self, method: str, params: Dict[str, Any]) -> None:
+        """处理 JSON-RPC 通知，无返回值"""
+        # 当前未实现通知副作用，保持静默
+        logger.debug("mcp notification ignored: %s", method)
 
 
 # 全局 MCP Server 实例
