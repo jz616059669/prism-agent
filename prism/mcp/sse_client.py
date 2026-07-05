@@ -42,7 +42,7 @@ class MCPSSEClient:
             logger.debug("sse init failed: %s", traceback.format_exc())
             return {'success': False, 'error': str(exc)}
 
-    def list_tools(self) -> Dict[str, Any]:
+    def list_tools(self, timeout: int = 30) -> Dict[str, Any]:
         init = self.initialize()
         if not init.get('success'):
             return init
@@ -59,7 +59,7 @@ class MCPSSEClient:
                 headers={'Content-Type': 'application/json'},
                 method='POST',
             )
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
                 data = json.loads(resp.read().decode('utf-8'))
             if 'error' in data:
                 return {'success': False, 'error': data['error'].get('message', 'Unknown error')}
@@ -68,7 +68,7 @@ class MCPSSEClient:
         except Exception as exc:
             return {'success': False, 'error': str(exc)}
 
-    def call_tool(self, name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    def call_tool(self, name: str, arguments: Dict[str, Any], timeout: int = 30) -> Dict[str, Any]:
         init = self.initialize()
         if not init.get('success'):
             return init
@@ -88,7 +88,7 @@ class MCPSSEClient:
                 headers={'Content-Type': 'application/json'},
                 method='POST',
             )
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
                 data = json.loads(resp.read().decode('utf-8'))
             if 'error' in data:
                 return {'success': False, 'error': data['error'].get('message', 'Unknown error')}

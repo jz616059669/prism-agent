@@ -69,20 +69,20 @@ class MCPHTTPClient:
         except Exception as e:
             return {'success': False, 'error': str(e)}
     
-    def list_tools(self) -> Dict[str, Any]:
+    def list_tools(self, timeout: int = 30) -> Dict[str, Any]:
         init = self.initialize()
         if not init.get('success'):
             return init
-        
+
         payload = {
             'jsonrpc': '2.0',
             'id': 2,
             'method': 'tools/list',
             'params': {},
         }
-        
+
         try:
-            data = self._request('POST', '/mcp', payload, timeout=30)
+            data = self._request('POST', '/mcp', payload, timeout=timeout)
             if 'error' in data:
                 return {'success': False, 'error': data['error'].get('message', 'Unknown error')}
             if 'result' in data:
@@ -91,12 +91,12 @@ class MCPHTTPClient:
             return {'success': False, 'error': 'Unknown error'}
         except Exception as e:
             return {'success': False, 'error': str(e)}
-    
-    def call_tool(self, name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+
+    def call_tool(self, name: str, arguments: Dict[str, Any], timeout: int = 30) -> Dict[str, Any]:
         init = self.initialize()
         if not init.get('success'):
             return init
-        
+
         payload = {
             'jsonrpc': '2.0',
             'id': 3,
@@ -106,9 +106,9 @@ class MCPHTTPClient:
                 'arguments': arguments,
             },
         }
-        
+
         try:
-            data = self._request('POST', '/mcp', payload, timeout=30)
+            data = self._request('POST', '/mcp', payload, timeout=timeout)
             if 'error' in data:
                 return {'success': False, 'error': data['error'].get('message', 'Unknown error')}
             if 'result' in data:
