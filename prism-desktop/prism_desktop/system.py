@@ -158,3 +158,19 @@ class SystemMixin:
             self._append_terminal("open github releases")
         except Exception as ex:
             self._append_terminal(f"open github releases failed: {ex}")
+
+    def _open_init_error_log(self) -> None:
+        try:
+            path = Path.home() / '.prism' / 'init-error.log'
+            if not path.exists():
+                self._append_terminal("init error log not found")
+                return
+            if sys.platform == "win32":
+                os.startfile(str(path))
+            elif sys.platform == "darwin":
+                subprocess.run(["open", str(path)], check=False)
+            else:
+                subprocess.run(["xdg-open", str(path)], check=False)
+            self._append_terminal(f"open init error log: {path}")
+        except Exception as ex:
+            self._append_terminal(f"open init error log failed: {ex}")

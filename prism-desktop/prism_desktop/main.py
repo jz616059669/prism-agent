@@ -82,6 +82,11 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 self._set_status(f"初始化失败：{exc}", ft.Colors.RED_400)
             except Exception:
                 logger.debug('desktop exception: %s', traceback.format_exc())
+            # Fallback UI 兜底：初始化失败时展示可交互错误页，而非仅日志/print
+            try:
+                self._show_init_fallback(exc)
+            except Exception:
+                logger.debug('desktop fallback ui failed: %s', traceback.format_exc())
         self._mcp_logs = []
         self._skill_list_cache = []
         self._mcp_server_status = {}
@@ -156,6 +161,68 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self._append_terminal(f"[ERROR] {context}: {exc}")
         except Exception:
             logger.debug('desktop exception: %s', traceback.format_exc())
+
+    def _show_init_fallback(self, exc: BaseException) -> None:
+        """初始化失败时展示可交互 fallback UI。"""
+        try:
+            import traceback as tb_mod
+            tb_text = tb_mod.format_exception(type(exc), exc, exc.__traceback__)
+            tb_text = "".join(tb_text)
+            try:
+                INIT_ERROR_LOG.write_text(tb_text, encoding="utf-8")
+            except Exception:
+                logger.debug('desktop exception: %s', traceback.format_exc())
+            retry_btn = ft.ElevatedButton(
+                "重试初始化",
+                style=ft.ButtonStyle(bgcolor=ft.Colors.PRIMARY, color=ft.Colors.ON_PRIMARY, shape=ft.RoundedRectangleBorder(radius=12)),
+                on_click=lambda e: self._retry_init(),
+            )
+            open_log_btn = ft.TextButton(
+                "打开错误日志",
+                on_click=lambda e: self._open_init_error_log(),
+            )
+            fallback = ft.Column(
+                [
+                    ft.Icon(ft.Icons.ERROR_ROUNDED, size=36, color=ft.Colors.ERROR),
+                    ft.Text("初始化失败", size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.ERROR),
+                    ft.Text(str(exc), size=12, color=ft.Colors.ON_SURFACE_VARIANT),
+                    ft.Row([retry_btn, open_log_btn], spacing=10, alignment=ft.MainAxisAlignment.CENTER),
+                ],
+                spacing=10,
+                alignment=ft.MainAxisAlignment.CENTER,
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            )
+            try:
+                self.page.clean()
+            except Exception:
+                logger.debug('desktop exception: %s', traceback.format_exc())
+            try:
+                self.page.add(fallback)
+                self.page.update()
+            except Exception:
+                logger.debug('desktop exception: %s', traceback.format_exc())
+        except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
+
+    def _retry_init(self) -> None:
+        """点击重试时重新初始化 Agent。"""
+        try:
+            self.page.clean()
+        except Exception:
+            logger.debug('desktop exception: %s', traceback.format_exc())
+        try:
+            self._build_ui()
+            self._bind_context_menu()
+            self._bind_tray()
+            self._maybe_show_setup_wizard()
+            self._settings = self._load_settings()
+            if hasattr(self.page, "run_task"):
+                self._start_update_check()
+            self._set_status("已重试", ft.Colors.GREEN_400)
+            self.page.update()
+        except Exception as exc:
+            self._log_error("agent init retry", exc)
+            self._show_init_fallback(exc)
 
     def _structured_log(self, level: str, event: str, **fields) -> None:
         try:
