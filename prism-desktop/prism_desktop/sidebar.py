@@ -120,36 +120,6 @@ class SidebarMixin:
         self.mcp_refresh_btn.on_click = lambda e: self._refresh_mcp()
         self.mcp_server_list = ft.Column(spacing=6, tight=True)
 
-        # Skills
-        self.skill_refresh_btn = ft.Button(
-            _("refresh_skills"),
-            icon=ft.Icons.REFRESH_ROUNDED,
-            width=280,
-            style=ft.ButtonStyle(
-                shape=ft.RoundedRectangleBorder(radius=12),
-                padding=ft.Padding(18, 14, 18, 14),
-                bgcolor=ft.Colors.SURFACE_CONTAINER,
-                color=ft.Colors.ON_SURFACE,
-            ),
-            animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT),
-        )
-        self.skill_refresh_btn.on_click = lambda e: self._refresh_skills()
-        self.skill_install_field = ft.TextField(hint_text=_("install_skill_placeholder"), width=280, border_radius=14)
-        self.skill_install_btn = ft.Button(
-            _("install_skill"),
-            icon=ft.Icons.DOWNLOAD_ROUNDED,
-            width=280,
-            style=ft.ButtonStyle(
-                shape=ft.RoundedRectangleBorder(radius=12),
-                padding=ft.Padding(18, 14, 18, 14),
-                bgcolor=ft.Colors.SURFACE_CONTAINER,
-                color=ft.Colors.ON_SURFACE,
-            ),
-            animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT),
-        )
-        self.skill_install_btn.on_click = lambda e: self._install_skill_from_ui()
-        self.skill_list = ft.Column(spacing=6, tight=True)
-
         # 会话
         self.session_new_btn = ft.IconButton(
             icon=ft.Icons.ADD_ROUNDED,
