@@ -571,8 +571,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._clock_text = ft.Text(datetime.now().strftime("%H:%M:%S"), size=11, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_500, opacity=0.95)
         self.page.appbar = self._build_appbar()
         self._chat_container = ft.Container(self._build_chat(), expand=True, padding=ft.Padding(0, 4, 0, 4))
-        self._right_container = ft.Container(self._build_right_panel(), width=320, border=ft.Border(left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)))
         sidebar = self._build_sidebar()
+        self._right_container = ft.Container(self._build_right_panel(), width=320, border=ft.Border(left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)))
         if str(self._settings.get("sidebar_collapsed", "false")).lower() == "true":
             sidebar.visible = False
             sidebar.width = 0
@@ -1143,6 +1143,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             spacing=0,
         )
         self.right_tabs = ft.Tabs(
+            length=3,
             content=self._right_tab_container,
             selected_index=0,
             on_change=self._on_right_tab_changed,
