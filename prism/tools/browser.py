@@ -298,7 +298,7 @@ class BrowserController:
             
             return {'success': True, 'message': 'Browser disconnected'}
         except Exception as e:
-            logger.debug("scroll failed: %s", traceback.format_exc())
+            logger.debug("disconnect failed: %s", traceback.format_exc())
             return {'success': False, 'error': str(e)}
     
     def _check_connection(self) -> bool:
