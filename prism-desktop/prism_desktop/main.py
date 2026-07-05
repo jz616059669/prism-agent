@@ -73,20 +73,17 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._perf_last_ts = None
         self._perf_mem_mb = 0.0
         self._terminal_lines = ["PRISM Desktop 已启动"]
+        self._init_error: Optional[BaseException] = None
         try:
             self._validate_and_create_agent()
         except Exception as exc:
             self.agent = None
+            self._init_error = exc
             self._log_error("agent init fallback", exc)
             try:
                 self._set_status(f"初始化失败：{exc}", ft.Colors.RED_400)
             except Exception:
                 logger.debug('desktop exception: %s', traceback.format_exc())
-            # Fallback UI 兜底：初始化失败时展示可交互错误页，而非仅日志/print
-            try:
-                self._show_init_fallback(exc)
-            except Exception:
-                logger.debug('desktop fallback ui failed: %s', traceback.format_exc())
         self._mcp_logs = []
         self._skill_list_cache = []
         self._mcp_server_status = {}
@@ -612,6 +609,12 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self._right_container.width = int(self._settings.get("right_width"))
         else:
             self._right_container.width = int(self._settings.get("sidebar_width", 320))
+        if self._init_error is not None:
+            try:
+                self._init_error_banner.content.controls[2].value = str(self._init_error)
+                self._init_error_banner.visible = True
+            except Exception:
+                logger.debug('desktop exception: %s', traceback.format_exc())
         self.page.add(
             ft.Row(
                 [
@@ -1014,6 +1017,28 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         )
+        self._init_error_banner = ft.Container(
+            content=ft.Row(
+                [
+                    ft.Icon(ft.Icons.ERROR_ROUNDED, color=ft.Colors.ERROR),
+                    ft.Text("初始化失败", color=ft.Colors.ERROR, weight=ft.FontWeight.BOLD),
+                    ft.Text("", color=ft.Colors.ON_SURFACE_VARIANT, expand=True),
+                    ft.IconButton(
+                        icon=ft.Icons.REFRESH_ROUNDED,
+                        tooltip="重试初始化",
+                        icon_color=ft.Colors.ON_ERROR_CONTAINER,
+                        bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT),
+                        style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.ON_ERROR_CONTAINER)),
+                        on_click=lambda e: self._retry_init(),
+                    ),
+                ],
+                spacing=10,
+            ),
+            bgcolor=ft.Colors.ERROR_CONTAINER,
+            border_radius=12,
+            padding=ft.Padding(14, 12, 14, 12),
+            visible=False,
+        )
         self._chat_placeholder.controls[0].on_hover = lambda e: (setattr(self._chat_placeholder.controls[0], 'scale', 1.08 if e.data == 'true' else 1.0), self._chat_placeholder.controls[0].update())
         self.chat_search_field = ft.TextField(hint_text="搜索消息...", width=260, border_radius=18, dense=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), content_padding=ft.Padding(10, 8, 10, 8), bgcolor=ft.Colors.SURFACE_CONTAINER)
         return ft.Column(
@@ -1027,6 +1052,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 ], spacing=4, tight=True),
                 ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT, opacity=0.3),
                 ft.Container(height=14),
+                self._init_error_banner,
                 self.chat_list,
                 ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT, opacity=0.3),
                 ft.Container(

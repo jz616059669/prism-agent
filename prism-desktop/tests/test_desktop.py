@@ -108,13 +108,12 @@ def test_startup_create_agent_failure_sets_agent_none():
 
 
 def test_init_fallback_shows_retry_and_log(monkeypatch):
-    """Init failure should surface fallback UI with retry/log actions."""
+    """Init failure should set init error and show banner in main UI."""
     from prism_desktop.main import PrismDesktop
 
     with patch.object(PrismDesktop, "_set_status", MagicMock()), \
          patch.object(PrismDesktop, "_append_terminal", MagicMock()), \
          patch("prism_desktop.main.create_agent", side_effect=RuntimeError("boom")), \
-         patch.object(PrismDesktop, "_show_init_fallback") as mock_fallback, \
          patch.object(PrismDesktop, "_build_ui", MagicMock()), \
          patch.object(PrismDesktop, "_bind_context_menu", MagicMock()), \
          patch.object(PrismDesktop, "_bind_tray", MagicMock()), \
@@ -132,7 +131,8 @@ def test_init_fallback_shows_retry_and_log(monkeypatch):
         page.session_id = "test-session"
         d = PrismDesktop(page)
         assert d.agent is None
-        mock_fallback.assert_called_once()
+        assert d._init_error is not None
+        assert isinstance(d._init_error, RuntimeError)
 
 
 def test_retry_init_restores_ui(monkeypatch):
