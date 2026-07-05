@@ -361,6 +361,15 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
     def _bind_context_menu(self) -> None:
         self.page.on_resized = lambda e: self._save_settings_debounced()
         self.page.on_window_event = lambda e: self._save_settings_debounced()
+        try:
+            self.page.window_prevent_close = True
+            self.page.on_window_event = lambda e: (
+                self._persist_runtime_state(),
+                self._save_settings(),
+                getattr(self.page, "window_close", lambda: None)(),
+            )
+        except Exception:
+            pass
 
     def _bind_tray(self) -> None:
         try:

@@ -55,3 +55,43 @@ class SettingsMixin:
         except Exception:
             logger.debug("apply settings failed: %s", traceback.format_exc())
             pass
+
+    def _persist_runtime_state(self) -> None:
+        try:
+            self._settings["current_session"] = self._current_session_name
+            self._settings["unsent_messages"] = [
+                {
+                    "role": getattr(m, "role", "user"),
+                    "content": getattr(m, "content", ""),
+                    "timestamp": getattr(m, "timestamp", "").isoformat() if hasattr(getattr(m, "timestamp", ""), "isoformat") else str(getattr(m, "timestamp", "")),
+                }
+                for m in getattr(self, "messages", []) or []
+            ]
+            self._settings["chat_draft"] = getattr(self, "input_field", None).value if hasattr(self, "input_field") else ""
+            self._save_settings()
+        except Exception:
+            logger.debug("persist runtime state failed: %s", traceback.format_exc())
+
+    def _restore_runtime_state(self) -> None:
+        try:
+            session_name = self._settings.get("current_session")
+            if session_name and getattr(self, "agent", None) and hasattr(self.agent, "load_session"):
+                if self.agent.load_session(session_name):
+                    self._current_session_name = session_name
+                    self.chat_list.controls.clear()
+                    if hasattr(self, "_chat_placeholder") and self._chat_placeholder:
+                        self._chat_placeholder.visible = False
+                    for m in self.agent.messages:
+                        if getattr(m, "role", "") == "system":
+                            continue
+                        role_label = "你" if getattr(m, "role", "") == "user" else ("PRISM" if getattr(m, "role", "") == "assistant" else getattr(m, "role", ""))
+                        self._append(role_label, getattr(m, "content", "") or "")
+                    self.chat_list.update()
+            draft = self._settings.get("chat_draft") or ""
+            if draft and hasattr(self, "input_field"):
+                self.input_field.value = draft
+                if hasattr(self, "_on_input_change"):
+                    self._on_input_change()
+                self.input_field.update()
+        except Exception:
+            logger.debug("restore runtime state failed: %s", traceback.format_exc())
