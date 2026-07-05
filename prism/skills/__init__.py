@@ -174,7 +174,7 @@ class SkillRegistry:
                 if hasattr(module, 'register'):
                     module.register(self)
             except Exception as e:
-                print(f"[Skills] 加载 {skill_file} 失败: {e}")
+                logger.warning("load external skill failed: %s", skill_file, exc_info=True)
     
     def search_hub(self, query: str) -> List[Dict[str, Any]]:
         """搜索远程 Hub Skills"""
