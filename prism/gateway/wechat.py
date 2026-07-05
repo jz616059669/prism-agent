@@ -84,8 +84,10 @@ class WechatAdapter(PlatformAdapter):
         if not callable(handler):
             raise TypeError("handler must be callable")
         self.handler = handler
-        self.running = True
-        logger.info("wechat adapter started; waiting for callback service")
+        raise NotImplementedError(
+            "WeChat adapter callback service is not implemented yet. "
+            "Deploy a callback service and route inbound events to the registered handler."
+        )
 
     def stop(self) -> None:
         self.running = False
