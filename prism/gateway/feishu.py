@@ -164,6 +164,17 @@ class FeishuAdapter(PlatformAdapter):
 
     def stop(self) -> None:
         self.running = False
+        if self._ws_client is not None:
+            try:
+                close = getattr(self._ws_client, "stop", None) or getattr(self._ws_client, "close", None)
+                if close is not None:
+                    if asyncio.iscoroutinefunction(close):
+                        if self._loop and not self._loop.is_closed():
+                            self._loop.run_until_complete(close())
+                    else:
+                        close()
+            except Exception:
+                logger.debug("feishu ws client close failed: %s", traceback.format_exc())
         if self._loop is not None and not self._loop.is_closed():
             try:
                 self._loop.call_soon_threadsafe(self._loop.stop)
@@ -192,7 +203,7 @@ class FeishuAdapter(PlatformAdapter):
                 .build(),
             )
             self._ws_client = ws_client
-            ws_client.start()
+            self._loop.run_until_complete(ws_client.start())
         except Exception as e:
             print(f"[Feishu] WebSocket 启动失败: {e}")
             self.running = False
