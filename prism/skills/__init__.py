@@ -193,7 +193,8 @@ class SkillRegistry:
                 if isinstance(data, dict):
                     return data.get('skills', [])
             return []
-        except Exception:
+        except Exception as exc:
+            logger.warning("search hub failed: %s", exc)
             return []
     
     def browse_hub(self) -> List[Dict[str, Any]]:
