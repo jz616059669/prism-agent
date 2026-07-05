@@ -27,6 +27,15 @@ def serve() -> None:
             print(json.dumps(resp, ensure_ascii=False), flush=True)
             continue
 
+        if not isinstance(payload, dict):
+            resp = {
+                "jsonrpc": "2.0",
+                "id": None,
+                "error": {"code": -32600, "message": "Invalid Request"},
+            }
+            print(json.dumps(resp, ensure_ascii=False), flush=True)
+            continue
+
         if "method" not in payload:
             resp = {
                 "jsonrpc": "2.0",
