@@ -62,6 +62,13 @@ class MCPClient:
         self._stdio_locks: Dict[str, threading.Lock] = {}
         self._stdio_queues: Dict[str, "queue.Queue[Optional[str]]"] = {}
         self._stdio_threads: Dict[str, threading.Thread] = {}
+        self._result_cache: Dict[str, Dict[str, Any]] = {}
+        self._cache_ttl: int = 60
+        self._cache_lock = threading.Lock()
+        self._config_path: Optional[str] = None
+        self._config_mtime: float = 0.0
+        self._watcher_thread: Optional[threading.Thread] = None
+        self._watcher_stop = threading.Event()
 
     def add_server(self, server: MCPServer):
         """添加 MCP 服务器"""
@@ -260,19 +267,26 @@ class MCPClient:
         if not server:
             return {'success': False, 'error': f'Server not found: {server_name}'}
 
+        cached = self.get_cached(server_name, tool_name, arguments)
+        if cached is not None:
+            return cached
+
         timeout = getattr(server, 'timeout', 30) or 30
         retries = getattr(server, 'retries', 2) or 2
         last_error = None
         for attempt in range(1, max(retries, 1) + 1):
             try:
                 if server.transport == "stdio":
-                    return self._call_stdio_tool(server, tool_name, arguments, timeout=timeout)
+                    result = self._call_stdio_tool(server, tool_name, arguments, timeout=timeout)
                 elif server.transport == "http":
-                    return self._call_http_tool(server_name, tool_name, arguments, timeout=timeout)
+                    result = self._call_http_tool(server_name, tool_name, arguments, timeout=timeout)
                 elif server.transport == "sse":
-                    return self._call_sse_tool(server_name, tool_name, arguments, timeout=timeout)
+                    result = self._call_sse_tool(server_name, tool_name, arguments, timeout=timeout)
                 else:
-                    return {'success': False, 'error': f'Unsupported transport: {server.transport}'}
+                    result = {'success': False, 'error': f'Unsupported transport: {server.transport}'}
+                if result.get('success'):
+                    self.set_cached(server_name, tool_name, arguments, result)
+                return result
             except Exception as e:
                 last_error = e
                 logger.debug("mcp call attempt %s/%s failed: %s", attempt, retries, e, exc_info=True)
@@ -435,6 +449,103 @@ class MCPClient:
                 status["tool_count"] = len(self.tools.get(name, []))
             result[name] = status
         return result
+
+    # -------------------- tool result cache --------------------
+    def _cache_key(self, server_name: str, tool_name: str, arguments: Dict[str, Any]) -> str:
+        return f"{server_name}::{tool_name}::{json.dumps(arguments, ensure_ascii=False, sort_keys=True)}"
+
+    def get_cached(self, server_name: str, tool_name: str, arguments: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        key = self._cache_key(server_name, tool_name, arguments)
+        with self._cache_lock:
+            item = self._result_cache.get(key)
+            if not item:
+                return None
+            if time.time() - item["ts"] > self._cache_ttl:
+                self._result_cache.pop(key, None)
+                return None
+            return item["value"]
+
+    def set_cached(self, server_name: str, tool_name: str, arguments: Dict[str, Any], value: Dict[str, Any]) -> None:
+        key = self._cache_key(server_name, tool_name, arguments)
+        with self._cache_lock:
+            self._result_cache[key] = {"ts": time.time(), "value": value}
+
+    def invalidate_cache(self, server_name: Optional[str] = None) -> None:
+        with self._cache_lock:
+            if server_name is None:
+                self._result_cache.clear()
+                return
+            for key in list(self._result_cache.keys()):
+                if key.startswith(f"{server_name}::"):
+                    self._result_cache.pop(key, None)
+
+    # -------------------- config hot reload --------------------
+    def watch_config(self, config_path: Optional[str] = None) -> None:
+        """后台监听 MCP 配置文件变更，自动热重载"""
+        if self._watcher_thread and self._watcher_thread.is_alive():
+            return
+        if not config_path:
+            from prism.paths import PRISM_HOME
+            config_path = str(PRISM_HOME / "mcp.json")
+        self._config_path = config_path
+        try:
+            self._config_mtime = Path(config_path).stat().st_mtime
+        except Exception:
+            self._config_mtime = 0.0
+        self._watcher_stop.clear()
+        self._watcher_thread = threading.Thread(target=self._config_watcher, daemon=True)
+        self._watcher_thread.start()
+
+    def _config_watcher(self) -> None:
+        while not self._watcher_stop.is_set():
+            try:
+                path = Path(self._config_path) if self._config_path else None
+                if path and path.exists():
+                    mtime = path.stat().st_mtime
+                    if mtime != self._config_mtime:
+                        self._config_mtime = mtime
+                        self._reload_config()
+            except Exception:
+                logger.debug("mcp config watcher error", exc_info=True)
+            self._watcher_stop.wait(2.0)
+
+    def _reload_config(self) -> None:
+        try:
+            from prism.mcp.config_loader import load_mcp_config, setup_mcp_servers
+            new_servers = load_mcp_config(self._config_path)
+            new_names = {s.name for s in new_servers if s.enabled}
+            existing_names = set(self.servers.keys())
+            for name in existing_names - new_names:
+                self._remove_server(name)
+            added = []
+            for server in new_servers:
+                if server.name not in self.servers:
+                    self.add_server(server)
+                    added.append(server.name)
+            if added:
+                print(f"[MCP] 热重载新增服务器: {added}")
+            self.invalidate_cache()
+        except Exception as e:
+            print(f"[MCP] 热重载失败: {e}")
+
+    def _remove_server(self, name: str) -> None:
+        process = self.processes.pop(name, None)
+        if process and process.poll() is None:
+            try:
+                process.terminate()
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+            except Exception:
+                logger.debug("mcp server remove failed: %s", name, exc_info=True)
+        self.http_clients.pop(name, None)
+        self.tools.pop(name, None)
+        self._stdio_initialized.pop(name, None)
+        self._stdio_locks.pop(name, None)
+        self._stdio_queues.pop(name, None)
+        self._stdio_threads.pop(name, None)
+        self.servers.pop(name, None)
 
 
 # 全局 MCP 客户端

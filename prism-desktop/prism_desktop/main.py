@@ -156,6 +156,11 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     self.api_key_textfield.value = p["api_key"]
         self._apply_settings()
         self._init_mcp_servers()
+        try:
+            from prism.mcp import mcp_client
+            mcp_client.watch_config()
+        except Exception:
+            pass
 
     def _log_error(self, context: str, exc: BaseException) -> None:
         try:
