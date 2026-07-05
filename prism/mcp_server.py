@@ -20,7 +20,7 @@ class PrismMCPServer:
 
     def _register_tools(self) -> Dict[str, Dict[str, Any]]:
         """注册可用的 MCP 工具"""
-        return {
+        tools: Dict[str, Dict[str, Any]] = {
             "prism_chat": {
                 "name": "prism_chat",
                 "description": "与 PRISM Agent 对话，获取 AI 回复",
@@ -70,10 +70,7 @@ class PrismMCPServer:
             "prism_list_sessions": {
                 "name": "prism_list_sessions",
                 "description": "列出已保存的会话",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {},
-                },
+                "inputSchema": {"type": "object", "properties": {}},
             },
             "prism_search_sessions": {
                 "name": "prism_search_sessions",
@@ -112,6 +109,23 @@ class PrismMCPServer:
             },
         }
 
+        # Auto-discover tools from registry and expose as MCP tools
+        try:
+            from prism.tools.registry import registry
+            for t in registry.list_tools():
+                name = t.get("name") if isinstance(t, dict) else getattr(t, "name", None)
+                description = t.get("description") if isinstance(t, dict) else getattr(t, "description", "")
+                if name and name not in tools:
+                    tools[name] = {
+                        "name": name,
+                        "description": description or f"PRISM tool: {name}",
+                        "inputSchema": {"type": "object", "properties": {}},
+                    }
+        except Exception as exc:
+            logger.debug("mcp tool discovery failed: %s", exc)
+
+        return tools
+
     def list_tools(self) -> List[Dict[str, Any]]:
         """列出所有可用工具"""
         return list(self._tools.values())
@@ -139,7 +153,8 @@ class PrismMCPServer:
             elif name == "prism_recall":
                 return self._tool_recall(arguments)
             else:
-                return {"error": f"Tool not implemented: {name}"}
+                # Dynamic dispatch for auto-discovered tools from registry
+                return self._tool_dispatch(name, arguments)
         except Exception as exc:
             logger.error("tool %s failed: %s", name, exc)
             return {"error": str(exc)}
@@ -204,6 +219,14 @@ class PrismMCPServer:
             return {"error": "key is required"}
         value = persistent_memory.recall(key)
         return {"content": value or f"No memory found for: {key}"}
+
+    def _tool_dispatch(self, name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+        """动态分发到 registry 工具，供 MCP 自动发现工具使用"""
+        from prism.tools.registry import registry
+        result = registry.execute(name, **arguments)
+        if isinstance(result, dict):
+            return result
+        return {"content": str(result)}
 
 
 # 全局 MCP Server 实例

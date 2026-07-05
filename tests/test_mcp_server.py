@@ -48,3 +48,23 @@ def test_call_unknown_tool():
     server = PrismMCPServer()
     result = server.call_tool("prism_does_not_exist", {})
     assert "error" in result
+
+
+def test_list_tools_includes_registry_tools():
+    server = PrismMCPServer()
+    tools = server.list_tools()
+    names = [tool.get("name") for tool in tools]
+    assert "file_read" in names
+    assert "browser_navigate" in names
+
+
+def test_call_tool_dispatch_to_registry(monkeypatch):
+    server = PrismMCPServer()
+
+    def fake_execute(name, **kwargs):
+        return {"success": True, "content": f"ok:{name}"}
+
+    monkeypatch.setattr("prism.tools.registry.registry.execute", fake_execute)
+    result = server.call_tool("file_read", {"path": "/tmp/x.txt"})
+    assert result.get("success") is True
+    assert "file_read" in result.get("content", "")
