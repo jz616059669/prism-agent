@@ -48,6 +48,10 @@ class Tool(ABC):
     @abstractmethod
     def description(self) -> str:
         pass
+
+    @property
+    def input_schema(self) -> Optional[Dict[str, Any]]:
+        return None
     
     @abstractmethod
     def execute(self, **kwargs) -> Dict[str, Any]:
@@ -59,6 +63,15 @@ class FileReadTool(Tool):
     
     name = "file_read"
     description = "读取文件内容，支持offset/limit分页"
+    input_schema = {
+        "type": "object",
+        "properties": {
+            "path": {"type": "string", "description": "文件路径"},
+            "offset": {"type": "integer", "description": "起始行号，从1开始", "default": 1},
+            "limit": {"type": "integer", "description": "最大读取行数", "default": 500},
+        },
+        "required": ["path"],
+    }
     
     def execute(self, path: str, offset: int = 1, limit: int = 500) -> Dict[str, Any]:
         try:
@@ -84,6 +97,14 @@ class FileWriteTool(Tool):
     
     name = "file_write"
     description = "写入文件内容，自动创建父目录"
+    input_schema = {
+        "type": "object",
+        "properties": {
+            "path": {"type": "string", "description": "文件路径"},
+            "content": {"type": "string", "description": "文件内容"},
+        },
+        "required": ["path", "content"],
+    }
     
     def execute(self, path: str, content: str) -> Dict[str, Any]:
         try:
@@ -100,6 +121,17 @@ class FilePatchTool(Tool):
     
     name = "file_patch"
     description = "对文件进行精确替换，支持replace/patch模式"
+    input_schema = {
+        "type": "object",
+        "properties": {
+            "path": {"type": "string", "description": "文件路径"},
+            "old_string": {"type": "string", "description": "旧文本"},
+            "new_string": {"type": "string", "description": "新文本"},
+            "mode": {"type": "string", "description": "replace 或 patch", "default": "replace"},
+            "replace_all": {"type": "boolean", "description": "是否全部替换", "default": False},
+        },
+        "required": ["path", "old_string", "new_string"],
+    }
     
     def execute(self, path: str, old_string: str, new_string: str, 
                 mode: str = 'replace', replace_all: bool = False) -> Dict[str, Any]:
@@ -131,6 +163,16 @@ class TerminalTool(Tool):
     
     name = "terminal"
     description = "执行shell命令，支持background/pty/timeout"
+    input_schema = {
+        "type": "object",
+        "properties": {
+            "command": {"type": "string", "description": "要执行的命令"},
+            "timeout": {"type": "integer", "description": "超时秒数", "default": 180},
+            "background": {"type": "boolean", "description": "是否后台执行", "default": False},
+            "workdir": {"type": "string", "description": "工作目录"},
+        },
+        "required": ["command"],
+    }
     
     def execute(self, command: str, timeout: int = 180, 
                 background: bool = False, workdir: Optional[str] = None) -> Dict[str, Any]:
@@ -225,12 +267,21 @@ class TerminalTool(Tool):
 
 
 class WebSearchTool(Tool):
-    """网页搜索工具，使用 DuckDuckGo HTML 版，无需 API key"""
+    """网页搜索工具"""
     
     name = "web_search"
     description = "搜索网页，返回结果摘要"
+    input_schema = {
+        "type": "object",
+        "properties": {
+            "query": {"type": "string", "description": "搜索关键词"},
+            "max_results": {"type": "integer", "description": "最大结果数", "default": 5},
+            "file_glob": {"type": "string", "description": "按文件类型过滤"},
+        },
+        "required": ["query"],
+    }
     
-    def execute(self, query: str, max_results: int = 5, max_age_minutes: int = 60) -> Dict[str, Any]:
+    def execute(self, query: str, max_results: int = 5, file_glob: Optional[str] = None, **kwargs) -> Dict[str, Any]:
         if not query:
             return {"success": False, "error": "query is required"}
         try:
@@ -282,10 +333,18 @@ class WebSearchTool(Tool):
 
 
 class CodeExecutionTool(Tool):
-    """代码执行工具，透传 skills.code_execution"""
+    """代码执行工具"""
     
     name = "code_execution"
-    description = "执行 Python 代码，返回结果"
+    description = "执行 Python 代码，支持超时和输出捕获"
+    input_schema = {
+        "type": "object",
+        "properties": {
+            "code": {"type": "string", "description": "Python 代码"},
+            "timeout": {"type": "integer", "description": "超时秒数", "default": 30},
+        },
+        "required": ["code"],
+    }
     
     def execute(self, code: str, timeout: int = 30, **kwargs) -> Dict[str, Any]:
         try:
@@ -400,10 +459,14 @@ class ToolRegistry:
         """获取工具"""
         return self._tools.get(name)
     
-    def list_tools(self) -> List[Dict[str, str]]:
+    def list_tools(self) -> List[Dict[str, Any]]:
         """列出所有工具"""
         return [
-            {'name': t.name, 'description': t.description}
+            {
+                'name': t.name,
+                'description': t.description,
+                'inputSchema': t.input_schema or {'type': 'object', 'properties': {}},
+            }
             for t in self._tools.values()
         ]
     

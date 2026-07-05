@@ -123,10 +123,11 @@ class PrismMCPServer:
                 name = t.get("name") if isinstance(t, dict) else getattr(t, "name", None)
                 description = t.get("description") if isinstance(t, dict) else getattr(t, "description", "")
                 if name and name not in tools:
+                    input_schema = t.get("inputSchema") if isinstance(t, dict) else None
                     tools[name] = {
                         "name": name,
                         "description": description or f"PRISM tool: {name}",
-                        "inputSchema": {"type": "object", "properties": {}},
+                        "inputSchema": input_schema or {"type": "object", "properties": {}},
                     }
         except Exception as exc:
             logger.debug("mcp tool discovery failed: %s", exc)

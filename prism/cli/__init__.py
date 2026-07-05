@@ -229,6 +229,7 @@ from prism.cli.browser import browser  # noqa: E402
 from prism.cli.config_cmds import config  # noqa: E402
 from prism.cli.workspace import workspace  # noqa: E402
 from prism.cli.memory import memory  # noqa: E402
+from prism.cli.mcp import mcp  # noqa: E402
 
 cli.add_command(gateway)
 cli.add_command(session)
@@ -237,6 +238,7 @@ cli.add_command(browser)
 cli.add_command(config)
 cli.add_command(workspace)
 cli.add_command(memory)
+cli.add_command(mcp)
 
 
 def main():
