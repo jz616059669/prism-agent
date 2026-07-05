@@ -3,10 +3,14 @@ PRISM Agent - 模型提供商管理
 整合多模型、自动降级、凭证池轮转
 """
 
+import logging
 import os
+import random
 import time
 from typing import Optional, List, Dict, Any
 from abc import ABC, abstractmethod
+
+logger = logging.getLogger("prism.providers")
 
 
 class Provider(ABC):
@@ -161,6 +165,78 @@ class ProviderPool:
                     model=model,
                 ))
     
+    def _should_retry(self, exc: Exception) -> bool:
+        status = None
+        error_str = str(exc)
+        for part in error_str.split():
+            if part.isdigit():
+                candidate = int(part)
+                if 100 <= candidate <= 599:
+                    status = candidate
+                    break
+        if status is None:
+            return False
+        return status in {429, 500, 502, 503, 504}
+
+    def _delay_for_retry(self, attempt: int) -> float:
+        return min(1.0 * (2 ** attempt) + random.uniform(0, 0.5), 30.0)
+
+    def _chat_with_retry(self, provider: Provider, messages: List[Dict], max_retries: int = 3, **kwargs) -> Dict[str, Any]:
+        last_error = None
+        for attempt in range(max_retries):
+            try:
+                result = provider.chat(messages, **kwargs)
+                if result.get('success'):
+                    return result
+                last_error = result.get('error')
+                if last_error and self._should_retry(Exception(last_error)):
+                    time.sleep(self._delay_for_retry(attempt))
+                    continue
+                return result
+            except Exception as exc:
+                last_error = str(exc)
+                if attempt < max_retries - 1 and self._should_retry(exc):
+                    time.sleep(self._delay_for_retry(attempt))
+                    continue
+                return {
+                    'success': False,
+                    'error': last_error,
+                    'provider': getattr(provider, 'name', 'unknown'),
+                }
+        return {
+            'success': False,
+            'error': last_error or 'retry exhausted',
+            'provider': getattr(provider, 'name', 'unknown'),
+        }
+
+    def _stream_with_retry(self, provider: Provider, messages: List[Dict], on_chunk, max_retries: int = 3, **kwargs) -> Dict[str, Any]:
+        last_error = None
+        for attempt in range(max_retries):
+            try:
+                result = provider.stream_chat(messages, on_chunk, **kwargs)
+                if result.get('success'):
+                    return result
+                last_error = result.get('error')
+                if last_error and self._should_retry(Exception(last_error)):
+                    time.sleep(self._delay_for_retry(attempt))
+                    continue
+                return result
+            except Exception as exc:
+                last_error = str(exc)
+                if attempt < max_retries - 1 and self._should_retry(exc):
+                    time.sleep(self._delay_for_retry(attempt))
+                    continue
+                return {
+                    'success': False,
+                    'error': last_error,
+                    'provider': getattr(provider, 'name', 'unknown'),
+                }
+        return {
+            'success': False,
+            'error': last_error or 'retry exhausted',
+            'provider': getattr(provider, 'name', 'unknown'),
+        }
+
     def chat(self, messages: List[Dict], **kwargs) -> Dict[str, Any]:
         """发送请求，自动降级"""
         self._load_from_config()
@@ -173,7 +249,7 @@ class ProviderPool:
 
         last_error = None
         for provider in self.providers:
-            result = provider.chat(messages, **kwargs)
+            result = self._chat_with_retry(provider, messages, **kwargs)
             if result.get('success'):
                 return result
             last_error = result.get('error')
@@ -192,7 +268,7 @@ class ProviderPool:
         
         last_error = None
         for provider in self.providers:
-            result = provider.stream_chat(messages, on_chunk, **kwargs)
+            result = self._stream_with_retry(provider, messages, on_chunk, **kwargs)
             if result.get('success'):
                 return result
             last_error = result.get('error')

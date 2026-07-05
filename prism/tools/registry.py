@@ -4,14 +4,18 @@ PRISM Agent - 统一工具系统
 """
 
 import json
+import logging
 import os
 import re
 import shlex
 import subprocess
 import tempfile
+import traceback
 from typing import Dict, List, Any, Optional, Callable
 from abc import ABC, abstractmethod
 from pathlib import Path
+
+logger = logging.getLogger("prism.tools")
 
 # 延迟导入浏览器模块，避免强依赖
 try:
@@ -153,16 +157,33 @@ class TerminalTool(Tool):
             
             # 使用 shlex.split 解析命令，避免 shell=True
             if os.name == 'nt':
-                # Windows 下保留 shell=True 以支持内部命令（dir/path/echo 等）
-                result = subprocess.run(
-                    command,
-                    shell=True,
-                    capture_output=True,
-                    text=True,
-                    timeout=timeout,
-                    cwd=cwd,
-                    env={**os.environ, 'PYTHONIOENCODING': 'utf-8'},
-                )
+                # Windows 下尽量用参数数组，避免 shell 注入
+                import shlex
+                try:
+                    args = shlex.split(command, posix=False)
+                    if not args:
+                        return {'success': False, 'error': 'Empty command'}
+                    result = subprocess.run(
+                        args,
+                        capture_output=True,
+                        text=True,
+                        timeout=timeout,
+                        cwd=cwd,
+                        env={**os.environ, 'PYTHONIOENCODING': 'utf-8'},
+                    )
+                except ValueError:
+                    # 回退：复杂 shell 语法仍允许 shell=True，但做长度限制
+                    if len(command) > 4096:
+                        return {'success': False, 'error': 'Command too long (max 4096 chars)', 'exit_code': -1}
+                    result = subprocess.run(
+                        command,
+                        shell=True,
+                        capture_output=True,
+                        text=True,
+                        timeout=timeout,
+                        cwd=cwd,
+                        env={**os.environ, 'PYTHONIOENCODING': 'utf-8'},
+                    )
             else:
                 # Unix 下尽量用 shlex 避免 shell 注入
                 try:
@@ -179,6 +200,8 @@ class TerminalTool(Tool):
                     )
                 except ValueError:
                     # 回退：复杂 shell 语法仍允许 shell=True
+                    if len(command) > 4096:
+                        return {'success': False, 'error': 'Command too long (max 4096 chars)', 'exit_code': -1}
                     result = subprocess.run(
                         command,
                         shell=True,

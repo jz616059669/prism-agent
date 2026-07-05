@@ -5,6 +5,7 @@ PRISM Agent - 浏览器控制模块
 
 import asyncio
 import json
+import threading
 import time
 from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
@@ -319,75 +320,92 @@ browser_controller = BrowserController()
 
 
 # 同步接口封装（供非async代码调用）
-_loop = None
-_loop_lock = None
-
-def _get_loop():
-    """获取或创建持久事件循环"""
-    global _loop, _loop_lock
-    if _loop is None or _loop.is_closed():
-        import threading
-        _loop = asyncio.new_event_loop()
-        _loop_lock = threading.Lock()
-        threading.Thread(target=_loop.run_forever, daemon=True).start()
-    return _loop
-
-def run_async(coro):
-    """在持久事件循环中运行异步函数，线程安全"""
-    loop = _get_loop()
-    future = asyncio.run_coroutine_threadsafe(coro, loop)
-    return future.result(timeout=120)
-
-
-# 同步API
 class SyncBrowserAPI:
     """同步浏览器API（供工具系统调用）"""
     
+    def __init__(self):
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._loop_thread: Optional[threading.Thread] = None
+        self._ensure_loop()
+    
+    def _ensure_loop(self) -> None:
+        if self._loop is not None and not self._loop.is_closed():
+            return
+        self._loop = asyncio.new_event_loop()
+        self._loop_thread = threading.Thread(target=self._loop.run_forever, daemon=True)
+        self._loop_thread.start()
+    
+    def _shutdown_loop(self) -> None:
+        if self._loop is None or self._loop.is_closed():
+            return
+        try:
+            self._loop.call_soon_threadsafe(self._loop.stop)
+        except Exception:
+            pass
+        if self._loop_thread is not None:
+            self._loop_thread.join(timeout=5)
+        self._loop = None
+        self._loop_thread = None
+    
+    def _run(self, coro, timeout: int = 120):
+        self._ensure_loop()
+        loop = self._loop
+        future = asyncio.run_coroutine_threadsafe(coro, loop)
+        return future.result(timeout=timeout)
+    
     def _ensure_connected(self, headless: bool = True) -> bool:
         if not browser_controller.connected:
-            result = run_async(browser_controller.connect(headless=headless))
+            result = self._run(browser_controller.connect(headless=headless))
             return result.get("success", False)
         return True
     
     def navigate(self, url: str, headless: bool = True) -> Dict[str, Any]:
         if not self._ensure_connected(headless):
             return {"success": False, "error": "Failed to connect browser"}
-        return run_async(browser_controller.navigate(url))
+        return self._run(browser_controller.navigate(url))
     
     def snapshot(self, full: bool = False) -> Dict[str, Any]:
         if not browser_controller.connected:
             return {"success": False, "error": "Browser not connected"}
-        return run_async(browser_controller.snapshot(full=full))
+        return self._run(browser_controller.snapshot(full=full))
     
     def click(self, selector: str) -> Dict[str, Any]:
         if not browser_controller.connected:
             return {"success": False, "error": "Browser not connected"}
-        return run_async(browser_controller.click(selector))
+        return self._run(browser_controller.click(selector))
     
     def type(self, selector: str, text: str) -> Dict[str, Any]:
         if not browser_controller.connected:
             return {"success": False, "error": "Browser not connected"}
-        return run_async(browser_controller.type_text(selector, text))
+        return self._run(browser_controller.type_text(selector, text))
     
     def screenshot(self, path: Optional[str] = None) -> Dict[str, Any]:
         if not browser_controller.connected:
             return {"success": False, "error": "Browser not connected"}
-        return run_async(browser_controller.screenshot(path))
+        return self._run(browser_controller.screenshot(path))
     
     def evaluate(self, script: str) -> Dict[str, Any]:
         if not browser_controller.connected:
             return {"success": False, "error": "Browser not connected"}
-        return run_async(browser_controller.evaluate(script))
+        return self._run(browser_controller.evaluate(script))
     
     def scroll(self, direction: str = "down") -> Dict[str, Any]:
         if not browser_controller.connected:
             return {"success": False, "error": "Browser not connected"}
-        return run_async(browser_controller.scroll(direction))
+        return self._run(browser_controller.scroll(direction))
     
     def disconnect(self) -> Dict[str, Any]:
         if not browser_controller.connected:
             return {"success": True, "message": "Browser already disconnected"}
-        return run_async(browser_controller.disconnect())
+        result = self._run(browser_controller.disconnect())
+        self._shutdown_loop()
+        return result
+    
+    def __del__(self):
+        try:
+            self._shutdown_loop()
+        except Exception:
+            pass
 
 
 # 全局同步API

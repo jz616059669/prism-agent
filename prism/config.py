@@ -6,14 +6,29 @@ PRISM Agent - 统一配置系统
 import os
 import yaml
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from prism.paths import PRISM_HOME, ensure_dirs
+
+try:
+    import keyring
+except ImportError:
+    keyring = None  # type: ignore[assignment]
 
 
 class ConfigError(Exception):
     """配置校验失败"""
     pass
+
+
+_SENSITIVE_KEYS = {
+    'model.api_key',
+    'gateway.feishu.app_secret',
+    'gateway.telegram.bot_token',
+    'gateway.discord.bot_token',
+    'gateway.wechat.corp_secret',
+    'gateway.wechat.agent_secret',
+}
 
 
 class Config:
@@ -110,13 +125,47 @@ class Config:
             raise ConfigError(
                 '配置错误：model.base_url 不合法，应以 http/https 开头，当前值：' + str(model.get('base_url'))
             )
-        if not model.get('api_key'):
+        api_key = model.get('api_key')
+        if not api_key:
+            api_key = self._resolve_sensitive('model.api_key', '')
+        if not api_key:
             missing.append('model.api_key')
         if missing:
             raise ConfigError(
                 '配置缺失，请先设置：' + ', '.join(missing) +
                 '。可用命令：prism config set <key> <value>，或编辑 ' + str(self.config_file)
             )
+
+    def _resolve_sensitive(self, key: str, value: str) -> str:
+        """敏感字段优先回退 keyring，其次环境变量，最后保持原值。"""
+        if not value and keyring is not None:
+            try:
+                stored = keyring.get_password("prism", key)
+                if stored:
+                    return stored
+            except Exception:
+                pass
+        env_name = key.upper().replace('.', '_')
+        return value or os.getenv(env_name, '')
+    
+    def _redact_value(self, value: Any) -> Any:
+        """对敏感值做脱敏显示"""
+        if isinstance(value, str) and len(value) > 6:
+            return f"{value[:3]}***{value[-2:]}"
+        return "***"
+    
+    def _redact_config(self, data: dict) -> dict:
+        """递归脱敏配置中的敏感字段"""
+        result = {}
+        for k, v in data.items():
+            full_key = k
+            if isinstance(v, dict):
+                result[k] = self._redact_config(v)
+            elif full_key.lower().endswith('api_key') or full_key.lower().endswith('secret') or full_key.lower().endswith('token'):
+                result[k] = self._redact_value(str(v))
+            else:
+                result[k] = v
+        return result
     
     def get(self, key: str, default=None):
         """获取配置项，支持点号分隔的路径"""
@@ -127,21 +176,41 @@ class Config:
                 value = value.get(k)
             else:
                 return default
-        return value if value is not None else default
+        if value is None:
+            return default
+        if key.lower().replace('.', '_') in {
+            'model_api_key',
+            'gateway_feishu_app_secret',
+            'gateway_telegram_bot_token',
+            'gateway_discord_bot_token',
+            'gateway_wechat_corp_secret',
+            'gateway_wechat_agent_secret',
+        }:
+            return self._resolve_sensitive(key, value)
+        return value
     
     def set(self, key: str, value) -> None:
-        """设置配置项，支持点号分隔的路径"""
+        """设置配置项，支持点号分隔的路径；敏感字段写入 keyring"""
+        resolved = value
+        if key in _SENSITIVE_KEYS and keyring is not None:
+            try:
+                keyring.set_password("prism", key, str(value))
+                resolved = value
+            except Exception:
+                resolved = value
         keys = key.split('.')
         config = self._config
         for k in keys[:-1]:
             if k not in config:
                 config[k] = {}
             config = config[k]
-        config[keys[-1]] = value
+        config[keys[-1]] = resolved
         self._save()
     
-    def show(self) -> dict:
-        """返回完整配置"""
+    def show(self, redact: bool = True) -> dict:
+        """返回完整配置，可脱敏"""
+        if redact:
+            return self._redact_config(self._config)
         return self._config
     
     def path(self) -> str:
@@ -151,7 +220,6 @@ class Config:
     def env_path(self) -> str:
         """返回.env文件路径"""
         return str(self.env_file)
-
 
     def _load_hooks(self) -> None:
         """加载 hooks 配置"""
