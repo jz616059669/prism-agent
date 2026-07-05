@@ -352,6 +352,12 @@ class SyncBrowserAPI:
         self._loop = None
         self._loop_thread = None
     
+    def _check_connection(self) -> bool:
+        try:
+            return bool(getattr(browser_controller, 'connected', False)) and not getattr(browser_controller, '_page', None).is_closed()
+        except Exception:
+            return False
+
     def _run(self, coro, timeout: int = 120):
         self._ensure_loop()
         loop = self._loop
@@ -364,7 +370,13 @@ class SyncBrowserAPI:
             except Exception:
                 pass
             return {"success": False, "error": f"browser operation timed out after {timeout}s"}
-    
+
+    def _check_connection(self) -> bool:
+        try:
+            return bool(getattr(browser_controller, 'connected', False)) and not getattr(browser_controller, '_page', None).is_closed()
+        except Exception:
+            return False
+
     def _ensure_connected(self, headless: bool = True) -> bool:
         if not self._check_connection():
             try:
