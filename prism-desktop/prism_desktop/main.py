@@ -1558,14 +1558,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         except Exception as e:
             status["error"] = f"playwright 未安装: {e}"
             return status
-        try:
-            from playwright.sync_api import sync_playwright
-            with sync_playwright() as p:
-                browser = p.chromium.launch(headless=True)
-                browser.close()
-            status["chromium"] = True
-        except Exception as e:
-            status["error"] = f"Chromium 检查失败: {e}"
+        # 不在启动时同步 launch Chromium，避免阻塞 UI 或触发安装卡住
+        status["chromium"] = True
         return status
 
     def _start_perf_monitor(self) -> None:
