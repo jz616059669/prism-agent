@@ -19,6 +19,11 @@ from prism.tools.registry import registry
 from prism.hooks import hook_manager
 from prism.memory import persistent_memory
 
+try:
+    from prism.mcp import mcp_client
+except Exception:
+    mcp_client = None  # type: ignore[assignment]
+
 
 @dataclass
 class Message:
@@ -165,12 +170,27 @@ class Agent:
     def execute_tool(self, tool_name: str, **kwargs) -> Dict[str, Any]:
         """
         执行工具
-        整合了 Codex 的终端执行 + OpenClaw 的浏览器控制
+        整合了 Codex 的终端执行 + OpenClaw 的浏览器控制 + MCP 外部工具
         """
         if not self.tools_enabled:
             return {'success': False, 'error': 'Tools disabled'}
         
         logger.info("execute tool=%s args=%s", tool_name, kwargs)
+        
+        # MCP 外部工具路由
+        mcp_result = self._try_execute_mcp_tool(tool_name, **kwargs)
+        if mcp_result is not None:
+            logger.info("execute mcp tool=%s result=%s", tool_name, mcp_result.get('success'))
+            self.tool_calls.append(ToolCall(
+                id=f"call_{len(self.tool_calls)}",
+                name=tool_name,
+                arguments=kwargs,
+                result=mcp_result,
+            ))
+            self._append_tool_message(tool_name, mcp_result)
+            return mcp_result
+        
+        # 本地工具
         result = registry.execute(tool_name, **kwargs)
         logger.info("execute tool=%s result=%s", tool_name, result.get('success'))
         
@@ -186,6 +206,19 @@ class Agent:
         self._append_tool_message(tool_name, result)
         
         return result
+    
+    def _try_execute_mcp_tool(self, tool_name: str, **kwargs) -> Optional[Dict[str, Any]]:
+        """尝试将工具调用路由到 MCP 外部服务器"""
+        try:
+            if mcp_client is None:
+                return None
+            for server_name, tools in mcp_client.tools.items():
+                for tool in tools:
+                    if tool.get('name') == tool_name:
+                        return mcp_client.call_tool(server_name, tool_name, kwargs)
+        except Exception:
+            logger.debug("mcp tool route failed: %s", traceback.format_exc())
+        return None
     
     def _append_tool_message(self, tool_name: str, result: Dict[str, Any]) -> None:
         """将工具调用结果写入消息流，保证会话保存/回溯有完整上下文。"""
@@ -221,9 +254,22 @@ class Agent:
         except Exception:
             logger.debug("tool message append failed: %s", traceback.format_exc())
     
-    def list_tools(self) -> List[Dict[str, str]]:
-        """列出可用工具"""
-        return registry.list_tools()
+    def list_tools(self) -> List[Dict[str, Any]]:
+        """列出可用工具，合并本地 registry 与 MCP 外部工具"""
+        local_tools = registry.list_tools()
+        mcp_tools: List[Dict[str, Any]] = []
+        try:
+            if mcp_client is not None:
+                mcp_tools = mcp_client.list_tools()
+        except Exception:
+            logger.debug("list mcp tools failed: %s", traceback.format_exc())
+        seen = {t.get('name') for t in local_tools}
+        merged = list(local_tools)
+        for t in mcp_tools:
+            if t.get('name') not in seen:
+                merged.append({**t, 'source': 'mcp'})
+                seen.add(t.get('name'))
+        return merged
     
     def clear_history(self):
         """清空对话历史"""
