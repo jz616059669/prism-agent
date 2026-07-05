@@ -323,8 +323,10 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         try:
             has_key = bool(prism_config.get("model.api_key"))
             has_provider = bool(prism_config.get("model.provider"))
+            mcp_configured = bool(prism_config.get("mcp.servers"))
             if has_key and has_provider:
-                return
+                if mcp_configured:
+                    return
         except Exception as exc:
             self._log_error("setup wizard check", exc)
         wizard_provider = ft.TextField(label=_("model_provider"), value="stepfun", width=320)
@@ -339,6 +341,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     prism_config.set("model.api_key", wizard_key.value.strip())
                 if wizard_model.value.strip():
                     prism_config.set("model.default", wizard_model.value.strip())
+                self._init_mcp_servers()
                 self.page.close_dialog()
                 self._append_terminal("setup wizard saved")
                 self._set_status("配置已保存", ft.Colors.GREEN_400)
@@ -365,6 +368,16 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         )
         self.page.dialog.open = True
         self.page.update()
+
+    def _init_mcp_servers(self) -> None:
+        try:
+            from prism.mcp.config_loader import setup_mcp_servers
+            client = setup_mcp_servers()
+            self._append_terminal(f"mcp servers loaded: {len(client.servers)}")
+            self._append_mcp(f"已加载 MCP 服务器：{len(client.servers)}")
+            self._refresh_mcp()
+        except Exception as exc:
+            self._log_error("init mcp servers", exc)
 
     def _save_settings_debounced(self) -> None:
         if self._save_settings_timer is not None:
