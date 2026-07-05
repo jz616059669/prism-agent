@@ -114,12 +114,16 @@ class SkillRegistry:
             timeout=kwargs.get('timeout', 180))
     
     def _skill_web_search(self, **kwargs) -> Dict[str, Any]:
-        """网页搜索 skill（简化版）"""
-        return {
-            'success': True,
-            'message': 'Web search requires external API integration',
-            'query': kwargs.get('query'),
-        }
+        """网页搜索 skill（DuckDuckGo HTML 版，无需 API key）"""
+        query = kwargs.get("query") or ""
+        max_results = int(kwargs.get("max_results") or 5)
+        if not query:
+            return {"success": False, "error": "query is required"}
+        try:
+            from prism.tools.registry import WebSearchTool
+            return WebSearchTool().execute(query=query, max_results=max_results)
+        except Exception as exc:
+            return {"success": False, "error": str(exc), "query": query}
     
     def _skill_code_execution(self, **kwargs) -> Dict[str, Any]:
         """代码执行 skill（简化版）"""

@@ -225,20 +225,57 @@ class TerminalTool(Tool):
 
 
 class WebSearchTool(Tool):
-    """网页搜索工具，透传 skills.web_search"""
+    """网页搜索工具，使用 DuckDuckGo HTML 版，无需 API key"""
     
     name = "web_search"
     description = "搜索网页，返回结果摘要"
     
     def execute(self, query: str, max_results: int = 5) -> Dict[str, Any]:
+        if not query:
+            return {"success": False, "error": "query is required"}
         try:
-            from prism.skills import skills
-            skill = skills.get("web_search")
-            if skill and skill.handler:
-                return skill.handler(query=query, max_results=max_results)
+            import requests
+            import re
+            import html
+            import urllib.parse
         except Exception as exc:
-            logger.debug("web_search skill invoke failed: %s", exc)
-        return {"success": False, "error": "Web search is not configured"}
+            return {"success": False, "error": f"search dependencies missing: {exc}"}
+        url = "https://html.duckduckgo.com/html/"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (compatible; PRISM/1.0)",
+            "Accept": "text/html",
+        }
+        try:
+            resp = requests.post(url, data={"q": query}, headers=headers, timeout=20)
+            text = resp.text
+        except Exception as exc:
+            return {"success": False, "error": f"search request failed: {exc}", "query": query}
+        results: List[Dict[str, Any]] = []
+        try:
+            for block in re.findall(r'<a[^>]+class="result__a"[^>]*>(.*?)</a>', text, re.S)[:max_results]:
+                title = re.sub(r"<[^>]+>", "", block)
+                title = html.unescape(title).strip()
+                href_match = re.search(r'href="([^"]+)"', block)
+                link = href_match.group(1) if href_match else ""
+                if link.startswith("//"):
+                    link = "https:" + link
+                snippet = ""
+                snippet_match = re.search(r'<a[^>]+class="result__snippet"[^>]*>(.*?)</a>', text, re.S)
+                if snippet_match:
+                    snippet = html.unescape(re.sub(r"<[^>]+>", "", snippet_match.group(1))).strip()
+                if title:
+                    results.append({
+                        "title": title,
+                        "url": link,
+                        "snippet": snippet,
+                        "source": "duckduckgo",
+                        "fetched_at": __import__('datetime').datetime.now().isoformat(),
+                    })
+        except Exception as exc:
+            return {"success": False, "error": f"search parse failed: {exc}", "query": query}
+        if not results:
+            return {"success": True, "results": [], "query": query, "message": "no results"}
+        return {"success": True, "results": results, "query": query, "count": len(results)}
 
 
 class CodeExecutionTool(Tool):
