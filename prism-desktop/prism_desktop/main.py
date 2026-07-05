@@ -378,6 +378,10 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
 
     def _bind_tray(self) -> None:
         try:
+            if sys.platform == "darwin":
+                self._append_terminal("macOS detected: tray disabled")
+                self._tray_icon = None
+                return
             try:
                 import threading
                 import pystray
