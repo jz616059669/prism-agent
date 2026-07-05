@@ -243,6 +243,7 @@ class ChatMixin:
             self.input_field.value = prompt + current
             self.input_field.focus()
             self.input_field.update()
+            if hasattr(self, "_on_input_change"):
+                self._on_input_change()
         except Exception:
             logger.debug("apply prompt template failed: %s", traceback.format_exc())
-            pass
