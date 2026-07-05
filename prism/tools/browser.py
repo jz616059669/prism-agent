@@ -108,7 +108,8 @@ class BrowserController:
         except Exception as e:
             return {
                 'success': False,
-                'error': f'Failed to connect browser: {str(e)}'
+                'error': f'Failed to connect browser: {str(e)}',
+                'hint': 'In CI/headless Linux, ensure Playwright Chromium deps are installed: python -m playwright install --with-deps chromium',
             }
     
     async def navigate(self, url: str) -> Dict[str, Any]:
@@ -354,7 +355,7 @@ class SyncBrowserAPI:
     
     def _check_connection(self) -> bool:
         try:
-            return bool(getattr(browser_controller, 'connected', False)) and not getattr(browser_controller, '_page', None).is_closed()
+            return bool(getattr(browser_controller, 'connected', False)) and not getattr(browser_controller, 'page', None).is_closed()
         except Exception:
             return False
 
@@ -370,12 +371,6 @@ class SyncBrowserAPI:
             except Exception:
                 pass
             return {"success": False, "error": f"browser operation timed out after {timeout}s"}
-
-    def _check_connection(self) -> bool:
-        try:
-            return bool(getattr(browser_controller, 'connected', False)) and not getattr(browser_controller, '_page', None).is_closed()
-        except Exception:
-            return False
 
     def _ensure_connected(self, headless: bool = True) -> bool:
         if not self._check_connection():
