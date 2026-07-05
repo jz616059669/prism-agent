@@ -52,3 +52,30 @@ def test_provider_pool_empty():
     pool.providers = []
     result = pool.chat([{"role": "user", "content": "hi"}])
     assert result["success"] is False
+
+
+def test_set_default_model_updates_providers_and_config(monkeypatch):
+    pool = ProviderPool()
+
+    class FakeProvider:
+        name = "fake"
+        model = "old-model"
+        def chat(self, messages, **kwargs):
+            return {"success": True, "content": "ok"}
+
+    pool.providers = [FakeProvider()]
+    monkeypatch.setattr(pool, "_load_from_config", lambda: None)
+
+    saved = {}
+
+    def fake_set(key, value):
+        saved[key] = value
+
+    monkeypatch.setattr("prism.config.get_config", lambda: type("Cfg", (), {"set": staticmethod(fake_set)})())
+
+    result = pool.set_default_model("new-model")
+    assert result["success"] is True
+    assert result["model"] == "new-model"
+    assert result["updated_providers"] == 1
+    assert saved.get("model.default") == "new-model"
+    assert pool.providers[0].model == "new-model"

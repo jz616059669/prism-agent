@@ -284,6 +284,23 @@ class ProviderPool:
         self._load_from_config()
         return [p.name for p in self.providers]
 
+    def set_default_model(self, model: str) -> Dict[str, Any]:
+        """运行时切换默认模型；影响已有 provider 实例及配置。"""
+        if not model:
+            return {'success': False, 'error': 'model is required'}
+        try:
+            from prism.config import get_config
+            get_config().set('model.default', model)
+        except Exception as exc:
+            return {'success': False, 'error': f'set config failed: {exc}'}
+        self._load_from_config()
+        updated = 0
+        for provider in self.providers:
+            if hasattr(provider, 'model'):
+                provider.model = model
+                updated += 1
+        return {'success': True, 'model': model, 'updated_providers': updated}
+
 
 # 全局提供商池
 provider_pool = ProviderPool()
