@@ -27,8 +27,8 @@ jobs:
         run: uv venv
       - name: Install dependencies
         run: |
-          uv pip install -e ".[dev]"
-          uv pip install pytest
+          python -m pip install -e .
+          python -m pip install pytest playwright nest-asyncio
       - name: Version check
         run: python scripts/check_version.py
       - name: Run tests
