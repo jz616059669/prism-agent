@@ -26,6 +26,7 @@ class Skill:
     enabled: bool = True
     created_at: datetime = field(default_factory=datetime.now)
     metadata: Dict[str, Any] = field(default_factory=dict)
+    status: str = "stable"  # stable | beta | placeholder
 
 
 class SkillRegistry:
@@ -81,6 +82,7 @@ class SkillRegistry:
             description="网文创作：章节生成、大纲规划、人物设定",
             triggers=["写小说", "创作", "章节", "大纲", "人物"],
             handler=self._skill_novel_writing,
+            status="placeholder",
         ))
         
         # 6. 小说优化 skill
@@ -89,6 +91,7 @@ class SkillRegistry:
             description="网文优化：去AI味、重复检测、节奏调整",
             triggers=["优化", "去AI味", "重复", "润色", "修改"],
             handler=self._skill_novel_optimization,
+            status="placeholder",
         ))
     
     def _skill_file_operations(self, **kwargs) -> Dict[str, Any]:
@@ -237,6 +240,7 @@ class SkillRegistry:
                 'version': s.version,
                 'enabled': s.enabled,
                 'triggers': s.triggers,
+                'status': getattr(s, 'status', 'stable'),
             }
             for s in self.skills.values()
         ]
