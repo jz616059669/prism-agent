@@ -26,11 +26,13 @@ jobs:
       - name: Create virtualenv
         run: uv venv
       - name: Install dependencies
-        run: uv pip install -e ".[dev]" pytest
+        run: |
+          uv pip install -e ".[dev]"
+          uv pip install pytest
       - name: Version check
         run: python scripts/check_version.py
       - name: Run tests
-        run: pytest tests/ -q
+        run: python -m pytest tests/ -q
         env:
           PRISM_SKIP_UPDATE_CHECK: "1"
 
