@@ -138,7 +138,11 @@ class PrismMCPServer:
         """返回 MCP 初始化响应"""
         return {
             "protocolVersion": MCP_PROTOCOL_VERSION,
-            "capabilities": {"tools": {}},
+            "capabilities": {
+                "tools": {},
+                "resources": {},
+                "prompts": {},
+            },
             "serverInfo": {"name": "prism", "version": "2.1.2"},
         }
 
@@ -160,6 +164,10 @@ class PrismMCPServer:
             arguments = params.get("arguments", {})
             result = self.call_tool(name, arguments)
             return make_response(req_id, result=result)
+        elif method == "resources/list":
+            return make_response(req_id, result={"resources": []})
+        elif method == "prompts/list":
+            return make_response(req_id, result={"prompts": []})
         else:
             return make_response(req_id, error={"code": -32601, "message": f"Method not found: {method}"})
 

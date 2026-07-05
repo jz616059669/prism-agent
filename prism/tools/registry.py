@@ -366,6 +366,14 @@ def _register_browser_tools(registry):
     class BrowserNavigateTool(Tool):
         name = "browser_navigate"
         description = "浏览器导航到指定URL"
+        input_schema = {
+            "type": "object",
+            "properties": {
+                "url": {"type": "string", "description": "目标URL"},
+                "headless": {"type": "boolean", "description": "无头模式", "default": True},
+            },
+            "required": ["url"],
+        }
         
         def execute(self, url: str, headless: bool = True) -> Dict[str, Any]:
             return browser_api.navigate(url, headless=headless)
@@ -373,6 +381,13 @@ def _register_browser_tools(registry):
     class BrowserSnapshotTool(Tool):
         name = "browser_snapshot"
         description = "获取页面快照/文本内容"
+        input_schema = {
+            "type": "object",
+            "properties": {
+                "full": {"type": "boolean", "description": "是否完整页面", "default": False},
+            },
+            "required": [],
+        }
         
         def execute(self, full: bool = False) -> Dict[str, Any]:
             return browser_api.snapshot(full=full)
@@ -380,6 +395,13 @@ def _register_browser_tools(registry):
     class BrowserClickTool(Tool):
         name = "browser_click"
         description = "点击页面元素"
+        input_schema = {
+            "type": "object",
+            "properties": {
+                "selector": {"type": "string", "description": "CSS 选择器或 ref"},
+            },
+            "required": ["selector"],
+        }
         
         def execute(self, selector: str) -> Dict[str, Any]:
             return browser_api.click(selector)
@@ -387,6 +409,14 @@ def _register_browser_tools(registry):
     class BrowserTypeTool(Tool):
         name = "browser_type"
         description = "在输入框中输入文本"
+        input_schema = {
+            "type": "object",
+            "properties": {
+                "selector": {"type": "string", "description": "CSS 选择器或 ref"},
+                "text": {"type": "string", "description": "要输入的文本"},
+            },
+            "required": ["selector", "text"],
+        }
         
         def execute(self, selector: str, text: str) -> Dict[str, Any]:
             return browser_api.type_text(selector, text)
@@ -394,6 +424,13 @@ def _register_browser_tools(registry):
     class BrowserScreenshotTool(Tool):
         name = "browser_screenshot"
         description = "浏览器截图"
+        input_schema = {
+            "type": "object",
+            "properties": {
+                "path": {"type": "string", "description": "截图保存路径（可选）"},
+            },
+            "required": [],
+        }
         
         def execute(self, path: Optional[str] = None) -> Dict[str, Any]:
             return browser_api.screenshot(path)
@@ -401,6 +438,13 @@ def _register_browser_tools(registry):
     class BrowserEvaluateTool(Tool):
         name = "browser_evaluate"
         description = "执行JavaScript代码"
+        input_schema = {
+            "type": "object",
+            "properties": {
+                "script": {"type": "string", "description": "JavaScript 代码"},
+            },
+            "required": ["script"],
+        }
         
         def execute(self, script: str) -> Dict[str, Any]:
             return browser_api.evaluate(script)
@@ -408,6 +452,13 @@ def _register_browser_tools(registry):
     class BrowserScrollTool(Tool):
         name = "browser_scroll"
         description = "滚动页面"
+        input_schema = {
+            "type": "object",
+            "properties": {
+                "direction": {"type": "string", "description": "up 或 down", "default": "down"},
+            },
+            "required": [],
+        }
         
         def execute(self, direction: str = "down") -> Dict[str, Any]:
             return browser_api.scroll(direction)
