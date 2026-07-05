@@ -354,13 +354,39 @@ class SkillRegistry:
         """移除 Skill"""
         if name not in self.skills:
             return {'success': True, 'message': f'{name} 未安装'}
-        
+
         target = self.skills_dir / f"{name}.py"
         if target.exists():
             target.unlink()
-        
+
         self.skills.pop(name, None)
         return {'success': True, 'message': f'已移除 {name}'}
+
+    def toggle_skill(self, name: str) -> Dict[str, Any]:
+        """切换 Skill 启用状态"""
+        skill = self.skills.get(name)
+        if not skill:
+            return {'success': False, 'error': f'Skill not found: {name}'}
+        skill.enabled = not bool(skill.enabled)
+        state = "启用" if skill.enabled else "禁用"
+        return {'success': True, 'message': f'{name} 已{state}', 'enabled': skill.enabled}
+
+    def get_skill_detail(self, name: str) -> Dict[str, Any]:
+        """获取 Skill 详情"""
+        skill = self.skills.get(name)
+        if not skill:
+            return {'success': False, 'error': f'Skill not found: {name}'}
+        return {
+            'success': True,
+            'name': skill.name,
+            'description': skill.description,
+            'version': skill.version,
+            'author': getattr(skill, 'author', 'unknown'),
+            'enabled': skill.enabled,
+            'triggers': skill.triggers,
+            'status': getattr(skill, 'status', 'stable'),
+            'handler': skill.handler.__name__ if skill.handler else None,
+        }
 
 
 # 全局 Skills 注册表

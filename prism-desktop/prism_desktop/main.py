@@ -74,16 +74,15 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._perf_mem_mb = 0.0
         self._terminal_lines = ["PRISM Desktop 已启动"]
         self._init_error: Optional[BaseException] = None
+        print("[BOOT] main.py loaded from:", __file__, flush=True)
         try:
             self._validate_and_create_agent()
         except Exception as exc:
             self.agent = None
             self._init_error = exc
             self._log_error("agent init fallback", exc)
-            try:
-                self._set_status(f"初始化失败：{exc}", ft.Colors.RED_400)
-            except Exception:
-                logger.debug('desktop exception: %s', traceback.format_exc())
+            if hasattr(self, "retry_init_btn") and self.retry_init_btn:
+                self.retry_init_btn.visible = True
         self._mcp_logs = []
         self._skill_list_cache = []
         self._mcp_server_status = {}
@@ -120,14 +119,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             except Exception:
                 logger.debug('desktop exception: %s', traceback.format_exc())
             print(f"[INIT ERROR] {exc}\n{tb}", flush=True)
-            try:
-                self._append_terminal(f"init error: {exc}")
-            except Exception:
-                logger.debug('desktop exception: %s', traceback.format_exc())
-            try:
-                self.page.add(ft.Text(f"初始化失败: {exc}", color=ft.Colors.ERROR))
-            except Exception:
-                logger.debug('desktop exception: %s', traceback.format_exc())
+            self._append_terminal(f"init error: {exc}")
+            self._append_terminal(tb)
         # Update clock every second
         if hasattr(self.page, 'add_periodic_callback'):
             def _tick(_):
@@ -169,7 +162,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             logger.debug('desktop exception: %s', traceback.format_exc())
 
     def _show_init_fallback(self, exc: BaseException) -> None:
-        """初始化失败时展示可交互 fallback UI。"""
+        """初始化失败时仅输出到终端与日志，不展示 fallback UI。"""
         try:
             import traceback as tb_mod
             tb_text = tb_mod.format_exception(type(exc), exc, exc.__traceback__)
@@ -178,35 +171,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 INIT_ERROR_LOG.write_text(tb_text, encoding="utf-8")
             except Exception:
                 logger.debug('desktop exception: %s', traceback.format_exc())
-            retry_btn = ft.ElevatedButton(
-                "重试初始化",
-                style=ft.ButtonStyle(bgcolor=ft.Colors.PRIMARY, color=ft.Colors.ON_PRIMARY, shape=ft.RoundedRectangleBorder(radius=12)),
-                on_click=lambda e: self._retry_init(),
-            )
-            open_log_btn = ft.TextButton(
-                "打开错误日志",
-                on_click=lambda e: self._open_init_error_log(),
-            )
-            fallback = ft.Column(
-                [
-                    ft.Icon(ft.Icons.ERROR_ROUNDED, size=36, color=ft.Colors.ERROR),
-                    ft.Text("初始化失败", size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.ERROR),
-                    ft.Text(str(exc), size=12, color=ft.Colors.ON_SURFACE_VARIANT),
-                    ft.Row([retry_btn, open_log_btn], spacing=10, alignment=ft.MainAxisAlignment.CENTER),
-                ],
-                spacing=10,
-                alignment=ft.MainAxisAlignment.CENTER,
-                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            )
-            try:
-                self.page.clean()
-            except Exception:
-                logger.debug('desktop exception: %s', traceback.format_exc())
-            try:
-                self.page.add(fallback)
-                self.page.update()
-            except Exception:
-                logger.debug('desktop exception: %s', traceback.format_exc())
+            self._append_terminal(f"[ERROR] agent init: {exc}")
+            self._append_terminal(tb_text)
         except Exception:
             logger.debug('desktop exception: %s', traceback.format_exc())
 
@@ -225,6 +191,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             if hasattr(self.page, "run_task"):
                 self._start_update_check()
             self._set_status("已重试", ft.Colors.GREEN_400)
+            if hasattr(self, "retry_init_btn") and self.retry_init_btn:
+                self.retry_init_btn.visible = False
             self.page.update()
         except Exception as exc:
             self._log_error("agent init retry", exc)
@@ -264,7 +232,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
 
     def _start_update_check(self):
         if os.environ.get("PRISM_SKIP_UPDATE_CHECK", "").strip() in ("1", "true", "yes", "y"):
-            print("[UPDATE] skipped by PRISM_SKIP_UPDATE_CHECK", flush=True)
             return
         if hasattr(self.page, "run_task"):
             self.page.run_task(self._check_for_updates)
@@ -284,7 +251,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 self._set_status(f"发现新版本 {latest}", ft.Colors.AMBER_400)
                 self._append_terminal(f"update available: {latest} (current {current})")
         except Exception:
-            logger.debug('desktop exception: %s', traceback.format_exc())
+            # 静默跳过，避免刷屏
+            return
 
     def _validate_config(self) -> bool:
         try:
@@ -322,7 +290,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         except Exception as exc:
             self.agent = None
             self._log_error("agent init", exc)
-            self._set_status(f"初始化失败：{exc}", ft.Colors.RED_400)
             raise
 
     def _maybe_show_setup_wizard(self):
@@ -618,12 +585,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self._right_container.width = int(self._settings.get("right_width"))
         else:
             self._right_container.width = int(self._settings.get("sidebar_width", 320))
-        if self._init_error is not None:
-            try:
-                self._init_error_banner.content.controls[2].value = str(self._init_error)
-                self._init_error_banner.visible = True
-            except Exception:
-                logger.debug('desktop exception: %s', traceback.format_exc())
         self.page.add(
             ft.Row(
                 [
@@ -809,11 +770,18 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.skill_refresh_btn = ft.Button(_("refresh_skills"), icon=ft.Icons.REFRESH_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
                      color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         self.skill_refresh_btn.on_click = lambda e: self._refresh_skills()
+        self.skill_search = ft.TextField(hint_text=_("skill_search_placeholder"), width=260, border_radius=18, dense=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), content_padding=ft.Padding(10, 8, 10, 8), bgcolor=ft.Colors.SURFACE_CONTAINER, on_change=lambda e: self._filter_skills(e.control.value or ""))
         self.skill_install_field = ft.TextField(hint_text=_("install_skill_placeholder"), width=280, border_radius=14)
         self.skill_install_btn = ft.Button(_("install_skill"), icon=ft.Icons.DOWNLOAD_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
                      color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         self.skill_install_btn.on_click = lambda e: self._install_skill_from_ui()
         self.skill_list = ft.Column(spacing=6, tight=True)
+        self._skill_all_items: List[dict] = []
+        self.hub_search = ft.TextField(hint_text=_("skill_hub_search"), width=220, border_radius=18, dense=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), content_padding=ft.Padding(10, 8, 10, 8), bgcolor=ft.Colors.SURFACE_CONTAINER)
+        self.hub_browse_btn = ft.Button(_("skill_hub_browse"), icon=ft.Icons.PUBLIC_ROUNDED, width=120, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER, color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
+        self.hub_browse_btn.on_click = lambda e: self._browse_hub_skills()
+        self.hub_list = ft.Column(spacing=6, tight=True)
+        self._hub_all_items: List[dict] = []
 
         # 会话
         self.session_new_btn = ft.IconButton(icon=ft.Icons.ADD_ROUNDED, tooltip="新建对话", icon_color=ft.Colors.PRIMARY, bgcolor=ft.Colors.with_opacity(0.08, ft.Colors.PRIMARY), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.PRIMARY)))
@@ -1030,7 +998,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             content=ft.Row(
                 [
                     ft.Icon(ft.Icons.ERROR_ROUNDED, color=ft.Colors.ERROR),
-                    ft.Text("初始化失败", color=ft.Colors.ERROR, weight=ft.FontWeight.BOLD),
                     ft.Text("", color=ft.Colors.ON_SURFACE_VARIANT, expand=True),
                     ft.IconButton(
                         icon=ft.Icons.REFRESH_ROUNDED,
@@ -1108,11 +1075,16 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         clear_terminal_btn.on_click = lambda e: self._clear_terminal()
         clear_mcp_btn = ft.TextButton("清空 MCP", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED, animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         clear_mcp_btn.on_click = lambda e: self._clear_mcp()
+        retry_init_btn = ft.TextButton("重试初始化", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.AMBER_100, color=ft.Colors.BLACK, icon_color=ft.Colors.BLACK), icon=ft.Icons.REFRESH_ROUNDED, animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
+        retry_init_btn.on_click = lambda e: self._retry_init()
+        if getattr(self, "_init_error", None) is None:
+            retry_init_btn.visible = False
+        self.retry_init_btn = retry_init_btn
         
         terminal_tab = ft.Column(
             [
                 ft.Row([self.terminal_input, terminal_run_btn], spacing=8),
-                ft.Row([clear_terminal_btn], alignment=ft.MainAxisAlignment.END),
+                ft.Row([self.retry_init_btn, clear_terminal_btn], alignment=ft.MainAxisAlignment.END, spacing=8),
                 ft.Container(self.terminal_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=34, padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE),
             ],
             expand=True,
@@ -1129,19 +1101,49 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         )
         self._right_terminal_tab = terminal_tab
         self._right_mcp_tab = mcp_tab
+        self._right_skills_tab = ft.Column(
+            [
+                ft.Row([ft.Text(_("refresh_skills"), size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), ft.Container(expand=True), self.skill_search], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=8),
+                ft.Row([self.skill_install_field, self.skill_install_btn], spacing=8),
+                ft.Container(self.skill_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=34, padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE),
+                ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.25),
+                ft.Row([ft.Text(_("skill_hub_browse"), size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), ft.Container(expand=True)], alignment=ft.MainAxisAlignment.START, spacing=8),
+                ft.Row([self.hub_search, self.hub_browse_btn], spacing=8),
+                ft.Container(self.hub_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=34, padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE),
+            ],
+            expand=True,
+            spacing=8,
+        )
         self._right_tab_content = ft.Column(
             [
                 terminal_tab,
                 ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.25),
                 ft.Container(height=4),
                 mcp_tab,
+                ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.25),
+                ft.Container(height=4),
+                self._right_skills_tab,
+            ],
+            expand=True,
+            spacing=0,
+        )
+        self._right_tab_container = ft.Column(
+            [
+                ft.TabBar(tabs=[ft.Tab("终端"), ft.Tab("MCP"), ft.Tab("Skills")]),
+                ft.TabBarView(
+                    expand=True,
+                    controls=[
+                        terminal_tab,
+                        mcp_tab,
+                        self._right_skills_tab,
+                    ],
+                ),
             ],
             expand=True,
             spacing=0,
         )
         self.right_tabs = ft.Tabs(
-            length=320,
-            content=self._right_tab_content,
+            content=self._right_tab_container,
             selected_index=0,
             on_change=self._on_right_tab_changed,
             expand=True,
@@ -1162,10 +1164,9 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self._log_error("tab change parse", exc)
             idx = 0
         try:
-            self._right_terminal_tab.visible = idx == 0
-            self._right_mcp_tab.visible = idx == 1
-            self._right_terminal_tab.update()
-            self._right_mcp_tab.update()
+            if hasattr(self, "_right_tab_container"):
+                self._right_tab_container.content.controls[1].selected_index = idx
+                self._right_tab_container.update()
         except Exception as exc:
             self._log_error("right tab change", exc)
 
@@ -1462,22 +1463,138 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         try:
             from prism.skills import skills
             skill_list = skills.list_skills()
-            self.skill_list.controls.clear()
-            if not skill_list:
-                self.skill_list.controls.append(ft.Text("暂无 Skills", size=12, color=ft.Colors.ON_SURFACE_VARIANT))
-            else:
-                for skill in skill_list:
-                    status = "启用" if skill.get('enabled') else "禁用"
-                    row = ft.Row([
-                        ft.Text(skill.get('name', 'unknown'), size=12, expand=True),
-                        ft.Text(status, size=10, color=ft.Colors.ON_SURFACE_VARIANT),
-                    ], spacing=6, tight=True)
-                    self.skill_list.controls.append(row)
-            self.skill_list.update()
+            self._skill_all_items = list(skill_list)
+            self._render_skill_items(self._skill_all_items)
             self._append_terminal(f"skills refreshed: {len(skill_list)} 个")
         except Exception as e:
             self._append_terminal(f"skills error: {e}")
             self._set_status("Skills 刷新失败", ft.Colors.RED_400)
+
+    def _render_skill_items(self, skill_list):
+        if not hasattr(self, "skill_list") or self.skill_list is None:
+            return
+        self.skill_list.controls.clear()
+        if not skill_list:
+            self.skill_list.controls.append(ft.Container(
+                content=ft.Column([
+                    ft.Icon(ft.Icons.EXTENSION_OFF_ROUNDED, size=28, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.5),
+                    ft.Text("暂无 Skills", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.95),
+                ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER, tight=True),
+                padding=ft.Padding(48, 48, 48, 48),
+                border_radius=12,
+                bgcolor=ft.Colors.with_opacity(0.6, ft.Colors.SURFACE_CONTAINER),
+            ))
+        else:
+            for skill in skill_list:
+                status = _("skill_enabled") if skill.get('enabled') else _("skill_disabled")
+                status_color = ft.Colors.GREEN_400 if skill.get('enabled') else ft.Colors.ON_SURFACE_VARIANT
+                row = ft.Row([
+                    ft.Column([
+                        ft.Text(skill.get('name', 'unknown'), size=12, weight=ft.FontWeight.W_500, color=ft.Colors.ON_SURFACE),
+                        ft.Text(skill.get('description', ''), size=10, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.85, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
+                    ], spacing=2, expand=True),
+                    ft.Text(status, size=10, color=status_color, weight=ft.FontWeight.W_500),
+                    ft.IconButton(icon=ft.Icons.POWER_SETTINGS_NEW_ROUNDED, tooltip=_("skill_toggle"), icon_size=14, icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE_VARIANT)), on_click=lambda e, n=skill.get('name'): self._toggle_skill(n)),
+                    ft.IconButton(icon=ft.Icons.DELETE_OUTLINE_ROUNDED, tooltip=_("skill_uninstall"), icon_size=14, icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE_VARIANT)), on_click=lambda e, n=skill.get('name'): self._uninstall_skill(n)),
+                ], spacing=6, tight=True)
+                self.skill_list.controls.append(row)
+        self.skill_list.update()
+
+    def _filter_skills(self, text: str):
+        q = (text or "").strip().lower()
+        if not q:
+            self._render_skill_items(self._skill_all_items)
+            return
+        filtered = [s for s in self._skill_all_items if q in s.get('name', '').lower() or q in s.get('description', '').lower() or any(q in t.lower() for t in s.get('triggers', []))]
+        self._render_skill_items(filtered)
+
+    def _toggle_skill(self, name: str):
+        if not name:
+            return
+        self._append_terminal(f"toggle skill: {name}")
+        try:
+            from prism.skills import skills
+            result = skills.toggle_skill(name)
+            if result.get('success'):
+                self._set_status(result.get('message', '已切换'), ft.Colors.GREEN_400)
+                self._append_terminal(f"toggled: {result.get('message')}")
+                self._refresh_skills()
+            else:
+                self._set_status(f"切换失败: {result.get('error', 'unknown')}", ft.Colors.RED_400)
+        except Exception as e:
+            self._append_terminal(f"toggle error: {e}")
+            self._set_status("Skill 切换异常", ft.Colors.RED_400)
+
+    def _install_skill_from_hub(self, name: str):
+        if not name:
+            return
+        self._append_terminal(f"install from hub: {name}")
+        try:
+            from prism.skills import skills
+            result = skills.install_skill(name)
+            if result.get('success'):
+                self._set_status(result.get('message', '安装成功'), ft.Colors.GREEN_400)
+                self._append_terminal(f"installed from hub: {result.get('message')}")
+                self._refresh_skills()
+            else:
+                self._set_status(f"安装失败: {result.get('error', 'unknown')}", ft.Colors.RED_400)
+        except Exception as e:
+            self._append_terminal(f"install hub error: {e}")
+            self._set_status("Skill 安装异常", ft.Colors.RED_400)
+
+    def _browse_hub_skills(self):
+        q = (self.hub_search.value if hasattr(self, "hub_search") and self.hub_search else "").strip()
+        self._append_terminal(f"browse hub skills: {q or '*'}")
+        try:
+            from prism.skills import skills
+            data = skills.search_hub(q) if q else skills.browse_hub()
+            self._render_hub_items(data)
+        except Exception as e:
+            self._append_terminal(f"hub browse error: {e}")
+            self._set_status(_("skill_hub_error"), ft.Colors.RED_400)
+
+    def _render_hub_items(self, items):
+        if not hasattr(self, "hub_list") or self.hub_list is None:
+            return
+        self.hub_list.controls.clear()
+        if not items:
+            self.hub_list.controls.append(ft.Container(
+                content=ft.Column([
+                    ft.Icon(ft.Icons.PUBLIC_OFF_ROUNDED, size=28, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.5),
+                    ft.Text(_("skill_hub_empty"), size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.95),
+                ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER, tight=True),
+                padding=ft.Padding(48, 48, 48, 48),
+                border_radius=12,
+                bgcolor=ft.Colors.with_opacity(0.6, ft.Colors.SURFACE_CONTAINER),
+            ))
+        else:
+            for item in items:
+                row = ft.Row([
+                    ft.Column([
+                        ft.Text(item.get('name', 'unknown'), size=12, weight=ft.FontWeight.W_500, color=ft.Colors.ON_SURFACE),
+                        ft.Text(item.get('description', ''), size=10, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.85, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
+                    ], spacing=2, expand=True),
+                    ft.TextButton(_("skill_hub_install"), style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), on_click=lambda e, n=item.get('name'): self._install_skill_from_hub(n)),
+                ], spacing=8, tight=True)
+                self.hub_list.controls.append(row)
+        self.hub_list.update()
+
+    def _uninstall_skill(self, name: str):
+        if not name:
+            return
+        self._append_terminal(f"uninstall skill: {name}")
+        try:
+            from prism.skills import skills
+            result = skills.uninstall_skill(name)
+            if result.get('success'):
+                self._set_status(result.get('message', '已卸载'), ft.Colors.GREEN_400)
+                self._append_terminal(f"uninstalled: {result.get('message')}")
+                self._refresh_skills()
+            else:
+                self._set_status(f"卸载失败: {result.get('error', 'unknown')}", ft.Colors.RED_400)
+        except Exception as e:
+            self._append_terminal(f"uninstall error: {e}")
+            self._set_status("Skill 卸载异常", ft.Colors.RED_400)
 
     def _install_skill_from_ui(self):
         name = self.skill_install_field.value.strip() if hasattr(self, 'skill_install_field') else ""
@@ -1491,6 +1608,9 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             if result.get('success'):
                 self._set_status(result.get('message', '安装成功'), ft.Colors.GREEN_400)
                 self._append_terminal(f"installed: {result.get('message')}")
+                self.skill_install_field.value = ""
+                if hasattr(self, 'skill_install_field') and self.skill_install_field:
+                    self.skill_install_field.update()
                 self._refresh_skills()
             else:
                 self._set_status(f"安装失败: {result.get('error', 'unknown')}", ft.Colors.RED_400)
@@ -1534,7 +1654,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         except Exception as exc:
             self.agent = None
             self._log_error("agent init", exc)
-            self._set_status(f"初始化失败：{exc}", ft.Colors.RED_400)
             self._append_terminal(f"agent recreate failed: {exc}")
 
     def _stop_send(self):
@@ -1558,8 +1677,17 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         except Exception as e:
             status["error"] = f"playwright 未安装: {e}"
             return status
-        # 不在启动时同步 launch Chromium，避免阻塞 UI 或触发安装卡住
-        status["chromium"] = True
+        try:
+            from playwright.sync_api import sync_playwright
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                version = browser.version
+                browser.close()
+                status["chromium"] = True
+                status["version"] = version
+        except Exception as e:
+            status["chromium"] = False
+            status["error"] = f"chromium 不可用: {e}"
         return status
 
     def _start_perf_monitor(self) -> None:

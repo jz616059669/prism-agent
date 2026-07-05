@@ -37,7 +37,9 @@ class BrowserMixin:
             from prism.tools.browser import browser as browser_api
             result = browser_api.snapshot()
             if result.get("success"):
-                self._append(result.get("role", "PRISM"), result.get("content", "(no content)"))
+                content = result.get("content", "(no content)")
+                self._append_terminal(f"snapshot: {content[:800]}")
+                self._append("PRISM", content)
             else:
                 self._set_status("快照失败", ft.Colors.RED_400)
         except Exception as e:

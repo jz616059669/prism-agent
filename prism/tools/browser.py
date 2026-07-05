@@ -150,13 +150,9 @@ class BrowserController:
             if not body_text.strip():
                 body_text = await self.page.evaluate("() => document.body.innerText || ''")
             
-            # 如果仍然为空，尝试获取 outerHTML 作为兜底
+            # 如果仍然为空，尝试更轻量的提示，不再直接塞大段 HTML
             if not body_text.strip():
-                outer_html = await self.page.evaluate("() => document.body.outerHTML || ''")
-                if outer_html.strip():
-                    body_text = "[页面文本为空，已返回 HTML 片段]\n" + outer_html[:4000]
-                else:
-                    body_text = "[页面文本为空，请检查页面是否正常渲染]"
+                body_text = "[页面文本为空，请检查页面是否正常渲染或尝试截图查看]"
             
             # 截断过长内容
             content = body_text.strip()
@@ -168,6 +164,7 @@ class BrowserController:
                 'content': content,
                 'url': url,
                 'title': title,
+                'role': 'browser',
             }
             
         except Exception as e:
@@ -209,16 +206,18 @@ class BrowserController:
             logger.debug("type_text failed: %s", traceback.format_exc())
             return {'success': False, 'error': str(e)}
     
-    async def screenshot(self, path: Optional[str] = None) -> Dict[str, Any]:
+    async def screenshot(self, path: Optional[str] = None, full_page: bool = False) -> Dict[str, Any]:
         """截图"""
         if not self._check_connection():
             return {'success': False, 'error': 'Browser not connected'}
         
         try:
             if not path:
-                path = f"prism_screenshot_{int(time.time())}.png"
+                screenshot_dir = Path.home() / '.prism' / 'browser_screenshots'
+                screenshot_dir.mkdir(parents=True, exist_ok=True)
+                path = str(screenshot_dir / f"prism_screenshot_{int(time.time())}.png")
             
-            await self.page.screenshot(path=path, full_page=False)
+            await self.page.screenshot(path=path, full_page=full_page)
             self.state.screenshot_path = path
             
             return {
@@ -303,8 +302,14 @@ class BrowserController:
             return {'success': False, 'error': str(e)}
     
     def _check_connection(self) -> bool:
-        """检查连接状态"""
-        return self.connected and self.page is not None
+        if not self.connected:
+            return False
+        if self.page is None:
+            return False
+        try:
+            return self.page.is_closed() is False
+        except Exception:
+            return False
     
     def _handle_console(self, msg):
         """处理控制台消息"""
@@ -351,48 +356,58 @@ class SyncBrowserAPI:
         self._ensure_loop()
         loop = self._loop
         future = asyncio.run_coroutine_threadsafe(coro, loop)
-        return future.result(timeout=timeout)
+        try:
+            return future.result(timeout=timeout)
+        except Exception:
+            try:
+                self._run(browser_controller.disconnect())
+            except Exception:
+                pass
+            return {"success": False, "error": f"browser operation timed out after {timeout}s"}
     
     def _ensure_connected(self, headless: bool = True) -> bool:
-        if not browser_controller.connected:
-            result = self._run(browser_controller.connect(headless=headless))
-            return result.get("success", False)
+        if not self._check_connection():
+            try:
+                result = self._run(browser_controller.connect(headless=headless))
+                return result.get("success", False)
+            except Exception:
+                return False
         return True
     
     def navigate(self, url: str, headless: bool = True) -> Dict[str, Any]:
         if not self._ensure_connected(headless):
             return {"success": False, "error": "Failed to connect browser"}
-        return self._run(browser_controller.navigate(url))
+        return self._run(browser_controller.navigate(url), timeout=40)
     
     def snapshot(self, full: bool = False) -> Dict[str, Any]:
         if not browser_controller.connected:
             return {"success": False, "error": "Browser not connected"}
-        return self._run(browser_controller.snapshot(full=full))
+        return self._run(browser_controller.snapshot(full=full), timeout=40)
     
     def click(self, selector: str) -> Dict[str, Any]:
         if not browser_controller.connected:
             return {"success": False, "error": "Browser not connected"}
-        return self._run(browser_controller.click(selector))
+        return self._run(browser_controller.click(selector), timeout=20)
     
     def type(self, selector: str, text: str) -> Dict[str, Any]:
         if not browser_controller.connected:
             return {"success": False, "error": "Browser not connected"}
-        return self._run(browser_controller.type_text(selector, text))
+        return self._run(browser_controller.type_text(selector, text), timeout=20)
     
     def screenshot(self, path: Optional[str] = None) -> Dict[str, Any]:
         if not browser_controller.connected:
             return {"success": False, "error": "Browser not connected"}
-        return self._run(browser_controller.screenshot(path))
+        return self._run(browser_controller.screenshot(path), timeout=20)
     
     def evaluate(self, script: str) -> Dict[str, Any]:
         if not browser_controller.connected:
             return {"success": False, "error": "Browser not connected"}
-        return self._run(browser_controller.evaluate(script))
+        return self._run(browser_controller.evaluate(script), timeout=20)
     
     def scroll(self, direction: str = "down") -> Dict[str, Any]:
         if not browser_controller.connected:
             return {"success": False, "error": "Browser not connected"}
-        return self._run(browser_controller.scroll(direction))
+        return self._run(browser_controller.scroll(direction), timeout=20)
     
     def disconnect(self) -> Dict[str, Any]:
         if not browser_controller.connected:

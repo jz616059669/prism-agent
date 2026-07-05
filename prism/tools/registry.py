@@ -281,7 +281,7 @@ class WebSearchTool(Tool):
         "required": ["query"],
     }
     
-    def execute(self, query: str, max_results: int = 5, file_glob: Optional[str] = None, **kwargs) -> Dict[str, Any]:
+    def execute(self, query: str, max_results: int = 5, file_glob: Optional[str] = None, max_age_minutes: Optional[int] = None, **kwargs) -> Dict[str, Any]:
         if not query:
             return {"success": False, "error": "query is required"}
         try:
@@ -327,8 +327,9 @@ class WebSearchTool(Tool):
         if not results:
             return {"success": True, "results": [], "query": query, "message": "no results"}
         
-        from prism.tools.freshness import filter_stale_results
-        results = filter_stale_results(results, max_age_minutes=max_age_minutes)
+        if max_age_minutes is not None:
+            from prism.tools.freshness import filter_stale_results
+            results = filter_stale_results(results, max_age_minutes=max_age_minutes)
         return {"success": True, "results": results, "query": query, "count": len(results)}
 
 
