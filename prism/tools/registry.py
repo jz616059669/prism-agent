@@ -230,7 +230,7 @@ class WebSearchTool(Tool):
     name = "web_search"
     description = "搜索网页，返回结果摘要"
     
-    def execute(self, query: str, max_results: int = 5) -> Dict[str, Any]:
+    def execute(self, query: str, max_results: int = 5, max_age_minutes: int = 60) -> Dict[str, Any]:
         if not query:
             return {"success": False, "error": "query is required"}
         try:
@@ -275,6 +275,9 @@ class WebSearchTool(Tool):
             return {"success": False, "error": f"search parse failed: {exc}", "query": query}
         if not results:
             return {"success": True, "results": [], "query": query, "message": "no results"}
+        
+        from prism.tools.freshness import filter_stale_results
+        results = filter_stale_results(results, max_age_minutes=max_age_minutes)
         return {"success": True, "results": results, "query": query, "count": len(results)}
 
 
