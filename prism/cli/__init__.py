@@ -16,6 +16,7 @@ import traceback
 from rich.console import Console
 from rich.panel import Panel
 from rich.markdown import Markdown
+from rich.prompt import Prompt
 
 from prism.config import config as prism_config
 from prism.config import ConfigError

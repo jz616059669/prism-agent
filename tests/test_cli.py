@@ -57,15 +57,19 @@ def test_cli_tools(runner):
     assert result.output and len(result.output.strip()) > 0
 
 
-def test_cli_ask(runner):
+def test_cli_ask(runner, monkeypatch):
+    fake_agent = type("FakeAgent", (), {"chat": lambda self, msg: "fake reply"})()
+    monkeypatch.setattr("prism.cli.create_agent", lambda: fake_agent)
     result = runner.invoke(cli, ["ask", "hello"])
     assert result.exit_code == 0
-    # 未配置模型时，ask 会返回配置错误提示
-    assert "配置" in result.output or "hello" in result.output or "PRISM" in result.output
+    assert "hello" in result.output or "fake reply" in result.output or "PRISM" in result.output
 
 
-def test_cli_chat(runner):
-    result = runner.invoke(cli, ["chat"], input="hello\n/exit\n")
+def test_cli_chat_smoke(runner, monkeypatch):
+    fake_agent = type("FakeAgent", (), {"chat": lambda self, msg: "fake reply", "clear_history": lambda self: None})()
+    monkeypatch.setattr("prism.cli.create_agent", lambda: fake_agent)
+    inputs = iter(["/exit"])
+    monkeypatch.setattr("prism.cli.Prompt.ask", lambda *args, **kwargs: next(inputs))
+    result = runner.invoke(cli, ["chat"])
     assert result.exit_code == 0
-    # 未配置模型时，chat 会返回配置错误提示
-    assert "配置" in result.output or "hello" in result.output or "PRISM" in result.output
+    assert "PRISM" in result.output or "再见" in result.output or "配置" in result.output

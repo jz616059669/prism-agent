@@ -50,10 +50,10 @@ class Config:
         """默认配置"""
         return {
             'model': {
-                'default': 'gpt-4o',
-                'provider': 'openai',
-                'base_url': 'https://api.openai.com/v1',
-                'api_key': os.getenv('OPENAI_API_KEY', ''),
+                'default': 'step-3.7-flash',
+                'provider': 'stepfun',
+                'base_url': 'https://api.stepfun.com/step_plan/v1',
+                'api_key': os.getenv('STEPFUN_API_KEY', os.getenv('OPENAI_API_KEY', '')),
                 'context_length': 128000,
                 'max_tokens': 4096,
             },
