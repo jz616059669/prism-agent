@@ -163,7 +163,7 @@ class PrismMCPServer:
 
     def _tool_execute(self, args: Dict[str, Any]) -> Dict[str, Any]:
         from prism.tools.registry import registry
-        result = registry.execute("code_execute", code=args.get("code", ""))
+        result = registry.execute("code_execution", code=args.get("code", ""))
         return result if isinstance(result, dict) else {"content": str(result)}
 
     def _tool_save_session(self, args: Dict[str, Any]) -> Dict[str, Any]:
