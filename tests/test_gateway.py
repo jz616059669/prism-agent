@@ -274,6 +274,14 @@ def test_wechat_adapter_send(monkeypatch):
     assert captured["send_json"].get("touser") == "user1"
 
 
+def test_wechat_start_polling_raises_not_implemented():
+    from prism.gateway.wechat import WechatAdapter, WechatConfig
+
+    adapter = WechatAdapter(WechatConfig(corp_id="c", agent_id="1", secret="s"))
+    with pytest.raises(NotImplementedError):
+        adapter.start_polling(lambda msg: None)
+
+
 def test_adapter_lifecycle_sync(monkeypatch):
     import time
     import threading
