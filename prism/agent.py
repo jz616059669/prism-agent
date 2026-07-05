@@ -48,13 +48,14 @@ class Agent:
     - 统一的模型调用接口
     """
     
-    def __init__(self, system_prompt: Optional[str] = None):
+    def __init__(self, system_prompt: Optional[str] = None, enable_auto_memory: bool = False):
         self.messages: List[Message] = []
         self.tool_calls: List[ToolCall] = []
         self.system_prompt = system_prompt or self._default_system_prompt()
         self.max_turns = 150
         self.max_messages = 200  # 防止上下文无限增长
         self.tools_enabled = True
+        self.enable_auto_memory = enable_auto_memory
         self._memory_context = persistent_memory.get_context(max_items=5)
         if self._memory_context:
             self.system_prompt = self.system_prompt.rstrip() + "\n\n" + self._memory_context
@@ -147,6 +148,17 @@ class Agent:
             "response": assistant_content,
             "agent": self,
         })
+
+        # 自动记忆：若开启，则将本轮关键信息写入持久记忆
+        if getattr(self, "enable_auto_memory", False) and assistant_content:
+            try:
+                persistent_memory.remember(
+                    key=f"chat:{datetime.now().isoformat()}",
+                    value=f"用户: {user_message}\n助手: {assistant_content}",
+                    category="chat_history",
+                )
+            except Exception:
+                logger.debug("auto memory save failed: %s", traceback.format_exc())
 
         return assistant_content
 
@@ -412,6 +424,6 @@ class AgentWithSubagents:
 # 在 Agent 类中添加 subagent 支持
 Agent.subagent_manager = property(lambda self: SubagentManager(self))
 
-def create_agent(system_prompt: Optional[str] = None) -> Agent:
+def create_agent(system_prompt: Optional[str] = None, enable_auto_memory: bool = False) -> Agent:
     """创建 Agent 实例"""
-    return Agent(system_prompt=system_prompt)
+    return Agent(system_prompt=system_prompt, enable_auto_memory=enable_auto_memory)

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import logging
+import traceback
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -67,7 +68,7 @@ class MemoryEmbeddingIndex:
     """轻量语义索引：向量存在磁盘，不占内存。"""
 
     def __init__(self, base_dir: Optional[Path] = None) -> None:
-        self.base_dir = base_dir or memory_dir()
+        self.base_dir = Path(base_dir) if base_dir is not None else memory_dir()
         self.base_dir.mkdir(parents=True, exist_ok=True)
         self._index_path = self.base_dir / "embeddings.json"
         self._client: Optional[_EmbeddingClient] = None
@@ -85,7 +86,7 @@ class MemoryEmbeddingIndex:
         try:
             data = json.loads(self._index_path.read_text(encoding="utf-8"))
             self._vectors = {k: v for k, v in data.get("vectors", {}).items() if isinstance(v, list)}
-        except Exception:
+        except Exception as exc:
             logger.debug("load memory index failed: %s", traceback.format_exc())
             self._vectors = {}
 
@@ -95,7 +96,7 @@ class MemoryEmbeddingIndex:
                 json.dumps({"vectors": self._vectors, "model": self._model}, ensure_ascii=False, indent=2),
                 encoding="utf-8",
             )
-        except Exception:
+        except Exception as exc:
             logger.debug("memory index save failed: %s", traceback.format_exc())
 
     @staticmethod
@@ -140,7 +141,7 @@ class PersistentMemory:
     """持久化记忆系统"""
 
     def __init__(self, base_dir: Optional[Path] = None) -> None:
-        self.base_dir = base_dir or memory_dir()
+        self.base_dir = Path(base_dir) if base_dir is not None else memory_dir()
         self.base_dir.mkdir(parents=True, exist_ok=True)
         self._index: Dict[str, Memory] = {}
         self._embedding_index = MemoryEmbeddingIndex(self.base_dir)
