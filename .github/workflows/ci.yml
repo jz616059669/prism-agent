@@ -44,6 +44,8 @@ jobs:
           python-version: "3.11"
       - name: Install uv
         run: pip install uv
+      - name: Create virtualenv
+        run: uv venv
       - name: Install dependencies
         run: uv pip install ruff
       - name: Ruff
