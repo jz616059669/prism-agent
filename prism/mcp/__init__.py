@@ -33,6 +33,8 @@ class MCPServer:
     args: List[str] = None  # stdio 模式：参数
     enabled: bool = True
     env: Optional[Dict[str, str]] = None  # stdio 模式：环境变量
+    timeout: int = 30  # 默认超时（秒）
+    retries: int = 2  # 连接/调用失败重试次数
 
     def __post_init__(self):
         if self.args is None:
@@ -187,19 +189,26 @@ class MCPClient:
         except Exception as e:
             print(f"[MCP] SSE 连接失败 {server.name}: {e}")
 
-    def list_tools(self, server_name: Optional[str] = None) -> List[Dict[str, Any]]:
+    def list_tools(self, server_name: Optional[str] = None, refresh: bool = False) -> List[Dict[str, Any]]:
         """
         列出可用工具
 
         Args:
             server_name: 指定服务器名，None 表示所有服务器
+            refresh: 强制刷新工具列表
         """
         servers = [server_name] if server_name else list(self.servers.keys())
         tools = []
         for name in servers:
+            if refresh:
+                self.tools.pop(name, None)
             self._refresh_tools(name)
             tools.extend(self.tools.get(name, []))
         return tools
+
+    def refresh_tools(self, server_name: Optional[str] = None) -> None:
+        """强制刷新一个或多个服务器的工具列表"""
+        self.list_tools(server_name=server_name, refresh=True)
 
     def _refresh_tools(self, server_name: str):
         if server_name not in self.servers:
@@ -229,16 +238,25 @@ class MCPClient:
         if not server:
             return {'success': False, 'error': f'Server not found: {server_name}'}
 
-        if server.transport == "stdio":
-            return self._call_stdio_tool(server, tool_name, arguments)
-        elif server.transport == "http":
-            return self._call_http_tool(server_name, tool_name, arguments)
-        elif server.transport == "sse":
-            return self._call_sse_tool(server_name, tool_name, arguments)
-        else:
-            return {'success': False, 'error': f'Unsupported transport: {server.transport}'}
+        timeout = getattr(server, 'timeout', 30) or 30
+        retries = getattr(server, 'retries', 2) or 2
+        last_error = None
+        for attempt in range(1, max(retries, 1) + 1):
+            try:
+                if server.transport == "stdio":
+                    return self._call_stdio_tool(server, tool_name, arguments, timeout=timeout)
+                elif server.transport == "http":
+                    return self._call_http_tool(server_name, tool_name, arguments, timeout=timeout)
+                elif server.transport == "sse":
+                    return self._call_sse_tool(server_name, tool_name, arguments, timeout=timeout)
+                else:
+                    return {'success': False, 'error': f'Unsupported transport: {server.transport}'}
+            except Exception as e:
+                last_error = e
+                logger.debug("mcp call attempt %s/%s failed: %s", attempt, retries, e, exc_info=True)
+        return {'success': False, 'error': f'MCP call failed after {retries} attempts: {last_error}'}
 
-    def _call_stdio_tool(self, server: MCPServer, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    def _call_stdio_tool(self, server: MCPServer, tool_name: str, arguments: Dict[str, Any], timeout: float = 30.0) -> Dict[str, Any]:
         """通过 stdio 调用工具"""
         process = self.processes.get(server.name)
         if not process:
@@ -262,7 +280,7 @@ class MCPClient:
             process.stdin.write(request_str)
             process.stdin.flush()
 
-            response = self._read_stdio_response(process, timeout=30.0)
+            response = self._read_stdio_response(process, timeout=timeout)
             if not response:
                 return {'success': False, 'error': 'No response from server'}
 
@@ -282,12 +300,12 @@ class MCPClient:
         except Exception as e:
             return {'success': False, 'error': str(e)}
 
-    def _call_http_tool(self, server_name: str, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    def _call_http_tool(self, server_name: str, tool_name: str, arguments: Dict[str, Any], timeout: int = 30) -> Dict[str, Any]:
         """通过 HTTP 调用工具"""
         client = self.http_clients.get(server_name)
         if not client:
             return {'success': False, 'error': f'HTTP client not connected: {server_name}'}
-        return client.call_tool(tool_name, arguments)
+        return client.call_tool(tool_name, arguments, timeout=timeout)
 
     def _list_stdio_tools(self, server_name: str) -> List[Dict[str, Any]]:
         process = self.processes.get(server_name)
@@ -296,6 +314,7 @@ class MCPClient:
         try:
             if not self._stdio_initialized.get(server_name):
                 self._initialize_stdio(self.servers[server_name], process)
+            timeout = getattr(self.servers.get(server_name), 'timeout', 30) or 30
             payload = {
                 "jsonrpc": "2.0",
                 "id": 10,
@@ -304,7 +323,7 @@ class MCPClient:
             }
             process.stdin.write(json.dumps(payload, ensure_ascii=False) + "\n")
             process.stdin.flush()
-            response = self._read_stdio_response(process, timeout=30.0)
+            response = self._read_stdio_response(process, timeout=timeout)
             if response and "result" in response:
                 return response["result"].get("tools", [])
         except Exception:
@@ -315,7 +334,8 @@ class MCPClient:
         client = self.http_clients.get(server_name)
         if not client:
             return []
-        result = client.list_tools()
+        timeout = getattr(self.servers.get(server_name), 'timeout', 30) or 30
+        result = client.list_tools(timeout=timeout)
         if result.get("success"):
             return result.get("tools", [])
         return []
@@ -325,17 +345,18 @@ class MCPClient:
         if not client:
             return []
         try:
-            return client.list_tools().get("tools", [])
+            timeout = getattr(self.servers.get(server_name), 'timeout', 30) or 30
+            return client.list_tools(timeout=timeout).get("tools", [])
         except Exception:
             logger.debug("list sse tools failed: %s", traceback.format_exc())
             return []
 
-    def _call_sse_tool(self, server_name: str, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    def _call_sse_tool(self, server_name: str, tool_name: str, arguments: Dict[str, Any], timeout: int = 30) -> Dict[str, Any]:
         client = self.http_clients.get(server_name)
         if not client:
             return {'success': False, 'error': f'SSE client not connected: {server_name}'}
         try:
-            return client.call_tool(tool_name, arguments)
+            return client.call_tool(tool_name, arguments, timeout=timeout)
         except Exception as exc:
             return {'success': False, 'error': str(exc)}
 

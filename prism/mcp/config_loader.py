@@ -52,6 +52,8 @@ def load_mcp_config(config_path: Optional[str] = None) -> List[Any]:
                 args=cfg.get("args", []),
                 env=cfg.get("env"),
                 enabled=cfg.get("enabled", True),
+                timeout=int(cfg.get("timeout") or 30),
+                retries=int(cfg.get("retries") or 2),
             )
             servers.append(server)
         
@@ -94,13 +96,24 @@ def create_default_mcp_config() -> str:
             "command": "npx",
             "args": ["-y", "@modelcontextprotocol/server-filesystem", str(config_dir)],
             "enabled": True,
+            "timeout": 30,
+            "retries": 2,
         },
         "github": {
             "transport": "stdio",
             "command": "npx",
             "args": ["-y", "@modelcontextprotocol/server-github"],
             "enabled": False,
-        }
+            "timeout": 30,
+            "retries": 2,
+        },
+        "example-http": {
+            "transport": "http",
+            "url": "http://localhost:3000/mcp",
+            "enabled": False,
+            "timeout": 15,
+            "retries": 3,
+        },
     }
     
     with open(config_path, 'w', encoding='utf-8') as f:
