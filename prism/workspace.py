@@ -33,6 +33,12 @@ class WorkspaceManager:
         self.base_dir.mkdir(parents=True, exist_ok=True)
         self._workspaces: Dict[str, Workspace] = {}
         self._agents: Dict[str, Agent] = {}
+        self._loaded = False
+
+    def _ensure_loaded(self) -> None:
+        if self._loaded:
+            return
+        self._loaded = True
         self._load_workspaces()
 
     def _load_workspaces(self) -> None:
@@ -58,7 +64,6 @@ class WorkspaceManager:
                     metadata=ws.get("metadata", {}),
                 )
                 self._workspaces[workspace.name] = workspace
-                self._agents[workspace.name] = Agent()
         except Exception as exc:
             logger.warning("failed to load workspaces: %s", exc)
 
@@ -119,6 +124,7 @@ class WorkspaceManager:
 
     def list_workspaces(self) -> List[Dict[str, Any]]:
         """列出所有工作区。"""
+        self._ensure_loaded()
         return [
             {
                 "name": ws.name,
@@ -131,6 +137,7 @@ class WorkspaceManager:
 
     def delete_workspace(self, name: str) -> None:
         """删除工作区。"""
+        self._ensure_loaded()
         if name == "default":
             raise ValueError("Cannot delete default workspace")
         if name in self._workspaces:
