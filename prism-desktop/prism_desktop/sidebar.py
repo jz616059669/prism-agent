@@ -9,6 +9,8 @@ import flet as ft
 from prism.logging import logger
 import traceback
 
+from prism_desktop.i18n import gettext as _
+
 if TYPE_CHECKING:
     from prism_desktop.main import PrismDesktop
 
