@@ -423,3 +423,17 @@ if "web_search" not in registry._tools:
     registry.register(WebSearchTool())
 if "code_execution" not in registry._tools:
     registry.register(CodeExecutionTool())
+
+try:
+    from prism.tools.multimodal_tools import (
+        VisionDescribeTool,
+        ImageToBase64Tool,
+        AudioTranscribeTool,
+        TextToSpeechTool,
+    )
+    registry.register(VisionDescribeTool())
+    registry.register(ImageToBase64Tool())
+    registry.register(AudioTranscribeTool())
+    registry.register(TextToSpeechTool())
+except Exception as exc:
+    logger.debug("multimodal tools import failed: %s", exc)
