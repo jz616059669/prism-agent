@@ -13,7 +13,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from prism.config import config as prism_config, ConfigError
+from prism.config import get_config, ConfigError
 from prism.providers.manager import provider_pool, ProviderPool
 from prism.agent import create_agent
 from prism.tools.browser_bridge import open_page, page_snapshot, close_browser
@@ -21,8 +21,8 @@ from prism.tools.browser_bridge import open_page, page_snapshot, close_browser
 
 def test_config_validation_fails_without_api_key():
     with pytest.raises(ConfigError):
-        prism_config.set("model.api_key", "")
-        prism_config.validate()
+        get_config().set("model.api_key", "")
+        get_config().validate()
 
 
 def test_provider_pool_requires_key():
@@ -33,17 +33,17 @@ def test_provider_pool_requires_key():
 
 
 def test_agent_creation_uses_config():
-    prism_config.set("model.api_key", "sk-fake")
-    prism_config.set("model.default", "gpt-4o")
-    prism_config.set("model.provider", "openai")
-    prism_config.set("model.base_url", "https://api.openai.com/v1")
+    get_config().set("model.api_key", "sk-fake")
+    get_config().set("model.default", "gpt-4o")
+    get_config().set("model.provider", "openai")
+    get_config().set("model.base_url", "https://api.openai.com/v1")
     try:
         agent = create_agent()
         assert agent is not None
         tools = agent.list_tools()
         assert isinstance(tools, list)
     finally:
-        prism_config.set("model.api_key", "")
+        get_config().set("model.api_key", "")
 
 
 def test_browser_open_and_snapshot():

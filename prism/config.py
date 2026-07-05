@@ -73,8 +73,8 @@ class Config:
                 'max_tokens': 4096,
             },
             'fallback': {
-                'enabled': True,
-                'chain': ['openai/gpt-4o', 'anthropic/claude-sonnet-4', 'openai/gpt-4o-mini'],
+                'enabled': False,
+                'chain': ['stepfun/step-3.7-flash'],
             },
             'agent': {
                 'max_turns': 150,
@@ -284,5 +284,16 @@ class Config:
         self._config['workspaces'] = workspaces
         self._save()
 
-# 全局配置实例
-config = Config()
+# 配置单例访问器（延迟初始化，避免 import-time 副作用）
+_config_instance = None
+
+
+def get_config() -> Config:
+    global _config_instance
+    if _config_instance is None:
+        _config_instance = Config()
+    return _config_instance
+
+
+# 向后兼容别名；推荐新代码用 get_config()
+config = get_config()
