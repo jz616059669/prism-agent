@@ -13,10 +13,49 @@ import traceback
 from prism.paths import PRISM_HOME
 
 
-def _load_mcp_module():
-    """延迟导入 prism.mcp，避免模块结构变化时顶层 ImportError。"""
-    from prism.mcp import MCPServer, mcp_client
-    return MCPServer, mcp_client
+class MCPConfigError(Exception):
+    """MCP 配置校验错误"""
+
+
+def _validate_mcp_config(name: str, cfg: Dict[str, Any]) -> List[str]:
+    """校验单个服务器配置，返回错误列表"""
+    errors: List[str] = []
+    transport = (cfg.get("transport") or "stdio").strip().lower()
+    if transport not in ("stdio", "http", "sse"):
+        errors.append(f"{name}: transport 必须为 stdio/http/sse")
+    if transport == "stdio":
+        if not cfg.get("command"):
+            errors.append(f"{name}: stdio 模式必须提供 command")
+    elif transport in ("http", "sse"):
+        if not cfg.get("url"):
+            errors.append(f"{name}: {transport} 模式必须提供 url")
+    timeout = cfg.get("timeout")
+    if timeout is not None:
+        try:
+            t = int(timeout)
+            if t <= 0:
+                errors.append(f"{name}: timeout 必须为正整数")
+        except (TypeError, ValueError):
+            errors.append(f"{name}: timeout 必须为整数")
+    retries = cfg.get("retries")
+    if retries is not None:
+        try:
+            r = int(retries)
+            if r < 0:
+                errors.append(f"{name}: retries 不能为负数")
+        except (TypeError, ValueError):
+            errors.append(f"{name}: retries 必须为整数")
+    return errors
+
+
+def validate_mcp_config(data: Dict[str, Any]) -> Dict[str, List[str]]:
+    """校验完整 MCP 配置，返回 {server_name: [errors]}"""
+    result: Dict[str, List[str]] = {}
+    for name, cfg in data.items():
+        errors = _validate_mcp_config(name, cfg)
+        if errors:
+            result[name] = errors
+    return result
 
 
 def load_mcp_config(config_path: Optional[str] = None) -> List[Any]:
@@ -29,7 +68,7 @@ def load_mcp_config(config_path: Optional[str] = None) -> List[Any]:
     Returns:
         MCPServer 列表
     """
-    MCPServer, _ = _load_mcp_module()
+    from prism.mcp import MCPServer
     
     if not config_path:
         config_path = str(PRISM_HOME / "mcp.json")
@@ -41,27 +80,36 @@ def load_mcp_config(config_path: Optional[str] = None) -> List[Any]:
     try:
         with open(path, 'r', encoding='utf-8') as f:
             data = json.load(f)
-        
-        servers = []
-        for name, cfg in data.items():
-            server = MCPServer(
-                name=name,
-                transport=cfg.get("transport", "stdio"),
-                command=cfg.get("command"),
-                url=cfg.get("url"),
-                args=cfg.get("args", []),
-                env=cfg.get("env"),
-                enabled=cfg.get("enabled", True),
-                timeout=int(cfg.get("timeout") or 30),
-                retries=int(cfg.get("retries") or 2),
-            )
-            servers.append(server)
-        
-        return servers
     except Exception as e:
         logger.debug("load mcp config failed: %s", traceback.format_exc())
         print(f"[MCP] 加载配置失败: {e}")
         return []
+    
+    validation = validate_mcp_config(data)
+    for name, errors in validation.items():
+        for error in errors:
+            print(f"[MCP] 配置错误: {error}")
+    
+    servers = []
+    for name, cfg in data.items():
+        if name in validation and cfg.get("enabled", True):
+            print(f"[MCP] 跳过无效服务器: {name}")
+            continue
+        server = MCPServer(
+            name=name,
+            transport=cfg.get("transport", "stdio"),
+            command=cfg.get("command"),
+            url=cfg.get("url"),
+            args=cfg.get("args", []),
+            env=cfg.get("env"),
+            enabled=cfg.get("enabled", True),
+            timeout=int(cfg.get("timeout") or 30),
+            retries=int(cfg.get("retries") or 2),
+            tool_timeouts=cfg.get("tool_timeouts"),
+        )
+        servers.append(server)
+    
+    return servers
 
 
 def setup_mcp_servers(config_path: Optional[str] = None):
@@ -71,7 +119,7 @@ def setup_mcp_servers(config_path: Optional[str] = None):
     Args:
         config_path: 配置文件路径
     """
-    _, mcp_client = _load_mcp_module()
+    from prism.mcp import mcp_client
     
     servers = load_mcp_config(config_path)
     

@@ -32,11 +32,12 @@ class MCPServer:
     transport: str  # stdio | http | sse
     command: Optional[str] = None  # stdio 模式：启动命令
     url: Optional[str] = None  # http/sse 模式：服务器地址
-    args: List[str] = None  # stdio 模式：参数
-    enabled: bool = True
-    env: Optional[Dict[str, str]] = None  # stdio 模式：环境变量
+    args: List[str] = None  # stdio 模式：命令参数
+    env: Optional[Dict[str, str]] = None  # 环境变量
+    enabled: bool = True  # 是否启用
     timeout: int = 30  # 默认超时（秒）
-    retries: int = 2  # 连接/调用失败重试次数
+    retries: int = 2  # 默认重试次数
+    tool_timeouts: Optional[Dict[str, int]] = None  # 工具级超时覆盖
 
     def __post_init__(self):
         if self.args is None:
@@ -65,6 +66,8 @@ class MCPClient:
         self._result_cache: Dict[str, Dict[str, Any]] = {}
         self._cache_ttl: int = 60
         self._cache_lock = threading.Lock()
+        self._cache_hits: int = 0
+        self._cache_misses: int = 0
         self._config_path: Optional[str] = None
         self._config_mtime: float = 0.0
         self._watcher_thread: Optional[threading.Thread] = None
@@ -272,6 +275,8 @@ class MCPClient:
             return cached
 
         timeout = getattr(server, 'timeout', 30) or 30
+        if server.tool_timeouts and tool_name in server.tool_timeouts:
+            timeout = server.tool_timeouts[tool_name]
         retries = getattr(server, 'retries', 2) or 2
         last_error = None
         for attempt in range(1, max(retries, 1) + 1):
@@ -459,10 +464,13 @@ class MCPClient:
         with self._cache_lock:
             item = self._result_cache.get(key)
             if not item:
+                self._cache_misses += 1
                 return None
             if time.time() - item["ts"] > self._cache_ttl:
                 self._result_cache.pop(key, None)
+                self._cache_misses += 1
                 return None
+            self._cache_hits += 1
             return item["value"]
 
     def set_cached(self, server_name: str, tool_name: str, arguments: Dict[str, Any], value: Dict[str, Any]) -> None:
@@ -478,6 +486,21 @@ class MCPClient:
             for key in list(self._result_cache.keys()):
                 if key.startswith(f"{server_name}::"):
                     self._result_cache.pop(key, None)
+
+    def get_cache_metrics(self) -> Dict[str, int]:
+        """获取缓存命中率统计"""
+        with self._cache_lock:
+            return {
+                "hits": self._cache_hits,
+                "misses": self._cache_misses,
+                "size": len(self._result_cache),
+                "ttl": self._cache_ttl,
+            }
+
+    def set_cache_ttl(self, ttl: int) -> None:
+        """动态调整缓存 TTL（秒）"""
+        if ttl > 0:
+            self._cache_ttl = ttl
 
     # -------------------- config hot reload --------------------
     def watch_config(self, config_path: Optional[str] = None) -> None:
