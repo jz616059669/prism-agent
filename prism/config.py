@@ -112,7 +112,7 @@ class Config:
         }
     
     def validate(self) -> None:
-        """校验必填配置"""
+        """校验必填配置，缺失时提前拦截，避免调用时才炸。"""
         model = self._config.get('model', {})
         missing = []
         if not model.get('default'):
@@ -130,6 +130,28 @@ class Config:
             api_key = self._resolve_sensitive('model.api_key', '')
         if not api_key:
             missing.append('model.api_key')
+
+        # 提前拦：已启用平台但缺凭证
+        gateway = self._config.get('gateway', {}) or {}
+        platforms = gateway.get('platforms') or []
+        for platform in platforms:
+            if platform == 'feishu':
+                if not gateway.get('feishu', {}).get('app_id'):
+                    missing.append('gateway.feishu.app_id')
+                if not gateway.get('feishu', {}).get('app_secret'):
+                    missing.append('gateway.feishu.app_secret')
+            elif platform == 'telegram':
+                if not gateway.get('telegram', {}).get('token'):
+                    missing.append('gateway.telegram.token')
+            elif platform == 'discord':
+                if not gateway.get('discord', {}).get('bot_token'):
+                    missing.append('gateway.discord.bot_token')
+            elif platform == 'wechat':
+                if not gateway.get('wechat', {}).get('secret'):
+                    missing.append('gateway.wechat.secret')
+                if not gateway.get('wechat', {}).get('token'):
+                    missing.append('gateway.wechat.token')
+
         if missing:
             raise ConfigError(
                 '配置缺失，请先设置：' + ', '.join(missing) +
