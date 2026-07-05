@@ -6,6 +6,7 @@ PRISM Agent - MCP (Model Context Protocol) 支持
 
 import json
 import os
+import queue
 import subprocess
 import threading
 import time
@@ -59,6 +60,8 @@ class MCPClient:
         self.http_clients: Dict[str, MCPHTTPClient] = {}
         self._stdio_initialized: Dict[str, bool] = {}
         self._stdio_locks: Dict[str, threading.Lock] = {}
+        self._stdio_queues: Dict[str, "queue.Queue[Optional[str]]"] = {}
+        self._stdio_threads: Dict[str, threading.Thread] = {}
 
     def add_server(self, server: MCPServer):
         """添加 MCP 服务器"""
@@ -93,10 +96,51 @@ class MCPClient:
             self.processes[server.name] = process
             self._stdio_initialized[server.name] = False
             self._stdio_locks.setdefault(server.name, threading.Lock())
+            self._stdio_queues.setdefault(server.name, queue.Queue())
+            self._stdio_threads.setdefault(server.name, threading.Thread(target=self._stdio_reader, args=(server.name, process), daemon=True))
+            self._stdio_threads[server.name].start()
             print(f"[MCP] 已连接 stdio 服务器: {server.name}")
             self._initialize_stdio(server, process)
         except Exception as e:
             print(f"[MCP] 连接失败 {server.name}: {e}")
+
+    def _stdio_reader(self, server_name: str, process: subprocess.Popen) -> None:
+        """后台线程持续读取 stdout 行并放入队列"""
+        q = self._stdio_queues.get(server_name)
+        if q is None:
+            return
+        try:
+            for line in process.stdout:
+                q.put(line)
+        except Exception:
+            logger.debug("stdio reader stopped for %s", server_name, exc_info=True)
+        finally:
+            q.put(None)
+
+    def _read_stdio_response(self, server_name: str, timeout: float = 5.0) -> Optional[Dict[str, Any]]:
+        """从队列读取 stdio JSON，跳过通知，返回首个带 result/error 的响应"""
+        q = self._stdio_queues.get(server_name)
+        if q is None:
+            return None
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            try:
+                item = q.get(timeout=max(deadline - time.time(), 0.01))
+            except queue.Empty:
+                return None
+            if item is None:
+                return None
+            line = item.strip()
+            if not line:
+                continue
+            try:
+                response = json.loads(line)
+                if "id" not in response and "method" in response:
+                    continue
+                return response
+            except (json.JSONDecodeError, ValueError):
+                continue
+        return None
 
     def _initialize_stdio(self, server: MCPServer, process: subprocess.Popen):
         """发送 MCP initialize 握手并等待 initialized"""
@@ -121,7 +165,7 @@ class MCPClient:
                 process.stdin.write(request_str)
                 process.stdin.flush()
 
-                response = self._read_stdio_response(process, timeout=5.0)
+                response = self._read_stdio_response(server.name, timeout=5.0)
                 if response and "result" in response:
                     self._stdio_initialized[server.name] = True
                     notify = {"jsonrpc": "2.0", "method": "notifications/initialized"}
@@ -135,29 +179,6 @@ class MCPClient:
             except Exception as e:
                 self._stdio_initialized[server.name] = True
                 print(f"[MCP] stdio 初始化失败 {server.name}: {e}")
-
-    def _read_stdio_response(self, process: subprocess.Popen, timeout: float = 5.0) -> Optional[Dict[str, Any]]:
-        """读取 stdio 单行 JSON，跳过通知，返回首个带 result/error 的响应"""
-        start = time.time()
-        while time.time() - start < timeout:
-            try:
-                line = process.stdout.readline()
-            except Exception:
-                logger.debug("read stdio line failed: %s", traceback.format_exc())
-                return None
-            if not line:
-                return None
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                response = json.loads(line)
-                if "id" not in response and "method" in response:
-                    continue
-                return response
-            except (json.JSONDecodeError, ValueError):
-                continue
-        return None
 
     def _connect_http(self, server: MCPServer):
         """通过 HTTP/SSE 连接"""
@@ -281,7 +302,7 @@ class MCPClient:
             process.stdin.write(request_str)
             process.stdin.flush()
 
-            response = self._read_stdio_response(process, timeout=timeout)
+            response = self._read_stdio_response(server.name, timeout=timeout)
             if not response:
                 return {'success': False, 'error': 'No response from server'}
 
@@ -324,7 +345,7 @@ class MCPClient:
             }
             process.stdin.write(json.dumps(payload, ensure_ascii=False) + "\n")
             process.stdin.flush()
-            response = self._read_stdio_response(process, timeout=timeout)
+            response = self._read_stdio_response(server.name, timeout=timeout)
             if response and "result" in response:
                 return response["result"].get("tools", [])
         except Exception:
