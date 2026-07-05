@@ -586,7 +586,10 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
 
     def _minimize_to_tray(self):
         try:
-            self.page.window_hide()
+            if hasattr(self.page, "window_hide"):
+                self.page.window_hide()
+            elif hasattr(self.page, "window_minimized"):
+                self.page.window_minimized = True
             self._append_terminal("minimized to tray")
         except Exception:
             logger.debug('desktop exception: %s', traceback.format_exc())
