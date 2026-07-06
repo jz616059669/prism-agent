@@ -99,6 +99,10 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.base_url_textfield = ft.TextField(label=_("base_url"), value=prism_config.get("model.base_url", "https://api.stepfun.com/step_plan/v1") or "https://api.stepfun.com/step_plan/v1", width=280)
         self.api_key_textfield = ft.TextField(label=_("api_key"), password=True, can_reveal_password=True, value=prism_config.get("model.api_key", "") or "", width=280)
 
+        self.review_enabled_switch = ft.Switch(label="后台自我复盘", value=bool(int(os.getenv("PRISM_REVIEW_ENABLED", "1") or 1)), width=280)
+        self.review_interval_field = ft.TextField(label="复盘间隔(轮数)", value=str(int(os.getenv("PRISM_REVIEW_INTERVAL", "5") or 5)), width=280, keyboard_type=ft.KeyboardType.NUMBER)
+        self.review_enabled_switch.on_change = lambda e: (self._apply_review_env(), self._save_settings())
+        self.review_interval_field.on_change = lambda e: (self._apply_review_env(), self._save_settings())
 
         self._save_settings_timer = None
         self._save_settings_delay = 0.5  # seconds
@@ -842,6 +846,9 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     self.base_url_textfield,
                     ft.Container(height=24),
                     self.api_key_textfield,
+                    ft.Container(height=14),
+                    self.review_enabled_switch,
+                    self.review_interval_field,
                     ft.Container(height=14),
                     ft.Row([
                         save_btn,

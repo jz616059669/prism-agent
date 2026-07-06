@@ -1,6 +1,7 @@
 """PRISM Desktop - 设置面板逻辑"""
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict
 
@@ -30,6 +31,16 @@ class SettingsMixin:
             config_path = Path.home() / ".prism" / "prism-desktop.yaml"
             config_path.parent.mkdir(parents=True, exist_ok=True)
             import yaml
+            try:
+                if hasattr(self, "review_enabled_switch") and self.review_enabled_switch is not None:
+                    self._settings["review_enabled"] = bool(self.review_enabled_switch.value)
+            except Exception:
+                pass
+            try:
+                if hasattr(self, "review_interval_field") and self.review_interval_field is not None:
+                    self._settings["review_interval"] = max(1, int((self.review_interval_field.value or "5").strip() or 5))
+            except Exception:
+                pass
             config_path.write_text(
                 yaml.safe_dump(self._settings, allow_unicode=True, sort_keys=False),
                 encoding="utf-8",
@@ -51,10 +62,31 @@ class SettingsMixin:
             if hasattr(self, "api_key_textfield"):
                 api_key = self._settings.get("api_key", "")
                 self.api_key_textfield.value = api_key
+            if hasattr(self, "review_enabled_switch"):
+                self.review_enabled_switch.value = bool(self._settings.get("review_enabled", True))
+            if hasattr(self, "review_interval_field"):
+                self.review_interval_field.value = str(int(self._settings.get("review_interval", 5) or 5))
+            self._apply_review_env()
             self.page.update()
         except Exception:
             logger.debug("apply settings failed: %s", traceback.format_exc())
             pass
+
+    def _apply_review_env(self) -> None:
+        try:
+            enabled = True
+            interval = 5
+            if hasattr(self, "review_enabled_switch") and self.review_enabled_switch is not None:
+                enabled = bool(self.review_enabled_switch.value)
+            if hasattr(self, "review_interval_field") and self.review_interval_field is not None:
+                try:
+                    interval = max(1, int((self.review_interval_field.value or "5").strip() or 5))
+                except Exception:
+                    interval = 5
+            os.environ["PRISM_REVIEW_ENABLED"] = "1" if enabled else "0"
+            os.environ["PRISM_REVIEW_INTERVAL"] = str(interval)
+        except Exception:
+            logger.debug("apply review env failed: %s", traceback.format_exc())
 
     def _persist_runtime_state(self) -> None:
         try:
