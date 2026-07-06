@@ -293,7 +293,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         if not self._validate_config():
             raise RuntimeError("configuration validation failed")
         try:
-            self.agent = create_agent()
+            self.agent = create_agent(enable_auto_memory=True)
             return True
         except Exception as exc:
             self.agent = None
@@ -1652,7 +1652,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._set_status("配置已保存")
         self._append_terminal("配置已保存")
         try:
-            self.agent = create_agent()
+            self.agent = create_agent(enable_auto_memory=True)
         except Exception as exc:
             self.agent = None
             self._log_error("agent init", exc)
