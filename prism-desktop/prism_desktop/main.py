@@ -849,10 +849,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     self.base_url_textfield,
                     ft.Container(height=24),
                     self.api_key_textfield,
-                    ft.Container(height=14),
-                    self.review_enabled_switch,
-                    self.review_interval_field,
-                    ft.Container(height=14),
+                    ft.Container(height=2),
+                    ft.Row([self.review_enabled_switch, self.review_interval_field], spacing=4, tight=True),
                     ft.Row([
                         save_btn,
                         ft.TextButton("预设管理", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.SURFACE_CONTAINER,
