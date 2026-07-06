@@ -168,6 +168,7 @@ class PersistentMemory:
                     embedding_model=item.get("embedding_model", ""),
                     access_count=int(item.get("access_count", 0)),
                     last_accessed_at=item.get("last_accessed_at", ""),
+                    digest=item.get("digest", ""),
                 )
                 self._index[memory.key] = memory
                 if memory.embedding:
@@ -191,6 +192,7 @@ class PersistentMemory:
                     "embedding_model": m.embedding_model,
                     "access_count": m.access_count,
                     "last_accessed_at": m.last_accessed_at,
+                    "digest": getattr(m, "digest", ""),
                 }
                 for m in self._index.values()
             ]
@@ -199,6 +201,32 @@ class PersistentMemory:
             index_file.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
         except Exception as exc:
             logger.warning("failed to save memory: %s", exc)
+
+    def _auto_consolidate(self, max_entries: int = 200) -> None:
+        """当记忆条目过多时，压缩低置信条目并清理冗余。"""
+        if len(self._index) <= max_entries:
+            return
+        # 先清理 duplicate digest（理论上 remember 已经拦截，这里做二次兜底）
+        seen: Dict[str, str] = {}
+        for key, m in list(self._index.items()):
+            d = getattr(m, "digest", "")
+            if d and d in seen:
+                del self._index[key]
+                self._embedding_index.remove(key)
+                continue
+            seen[d] = key
+        # 仍过多则丢弃 confidence 最低且 access_count 最低的条目
+        if len(self._index) > max_entries:
+            sorted_keys = sorted(
+                self._index.keys(),
+                key=lambda k: (self._index[k].confidence, self._index[k].access_count),
+            )
+            excess = len(self._index) - max_entries
+            for key in sorted_keys[:excess]:
+                del self._index[key]
+                self._embedding_index.remove(key)
+        if self._index:
+            self._save()
 
     def configure_embeddings(self, base_url: str, api_key: str, model: str) -> None:
         """启用语义检索。未调用时退化为纯字符串匹配。"""
@@ -214,7 +242,19 @@ class PersistentMemory:
     ) -> None:
         from datetime import datetime
 
-        now = datetime.now().isoformat()
+        now = _now_iso()
+        # 防重复：相同 category 下若已有 digest 相似条目，则只更新 access_count
+        if key not in self._index:
+            candidate_digest = _short(f"{category}:{value}", limit=64)
+            for m in self._index.values():
+                if m.category == category and getattr(m, "digest", "") and m.digest == candidate_digest:
+                    m.access_count = int(m.access_count) + 1
+                    m.last_accessed_at = now
+                    self._embedding_index.upsert(m.key, f"{m.key}: {m.value}")
+                    self._save()
+                    logger.debug("memory duplicate skipped: %s", key)
+                    return
+
         if key in self._index:
             memory = self._index[key]
             memory.value = value
@@ -231,6 +271,7 @@ class PersistentMemory:
                 updated_at=now,
                 access_count=0,
                 last_accessed_at="",
+                digest=_short(f"{category}:{value}", limit=64),
             )
         memory.access_count = int(memory.access_count) + 1
         memory.last_accessed_at = now
@@ -238,6 +279,8 @@ class PersistentMemory:
         self._embedding_index.upsert(key, f"{key}: {value}")
         self._save()
         logger.debug("memory stored: %s", key)
+        # 自动提炼：条目数过多时做压缩
+        self._auto_consolidate()
 
     def recall(self, key: str) -> Optional[str]:
         memory = self._index.get(key)

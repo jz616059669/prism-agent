@@ -108,6 +108,20 @@ class Agent:
         发送消息并获取回复
         on_stream: 可选回调，逐 token 接收文本
         """
+        # 动态注入记忆上下文，避免仅初始化一次
+        try:
+            ctx = persistent_memory.get_context(max_items=5)
+            if ctx:
+                base = (self.system_prompt or "").rstrip()
+                injection = "\n\n" + ctx
+                if not base.endswith(injection):
+                    self.system_prompt = base + injection
+                    # 同步第一条 system message
+                    if self.messages and getattr(self.messages[0], "role", "") == "system":
+                        self.messages[0].content = self.system_prompt
+        except Exception:
+            logger.debug("inject memory context failed: %s", traceback.format_exc())
+
         # Run before_chat hooks
         hook_result = hook_manager.run_hooks("before_chat", {"message": user_message, "agent": self})
         if not hook_result.passed:
