@@ -899,26 +899,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             ft.Container(height=14),
             ft.Container(
                 content=ft.Column([
-                    ft.Text("Skills", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
-                    ft.Icon(ft.Icons.EXTENSION, size=14, color=ft.Colors.PRIMARY),
-                    ft.Container(height=14),
-                    self.skill_refresh_btn,
-                    self.skill_install_field,
-                    ft.Container(height=14),
-                    self.skill_install_btn,
-                    ft.Container(height=6),
-                    ft.Text("可用 Skills", size=12, color=ft.Colors.ON_SURFACE),
-                    self.skill_list,
-                ], tight=True, spacing=6),
-                bgcolor=ft.Colors.SURFACE_CONTAINER,
-                
-                border_radius=34,
-                padding=18,
-                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.6, ft.Colors.OUTLINE_VARIANT))),
-            ),
-            ft.Container(height=14),
-            ft.Container(
-                content=ft.Column([
                     ft.Text("快捷提示词", size=13, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
                     ft.Icon(ft.Icons.LIGHTBULB_ROUNDED, size=14, color=ft.Colors.PRIMARY),
                     ft.Container(height=6),

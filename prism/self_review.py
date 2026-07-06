@@ -159,7 +159,7 @@ def _run_review_in_thread(
         actions = _summarize_review_actions(review_messages, messages_snapshot)
         if actions:
             summary = " · ".join(dict.fromkeys(actions))
-            _safe_emit(agent, f"💾 Self-improvement review: {summary}")
+            _safe_emit(agent, f"[self-review] {summary}")
     except Exception as exc:
         logger.warning("background review failed: %s", exc)
     finally:
