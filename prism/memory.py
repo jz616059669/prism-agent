@@ -31,6 +31,7 @@ class Memory:
     embedding_model: str = ""
     access_count: int = 0
     last_accessed_at: str = ""
+    digest: str = ""
 
 
 class _EmbeddingClient:
