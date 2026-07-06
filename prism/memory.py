@@ -247,14 +247,21 @@ class PersistentMemory:
             seen[d] = key
         # 仍过多则按综合重要度丢弃最低的条目
         if len(self._index) > max_entries:
-            sorted_keys = sorted(
-                self._index.keys(),
-                key=lambda k: self._importance(self._index[k]),
-            )
+            # 最近 7 天内访问过的记忆优先保留，不参与淘汰
+            from datetime import datetime, timedelta
+            recent_cutoff = datetime.now() - timedelta(days=7)
+            recent_keys = {
+                k for k, m in self._index.items()
+                if m.last_accessed_at and datetime.fromisoformat(m.last_accessed_at) >= recent_cutoff
+            }
+            candidate_keys = [k for k in self._index.keys() if k not in recent_keys]
+            candidate_keys.sort(key=lambda k: self._importance(self._index[k]))
+            # 先把非近期记忆淘汰到 max_entries 以内
             excess = len(self._index) - max_entries
-            for key in sorted_keys[:excess]:
-                del self._index[key]
-                self._embedding_index.remove(key)
+            for key in candidate_keys[:excess]:
+                if key in self._index:
+                    del self._index[key]
+                    self._embedding_index.remove(key)
         if self._index:
             self._save()
 
@@ -316,8 +323,11 @@ class PersistentMemory:
         memory = self._index.get(key)
         if memory:
             memory.access_count = int(memory.access_count) + 1
-            from datetime import datetime
-            memory.last_accessed_at = datetime.now().isoformat()
+            memory.last_accessed_at = _now_iso()
+            # 被多次 recall 的记忆，confidence 缓慢回升，上限 1.0
+            if memory.confidence < 1.0:
+                memory.confidence = min(1.0, memory.confidence + 0.05)
+                memory.updated_at = _now_iso()
             return memory.value
         return None
 
