@@ -133,6 +133,12 @@ class SettingsMixin:
                             continue
                         role_label = "你" if getattr(m, "role", "") == "user" else ("PRISM" if getattr(m, "role", "") == "assistant" else getattr(m, "role", ""))
                         self._append(role_label, getattr(m, "content", "") or "")
+                    unsent = state.get("unsent_messages") or []
+                    for m in unsent:
+                        role_label = "你" if m.get("role") == "user" else (m.get("role") or "")
+                        content = m.get("content") or ""
+                        if role_label and content:
+                            self._append(role_label, content)
                     self.chat_list.update()
             draft = state.get("chat_draft") or ""
             if draft and hasattr(self, "input_field"):

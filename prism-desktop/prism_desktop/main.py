@@ -375,7 +375,10 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 getattr(self.page, "window_close", lambda: None)(),
             )
         except Exception:
-            pass
+            try:
+                self._persist_runtime_state()
+            except Exception:
+                pass
 
     def _bind_tray(self) -> None:
         try:
