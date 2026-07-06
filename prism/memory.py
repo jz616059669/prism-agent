@@ -438,27 +438,58 @@ class PersistentMemory:
     def list_by_category(self, category: str) -> List[Memory]:
         return [m for m in self._index.values() if m.category == category]
 
-    def get_context(self, max_items: int = 5) -> str:
-        # 优先把身份类记忆提到最前
+    def get_context(self, max_items: int = 5, budget_chars: int = 1500) -> str:
+        """
+        生成记忆上下文块，并尽量控制在 budget_chars 以内。
+        结构: 【身份】→【相关(query命中)】→【兜底(按重要度)】
+        """
+        # 身份类记忆
         identities = [m for m in self._index.values() if m.category == "user_profile"]
+        # chat_history 只保留 top2，避免占满 context
         rest = [m for m in self._index.values() if m.category != "user_profile"]
         rest.sort(key=lambda m: self._importance(m), reverse=True)
-        # chat_history 只保留 top2，避免占满 context
         chat = [m for m in rest if m.category == "chat_history"][:2]
         non_chat = [m for m in rest if m.category != "chat_history"]
-        memories = identities + chat + non_chat[:max(0, max_items - len(identities) - len(chat))]
-        if not memories:
+
+        # 先放身份，再放 chat_history，再按重要度取非chat记忆
+        picked = identities + chat
+        remaining_budget = budget_chars
+        for m in picked:
+            remaining_budget -= len(f"- {m.key}: {m.value}\n")
+        # 从非chat记忆中按重要度挑，不超出剩余预算
+        for m in non_chat:
+            if len(picked) >= max_items:
+                break
+            val = m.value
+            if len(val) > 120:
+                val = val[:117] + "..."
+            cost = len(f"- [{m.category}] {m.key}: {val}\n")
+            if cost > remaining_budget:
+                # 尝试只保留更短摘要
+                short_val = val[:60].rstrip() + "..." if len(val) > 60 else val
+                short_cost = len(f"- [{m.category}] {m.key}: {short_val}\n")
+                if short_cost <= remaining_budget:
+                    val = short_val
+                else:
+                    continue
+            picked.append(m)
+            remaining_budget -= cost
+
+        if not picked:
             return ""
         lines = ["## 记忆上下文"]
         if identities:
             lines.append("【身份】")
             for m in identities[:3]:
                 lines.append(f"- {m.key}: {m.value}")
-        for m in memories[len(identities):]:
-            val = m.value
-            if len(val) > 120:
-                val = val[:117] + "..."
-            lines.append(f"- [{m.category}] {m.key}: {val}")
+        for m in picked[len(identities):]:
+            if m.category == "chat_history":
+                lines.append(f"- {m.value}")
+            else:
+                val = m.value
+                if len(val) > 120:
+                    val = val[:117] + "..."
+                lines.append(f"- [{m.category}] {m.key}: {val}")
         return "\n".join(lines)
 
     def clear(self) -> None:
