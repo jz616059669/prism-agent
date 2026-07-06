@@ -61,6 +61,10 @@ class Agent:
         self.max_messages = 200  # 防止上下文无限增长
         self.tools_enabled = True
         self.enable_auto_memory = enable_auto_memory
+        self.review_enabled = bool(int(os.getenv("PRISM_REVIEW_ENABLED", "0") or 0))
+        self.review_interval = int(os.getenv("PRISM_REVIEW_INTERVAL", "5") or 5)
+        self._review_turn_count = 0
+        self.background_review_callback: Optional[Callable[[str], None]] = None
         self._memory_context = persistent_memory.get_context(max_items=5)
         if self._memory_context:
             self.system_prompt = self.system_prompt.rstrip() + "\n\n" + self._memory_context
@@ -164,6 +168,25 @@ class Agent:
                 )
             except Exception:
                 logger.debug("auto memory save failed: %s", traceback.format_exc())
+
+        # Background self-improvement review
+        try:
+            if getattr(self, "review_enabled", False):
+                self._review_turn_count = getattr(self, "_review_turn_count", 0) + 1
+                if self._review_turn_count % max(1, getattr(self, "review_interval", 5)) == 0:
+                    from prism.self_review import spawn_background_review
+                    snapshot = [
+                        {"role": m.role, "content": m.content or ""}
+                        for m in getattr(self, "messages", []) or []
+                    ]
+                    spawn_background_review(
+                        self,
+                        snapshot,
+                        review_memory=getattr(self, "enable_auto_memory", False),
+                        review_skills=True,
+                    )
+        except Exception:
+            logger.debug("background review schedule failed: %s", traceback.format_exc())
 
         return assistant_content
 
