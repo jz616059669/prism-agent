@@ -1151,7 +1151,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             spacing=0,
         )
         self.right_tabs = ft.Tabs(
-            length=3,
+            3,
             content=self._right_tab_container,
             selected_index=0,
             on_change=self._on_right_tab_changed,
