@@ -28,13 +28,13 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install -e .
-          python -m pip install pytest playwright nest-asyncio
+          python -m pip install pytest pytest-timeout playwright nest-asyncio
       - name: Install Playwright Chromium
         run: python -m playwright install --with-deps chromium
       - name: Version check
         run: python scripts/check_version.py
       - name: Run tests
-        run: python -m pytest tests/ -q
+        run: python -m pytest tests/ -q --timeout=120
         env:
           PRISM_SKIP_UPDATE_CHECK: "1"
 
