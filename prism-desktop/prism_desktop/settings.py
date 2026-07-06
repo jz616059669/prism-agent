@@ -58,23 +58,35 @@ class SettingsMixin:
 
     def _persist_runtime_state(self) -> None:
         try:
-            self._settings["current_session"] = self._current_session_name
-            self._settings["unsent_messages"] = [
-                {
-                    "role": getattr(m, "role", "user"),
-                    "content": getattr(m, "content", ""),
-                    "timestamp": getattr(m, "timestamp", "").isoformat() if hasattr(getattr(m, "timestamp", ""), "isoformat") else str(getattr(m, "timestamp", "")),
-                }
-                for m in getattr(self, "messages", []) or []
-            ]
-            self._settings["chat_draft"] = getattr(self, "input_field", None).value if hasattr(self, "input_field") else ""
-            self._save_settings()
+            desktop_state_path = Path.home() / ".prism" / "desktop_state.json"
+            desktop_state_path.parent.mkdir(parents=True, exist_ok=True)
+            state = {
+                "current_session": self._current_session_name,
+                "unsent_messages": [
+                    {
+                        "role": getattr(m, "role", "user"),
+                        "content": getattr(m, "content", ""),
+                        "timestamp": getattr(m, "timestamp", "").isoformat() if hasattr(getattr(m, "timestamp", ""), "isoformat") else str(getattr(m, "timestamp", "")),
+                    }
+                    for m in getattr(self, "messages", []) or []
+                ],
+                "chat_draft": getattr(self, "input_field", None).value if hasattr(self, "input_field") else "",
+                "sidebar_collapsed": str(self._settings.get("sidebar_collapsed", "false")).lower() == "true",
+                "sidebar_width": self._settings.get("sidebar_width"),
+                "chat_width": self._settings.get("chat_width"),
+                "right_width": self._settings.get("right_width"),
+            }
+            desktop_state_path.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
         except Exception:
             logger.debug("persist runtime state failed: %s", traceback.format_exc())
 
     def _restore_runtime_state(self) -> None:
         try:
-            session_name = self._settings.get("current_session")
+            desktop_state_path = Path.home() / ".prism" / "desktop_state.json"
+            if not desktop_state_path.exists():
+                return
+            state = json.loads(desktop_state_path.read_text(encoding="utf-8"))
+            session_name = state.get("current_session")
             if session_name and getattr(self, "agent", None) and hasattr(self.agent, "load_session"):
                 if self.agent.load_session(session_name):
                     self._current_session_name = session_name
@@ -87,7 +99,7 @@ class SettingsMixin:
                         role_label = "你" if getattr(m, "role", "") == "user" else ("PRISM" if getattr(m, "role", "") == "assistant" else getattr(m, "role", ""))
                         self._append(role_label, getattr(m, "content", "") or "")
                     self.chat_list.update()
-            draft = self._settings.get("chat_draft") or ""
+            draft = state.get("chat_draft") or ""
             if draft and hasattr(self, "input_field"):
                 self.input_field.value = draft
                 if hasattr(self, "_on_input_change"):
