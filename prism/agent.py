@@ -136,10 +136,10 @@ class Agent:
                     lines.append(f"- [{m.category}] {m.key}: {m.value[:100]}")
                 query_block = "\n" + "\n".join(lines)
 
-            # 兜底：按高置信度补齐到总数不超过 8
+            # 兜底：按综合重要度补齐到总数不超过 8
             rest = sorted(
                 [m for m in persistent_memory._index.values() if m.category != "user_profile" and m.key not in seen],
-                key=lambda m: (m.confidence, m.access_count),
+                key=lambda m: persistent_memory._importance(m),
                 reverse=True,
             )[: max(0, 5 - len(query_matches))]
             rest_block = ""

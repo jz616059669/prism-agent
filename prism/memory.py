@@ -159,6 +159,8 @@ class PersistentMemory:
         # 记忆衰减：默认开启，半衰期 30 天，最低置信度 0.2
         self.decay_half_life_days: Optional[float] = 30.0
         self.decay_min_confidence: float = 0.2
+        self._decay_counter = 0
+        self._decay_interval = 10
         self._load()
 
     def _load(self) -> None:
@@ -227,11 +229,11 @@ class PersistentMemory:
                 self._embedding_index.remove(key)
                 continue
             seen[d] = key
-        # 仍过多则丢弃 confidence 最低且 access_count 最低的条目
+        # 仍过多则按综合重要度丢弃最低的条目
         if len(self._index) > max_entries:
             sorted_keys = sorted(
                 self._index.keys(),
-                key=lambda k: (self._index[k].confidence, self._index[k].access_count),
+                key=lambda k: self._importance(self._index[k]),
             )
             excess = len(self._index) - max_entries
             for key in sorted_keys[:excess]:
@@ -312,7 +314,7 @@ class PersistentMemory:
         return False
 
     def _apply_decay(self) -> None:
-        """按时间衰减调整 confidence。"""
+        """按时间衰减调整 confidence，基于 last_accessed_at。"""
         if self.decay_half_life_days is None:
             return
         from datetime import datetime
@@ -320,12 +322,12 @@ class PersistentMemory:
         for memory in self._index.values():
             if memory.confidence <= self.decay_min_confidence:
                 continue
-            created = memory.created_at or memory.updated_at
-            if not created:
+            last = memory.last_accessed_at or memory.updated_at or memory.created_at
+            if not last:
                 continue
             try:
-                created_dt = datetime.fromisoformat(created)
-                days = max((now - created_dt).total_seconds() / 86400.0, 0.0)
+                last_dt = datetime.fromisoformat(last)
+                days = max((now - last_dt).total_seconds() / 86400.0, 0.0)
             except Exception:
                 continue
             if days <= 0:
@@ -335,13 +337,20 @@ class PersistentMemory:
             if memory.confidence < 1.0:
                 memory.updated_at = now.isoformat()
 
+    def _maybe_decay(self) -> None:
+        """每 N 次 search 做一次衰减，减少运行时开销。"""
+        self._decay_counter += 1
+        if self._decay_counter >= self._decay_interval:
+            self._decay_counter = 0
+            self._apply_decay()
+
     def search(
         self,
         query: str,
         category: Optional[str] = None,
         limit: int = 10,
     ) -> List[Memory]:
-        self._apply_decay()
+        self._maybe_decay()
         query_lower = query.lower()
         candidates: List[Memory] = []
         for memory in self._index.values():
@@ -367,12 +376,30 @@ class PersistentMemory:
                 continue
             candidates.append(memory)
 
-        candidates.sort(key=lambda m: (m.confidence, m.access_count), reverse=True)
+        candidates.sort(key=lambda m: persistent_memory._importance(m), reverse=True)
         return candidates[:limit]
 
+    def _importance(self, memory: Memory, now: Optional[datetime] = None) -> float:
+        """综合重要度：confidence + access_count 加成 + 访问时间加成。"""
+        if now is None:
+            from datetime import datetime
+            now = datetime.now()
+        score = float(memory.confidence)
+        # 访问越多越重要
+        score += min(float(memory.access_count) * 0.05, 0.5)
+        # 最近访问过再稍微加权
+        if memory.last_accessed_at:
+            try:
+                last_dt = datetime.fromisoformat(memory.last_accessed_at)
+                hours = max((now - last_dt).total_seconds() / 3600.0, 0.0)
+                score += max(0.3 - hours * 0.001, 0.0)
+            except Exception:
+                pass
+        return score
+
     def summarize(self, category: Optional[str] = None, max_chars: int = 800) -> str:
-        """简单记忆摘要：按 confidence 取 top 条目拼成文本。"""
-        memories = sorted(self._index.values(), key=lambda m: m.confidence, reverse=True)
+        """简单记忆摘要：按综合重要度取 top 条目拼成文本。"""
+        memories = sorted(self._index.values(), key=lambda m: self._importance(m), reverse=True)
         if category:
             memories = [m for m in memories if m.category == category]
         if not memories:
@@ -394,7 +421,7 @@ class PersistentMemory:
         # 优先把身份类记忆提到最前
         identities = [m for m in self._index.values() if m.category == "user_profile"]
         rest = [m for m in self._index.values() if m.category != "user_profile"]
-        rest.sort(key=lambda m: m.confidence, reverse=True)
+        rest.sort(key=lambda m: self._importance(m), reverse=True)
         memories = identities + rest[:max(0, max_items - len(identities))]
         if not memories:
             return ""
