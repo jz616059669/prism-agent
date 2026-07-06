@@ -192,6 +192,11 @@ class FeishuAdapter(PlatformAdapter):
         try:
             self._loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self._loop)
+            try:
+                import nest_asyncio
+                nest_asyncio.apply(self._loop)
+            except Exception:
+                pass
 
             ws_client = FeishuWSClient(
                 self.config.app_id,
