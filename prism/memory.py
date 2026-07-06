@@ -159,6 +159,22 @@ class PersistentMemory:
         # 记忆衰减：默认开启，半衰期 30 天，最低置信度 0.2
         self.decay_half_life_days: Optional[float] = 30.0
         self.decay_min_confidence: float = 0.2
+        # 分类衰减：不同记忆类别有不同半衰期
+        self.category_decay_rates: Dict[str, Optional[float]] = {
+            "user_profile": 60.0,
+            "user_preference": 45.0,
+            "general": 30.0,
+            "chat_history": 14.0,
+            "skill": 45.0,
+        }
+        # 分类重要性：影响 recall / context / summary 排序
+        self.category_importance: Dict[str, float] = {
+            "user_profile": 1.5,
+            "user_preference": 1.3,
+            "general": 1.0,
+            "chat_history": 0.8,
+            "skill": 0.9,
+        }
         self._decay_counter = 0
         self._decay_interval = 10
         self._load()
@@ -314,7 +330,7 @@ class PersistentMemory:
         return False
 
     def _apply_decay(self) -> None:
-        """按时间衰减调整 confidence，基于 last_accessed_at。"""
+        """按时间衰减调整 confidence，基于 last_accessed_at；支持分类半衰期。"""
         if self.decay_half_life_days is None:
             return
         from datetime import datetime
@@ -332,7 +348,10 @@ class PersistentMemory:
                 continue
             if days <= 0:
                 continue
-            decay = 2 ** (-days / float(self.decay_half_life_days))
+            half_life = self.category_decay_rates.get(memory.category, self.decay_half_life_days)
+            if half_life is None or half_life <= 0:
+                continue
+            decay = 2 ** (-days / float(half_life))
             memory.confidence = max(self.decay_min_confidence, memory.confidence * decay)
             if memory.confidence < 1.0:
                 memory.updated_at = now.isoformat()
@@ -380,11 +399,13 @@ class PersistentMemory:
         return candidates[:limit]
 
     def _importance(self, memory: Memory, now: Optional[datetime] = None) -> float:
-        """综合重要度：confidence + access_count 加成 + 访问时间加成。"""
+        """综合重要度：confidence + access_count 加成 + 分类加成 + 访问时间加成。"""
         if now is None:
             from datetime import datetime
             now = datetime.now()
         score = float(memory.confidence)
+        # 分类重要性加成
+        score *= float(self.category_importance.get(memory.category, 1.0))
         # 访问越多越重要
         score += min(float(memory.access_count) * 0.05, 0.5)
         # 最近访问过再稍微加权
@@ -422,7 +443,10 @@ class PersistentMemory:
         identities = [m for m in self._index.values() if m.category == "user_profile"]
         rest = [m for m in self._index.values() if m.category != "user_profile"]
         rest.sort(key=lambda m: self._importance(m), reverse=True)
-        memories = identities + rest[:max(0, max_items - len(identities))]
+        # chat_history 只保留 top2，避免占满 context
+        chat = [m for m in rest if m.category == "chat_history"][:2]
+        non_chat = [m for m in rest if m.category != "chat_history"]
+        memories = identities + chat + non_chat[:max(0, max_items - len(identities) - len(chat))]
         if not memories:
             return ""
         lines = ["## 记忆上下文"]
@@ -430,8 +454,11 @@ class PersistentMemory:
             lines.append("【身份】")
             for m in identities[:3]:
                 lines.append(f"- {m.key}: {m.value}")
-        for m in rest[: max(0, max_items - len(identities))]:
-            lines.append(f"- [{m.category}] {m.key}: {m.value[:100]}")
+        for m in memories[len(identities):]:
+            val = m.value
+            if len(val) > 120:
+                val = val[:117] + "..."
+            lines.append(f"- [{m.category}] {m.key}: {val}")
         return "\n".join(lines)
 
     def clear(self) -> None:
