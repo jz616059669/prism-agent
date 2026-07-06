@@ -108,17 +108,52 @@ class Agent:
         发送消息并获取回复
         on_stream: 可选回调，逐 token 接收文本
         """
-        # 动态注入记忆上下文，避免仅初始化一次
+        # 动态注入记忆上下文：身份类优先，再按当前query召回相关记忆
         try:
-            ctx = persistent_memory.get_context(max_items=5)
-            if ctx:
-                base = (self.system_prompt or "").rstrip()
-                injection = "\n\n" + ctx
-                if not base.endswith(injection):
-                    self.system_prompt = base + injection
-                    # 同步第一条 system message
-                    if self.messages and getattr(self.messages[0], "role", "") == "system":
-                        self.messages[0].content = self.system_prompt
+            base = (self.system_prompt or "").rstrip()
+            # 移除旧记忆块，避免重复堆叠
+            if "## 记忆上下文" in base:
+                base = base[: base.index("## 记忆上下文")].rstrip()
+
+            identities = [m for m in persistent_memory._index.values() if m.category == "user_profile"]
+            identity_block = ""
+            if identities:
+                lines = ["【身份】"]
+                for m in identities[:3]:
+                    lines.append(f"- {m.key}: {m.value}")
+                identity_block = "\n" + "\n".join(lines)
+
+            # 只根据当前 query 做轻量召回，避免堆满 context
+            query_matches = persistent_memory.search(user_message, category=None, limit=3)
+            query_block = ""
+            if query_matches:
+                lines = ["【相关】"]
+                seen = set()
+                for m in query_matches:
+                    if m.key in seen:
+                        continue
+                    seen.add(m.key)
+                    lines.append(f"- [{m.category}] {m.key}: {m.value[:100]}")
+                query_block = "\n" + "\n".join(lines)
+
+            # 兜底：按高置信度补齐到总数不超过 8
+            rest = sorted(
+                [m for m in persistent_memory._index.values() if m.category != "user_profile" and m.key not in seen],
+                key=lambda m: (m.confidence, m.access_count),
+                reverse=True,
+            )[: max(0, 5 - len(query_matches))]
+            rest_block = ""
+            if rest:
+                lines = []
+                for m in rest:
+                    lines.append(f"- [{m.category}] {m.key}: {m.value[:80]}")
+                rest_block = "\n" + "\n".join(lines)
+
+            injection = identity_block + query_block + rest_block
+            if injection:
+                self.system_prompt = base + "\n## 记忆上下文" + injection
+                if self.messages and getattr(self.messages[0], "role", "") == "system":
+                    self.messages[0].content = self.system_prompt
         except Exception:
             logger.debug("inject memory context failed: %s", traceback.format_exc())
 

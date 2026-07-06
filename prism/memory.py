@@ -156,8 +156,9 @@ class PersistentMemory:
         self.base_dir.mkdir(parents=True, exist_ok=True)
         self._index: Dict[str, Memory] = {}
         self._embedding_index = MemoryEmbeddingIndex(self.base_dir)
-        self.decay_half_life_days: Optional[float] = None
-        self.decay_min_confidence: float = 0.1
+        # 记忆衰减：默认开启，半衰期 30 天，最低置信度 0.2
+        self.decay_half_life_days: Optional[float] = 30.0
+        self.decay_min_confidence: float = 0.2
         self._load()
 
     def _load(self) -> None:
