@@ -953,7 +953,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             border_color=ft.Colors.OUTLINE_VARIANT,
             focused_border_color=ft.Colors.OUTLINE_VARIANT,
             focused_border_width=1,
-            suffix=ft.IconButton(icon=ft.Icons.CLEAR_ROUNDED, tooltip="清空终端", icon_color=ft.Colors.ON_SURFACE_VARIANT, on_click=lambda e: self.input_field.clear()),
+            suffix=ft.IconButton(icon=ft.Icons.CLEAR_ROUNDED, tooltip="清空终端", icon_color=ft.Colors.ON_SURFACE_VARIANT, on_click=lambda e: setattr(self.input_field, 'value', '') or self.page.update()),
         )
         self.input_count = ft.Text("0 字", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.95)
         self.input_field.on_change = lambda e: self._on_input_change()
