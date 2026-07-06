@@ -119,10 +119,10 @@ class ProviderPool:
         self._loaded = False
 
     def _load_from_config(self):
-        """从配置文件加载提供商"""
-        if self._loaded:
-            return
-        self._loaded = True
+        """从配置文件加载提供商；每次调用前重置加载状态，保证配置变更后即时生效。"""
+        self._loaded = False
+        if self.providers:
+            self.providers = []
         try:
             from prism.config import config
         except Exception:

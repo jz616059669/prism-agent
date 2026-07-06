@@ -100,7 +100,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
 
         self.model_dropdown = ft.Dropdown(
             label="默认模型",
-            options=[ft.dropdown.Option("step-3.7-flash"), ft.dropdown.Option("gpt-4o-mini")],
+            options=[ft.dropdown.Option("step-3.7-flash")],
             value=prism_config.get("model.default", "step-3.7-flash") or "step-3.7-flash",
             width=280,
         )
