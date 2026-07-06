@@ -85,6 +85,9 @@ class SettingsMixin:
                     interval = 5
             os.environ["PRISM_REVIEW_ENABLED"] = "1" if enabled else "0"
             os.environ["PRISM_REVIEW_INTERVAL"] = str(interval)
+            if hasattr(self, "agent") and self.agent is not None:
+                self.agent.review_enabled = enabled
+                self.agent.review_interval = interval
         except Exception:
             logger.debug("apply review env failed: %s", traceback.format_exc())
 
