@@ -74,8 +74,17 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._perf_mem_mb = 0.0
         self._terminal_lines = ["PRISM Desktop 已启动"]
         self._init_error: Optional[BaseException] = None
+        self.agent = None
         print("[BOOT] main.py loaded from:", __file__, flush=True)
+        
         try:
+            self._build_ui()
+            self._bind_context_menu()
+            self._bind_tray()
+            self._maybe_show_setup_wizard()
+            self._settings = self._load_settings()
+            if hasattr(self.page, "run_task"):
+                self._start_update_check()
             self._validate_and_create_agent()
         except Exception as exc:
             self.agent = None
