@@ -109,6 +109,14 @@ class Config:
                 'servers': [],
                 'auto_discover': True,
             },
+            'moa': {
+                'enabled': False,
+                'ensemble': [],
+                'aggregate': True,
+            },
+            'review': {
+                'aux_model': '',
+            },
         }
     
     def validate(self) -> None:

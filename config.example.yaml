@@ -2,7 +2,16 @@ model:
   provider: stepfun
   base_url: https://api.stepfun.com/step_plan/v1
   api_key: ""
-  model.default: step-3.7-flash
+  default: step-3.7-flash
+
+# MoA 多模型投票（可选）
+# 启用后，Agent 会将同一个 prompt 同时发给多个模型做投票/聚合
+# moa:
+#   ensemble:
+#     - step-3.7-flash
+#     # - step-2-16k
+#   base_url: https://api.stepfun.com/step_plan/v1
+#   api_key: ""
 
 gateway:
   platforms: []

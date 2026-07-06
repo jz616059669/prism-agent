@@ -112,7 +112,7 @@ class OpenAIProvider(Provider):
 
 
 class ProviderPool:
-    """提供商池 - 支持多key轮转、自动降级"""
+    """提供商池 - 支持多key轮转、自动降级、MoA多模型投票"""
     
     def __init__(self):
         self.providers: List[Provider] = []
@@ -124,16 +124,16 @@ class ProviderPool:
         if self.providers:
             self.providers = []
         try:
-            from prism.config import config
+            from prism.config import config as cfg
         except Exception:
             return
-        
+
         # 主提供商
-        default_model = config.get('model.default', 'step-3.7-flash')
-        provider_name = config.get('model.provider', 'stepfun')
-        base_url = config.get('model.base_url', 'https://api.stepfun.com/step_plan/v1')
-        api_key = config.get('model.api_key', '') or os.getenv(f'{provider_name.upper()}_API_KEY', '') or config.get(f'providers.{provider_name}.api_key', '')
-        
+        default_model = cfg.get('model.default', 'step-3.7-flash')
+        provider_name = cfg.get('model.provider', 'stepfun')
+        base_url = cfg.get('model.base_url', 'https://api.stepfun.com/step_plan/v1')
+        api_key = cfg.get('model.api_key', '') or os.getenv(f'{provider_name.upper()}_API_KEY', '') or cfg.get(f'providers.{provider_name}.api_key', '')
+
         if api_key:
             self.providers.append(OpenAIProvider(
                 name=provider_name,
@@ -141,9 +141,9 @@ class ProviderPool:
                 api_key=api_key,
                 model=default_model,
             ))
-        
+
         # 备用提供商
-        fallback_chain = config.get('fallback.chain', [])
+        fallback_chain = cfg.get('fallback.chain', [])
         for fallback in fallback_chain:
             # 解析格式: "provider/model" 或 "model"
             if '/' in fallback:
@@ -151,12 +151,12 @@ class ProviderPool:
             else:
                 p_name = 'openai'
                 model = fallback
-            
+
             # 从环境变量或配置中获取key
             env_key = f"{p_name.upper()}_API_KEY"
-            key = os.getenv(env_key) or config.get(f'providers.{p_name}.api_key', '')
-            url = config.get(f'providers.{p_name}.base_url', 'https://api.openai.com/v1')
-            
+            key = os.getenv(env_key) or cfg.get(f'providers.{p_name}.api_key', '')
+            url = cfg.get(f'providers.{p_name}.base_url', 'https://api.openai.com/v1')
+
             if key:
                 self.providers.append(OpenAIProvider(
                     name=p_name,
@@ -164,6 +164,20 @@ class ProviderPool:
                     api_key=key,
                     model=model,
                 ))
+
+        # MoA 多模型投票：配置项 moa.ensemble 为模型列表时，为每个模型建 provider
+        moa_ensemble = cfg.get('moa.ensemble', []) or []
+        moa_base_url = cfg.get('moa.base_url', '') or base_url
+        moa_api_key = cfg.get('moa.api_key', '') or api_key
+        for model_name in moa_ensemble:
+            if not model_name:
+                continue
+            self.providers.append(OpenAIProvider(
+                name=f'moa/{model_name}',
+                base_url=moa_base_url,
+                api_key=moa_api_key,
+                model=model_name,
+            ))
     
     def _should_retry(self, exc: Exception) -> bool:
         status = None
@@ -274,7 +288,7 @@ class ProviderPool:
             last_error = result.get('error')
         
         return {'success': False, 'error': last_error or '所有提供商均不可用。'}
-
+    
     def add_provider(self, provider: Provider):
         """添加提供商"""
         self.providers.append(provider)
@@ -300,6 +314,73 @@ class ProviderPool:
                 provider.model = model
                 updated += 1
         return {'success': True, 'model': model, 'updated_providers': updated}
+
+    def chat_moa(self, messages: List[Dict], aggregate: bool = True, **kwargs) -> Dict[str, Any]:
+        """MoA 多模型投票：同时问多个模型，返回多数答案或聚合结果。"""
+        self._load_from_config()
+        moa_providers = [p for p in self.providers if p.name.startswith('moa/')]
+        if not moa_providers:
+            return self.chat(messages, **kwargs)
+
+        results: List[Dict[str, Any]] = []
+        for provider in moa_providers:
+            try:
+                result = self._chat_with_retry(provider, messages, **kwargs)
+            except Exception as exc:
+                result = {'success': False, 'error': str(exc), 'provider': provider.name}
+            results.append(result)
+
+        successes = [r for r in results if r.get('success')]
+        if not successes:
+            return {
+                'success': False,
+                'error': 'MoA 所有参考模型均不可用。',
+                'moa_results': results,
+            }
+
+        contents = [r.get('content', '') or '' for r in successes if r.get('content')]
+        if not contents:
+            return {
+                'success': False,
+                'error': 'MoA 参考模型未返回有效内容。',
+                'moa_results': results,
+            }
+
+        if not aggregate:
+            return {
+                'success': True,
+                'content': '\n\n---\n\n'.join(contents),
+                'moa_results': results,
+                'model': 'moa/ensemble',
+            }
+
+        try:
+            aggregator_prompt = (
+                "以下是多个模型对同一问题的回答，请综合这些回答，"
+                "给出一个更准确、全面的最终答案。\n\n"
+            )
+            for idx, text in enumerate(contents, 1):
+                aggregator_prompt += f"### 模型 {idx}\n{text}\n\n"
+            aggregator_prompt += "请直接给出最终答案："
+
+            primary = moa_providers[0]
+            agg_result = self._chat_with_retry(primary, [{"role": "user", "content": aggregator_prompt}], **kwargs)
+            if agg_result.get('success'):
+                return {
+                    'success': True,
+                    'content': agg_result.get('content', ''),
+                    'moa_results': results,
+                    'model': f"moa/{primary.model}",
+                }
+        except Exception as exc:
+            logger.debug("MoA aggregation failed: %s", exc)
+
+        return {
+            'success': True,
+            'content': contents[0],
+            'moa_results': results,
+            'model': moa_providers[0].model,
+        }
 
 
 # 全局提供商池
