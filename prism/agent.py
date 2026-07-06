@@ -564,5 +564,12 @@ class AgentWithSubagents:
 Agent.subagent_manager = property(lambda self: SubagentManager(self))
 
 def create_agent(system_prompt: Optional[str] = None, enable_auto_memory: bool = False) -> Agent:
-    """创建 Agent 实例"""
-    return Agent(system_prompt=system_prompt, enable_auto_memory=enable_auto_memory)
+    """创建 Agent 实例，并同步更新提供商池默认模型"""
+    agent = Agent(system_prompt=system_prompt, enable_auto_memory=enable_auto_memory)
+    try:
+        from prism.config import get_config
+        from prism.providers.manager import provider_pool
+        provider_pool.set_default_model(get_config().get('model.default', 'step-3.7-flash'))
+    except Exception:
+        pass
+    return agent

@@ -54,7 +54,7 @@ def show_tools(agent):
 
 def show_model():
     """显示模型配置"""
-    model = prism_config.get('model.default', 'gpt-4o')
+    model = prism_config.get('model.default', 'step-3.7-flash')
     provider = prism_config.get('model.provider', 'openai')
     base_url = prism_config.get('model.base_url', '')
     
