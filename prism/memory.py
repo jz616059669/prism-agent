@@ -390,11 +390,19 @@ class PersistentMemory:
         return [m for m in self._index.values() if m.category == category]
 
     def get_context(self, max_items: int = 5) -> str:
-        memories = sorted(self._index.values(), key=lambda m: m.confidence, reverse=True)[:max_items]
+        # 优先把身份类记忆提到最前
+        identities = [m for m in self._index.values() if m.category == "user_profile"]
+        rest = [m for m in self._index.values() if m.category != "user_profile"]
+        rest.sort(key=lambda m: m.confidence, reverse=True)
+        memories = identities + rest[:max(0, max_items - len(identities))]
         if not memories:
             return ""
         lines = ["## 记忆上下文"]
-        for m in memories:
+        if identities:
+            lines.append("【身份】")
+            for m in identities[:3]:
+                lines.append(f"- {m.key}: {m.value}")
+        for m in rest[: max(0, max_items - len(identities))]:
             lines.append(f"- [{m.category}] {m.key}: {m.value[:100]}")
         return "\n".join(lines)
 

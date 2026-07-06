@@ -173,13 +173,12 @@ class Agent:
         })
 
         # 自动记忆：若开启，则将本轮关键信息写入持久记忆
-        if getattr(self, "enable_auto_memory", False) and assistant_content:
+        if getattr(self, "enable_auto_memory", False):
             try:
-                persistent_memory.remember(
-                    key=f"chat:{datetime.now().isoformat()}",
-                    value=f"用户: {user_message}\n助手: {assistant_content}",
-                    category="chat_history",
-                )
+                turn_key = f"chat:{datetime.now().isoformat()}"
+                turn_value = f"用户: {user_message}\n助手: {assistant_content or '[无回复]'}"
+                persistent_memory.remember(turn_key, turn_value, category="chat_history")
+                self._extract_user_facts(user_message, assistant_content or "")
             except Exception:
                 logger.debug("auto memory save failed: %s", traceback.format_exc())
 
@@ -431,6 +430,28 @@ class Agent:
 
 
     # ========== 记忆系统 ==========
+    def _extract_user_facts(self, user_message: str, assistant_content: str) -> None:
+        """简单规则提取：用户称呼 / 偏好 / 身份等事实。"""
+        import re
+        text = user_message or ""
+        combined = text + chr(10) + assistant_content
+        patterns = [
+            (r"我叫([^，。]{1,10})", "user_profile", "name"),
+            (r"称呼([^，。]{1,10})", "user_profile", "name"),
+            (r"叫我([^，。]{1,10})", "user_profile", "name"),
+            (r"不要叫([^，。]{1,10})", "user_profile", "disliked_name"),
+            (r"我喜欢([^，。]{1,20})", "user_preference", "like"),
+            (r"我不喜欢([^，。]{1,20})", "user_preference", "dislike"),
+            (r"记住我的([^，。]{1,20})", "user_profile", "fact"),
+        ]
+        for pattern, category, key in patterns:
+            m = re.search(pattern, combined)
+            if m:
+                value = m.group(1).strip().strip(chr(10) + chr(13) + "，。,.:; ")
+                if value and len(value) <= 20:
+                    persistent_memory.remember(key, value, category=category, confidence=0.85)
+                break
+
     def remember(self, key: str, value: str, category: str = "general") -> None:
         """存储到持久记忆"""
         persistent_memory.remember(key, value, category)
