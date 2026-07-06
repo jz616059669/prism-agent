@@ -93,6 +93,15 @@ class SkillRegistry:
             handler=self._skill_novel_optimization,
             status="placeholder",
         ))
+
+        # 7. 章节推送 skill
+        self.register(Skill(
+            name="chapter_delivery",
+            description="长篇小说单章提取与推送：从合并文稿中提取指定章节正文并输出平台版",
+            triggers=["发章节", "第X章", "推送章节", "下一章", "提取第", "章节推送", "发第"],
+            handler=self._skill_chapter_delivery,
+            status="stable",
+        ))
     
     def _skill_file_operations(self, **kwargs) -> Dict[str, Any]:
         """文件操作 skill"""
@@ -164,6 +173,14 @@ class SkillRegistry:
                 'target': kwargs.get('target'),
             }
         return {'success': False, 'error': f'Unknown action: {action}'}
+    
+    def _skill_chapter_delivery(self, **kwargs) -> Dict[str, Any]:
+        """小说章节推送 skill"""
+        try:
+            from prism.skills.chapter_delivery import chapter_delivery_handler
+            return chapter_delivery_handler(**kwargs)
+        except Exception as e:
+            return {'success': False, 'error': f'chapter_delivery failed: {e}'}
     
     def _load_external_skills(self):
         """从 skills 目录加载外部 skills"""
