@@ -17,6 +17,16 @@ from prism.paths import memory_dir
 logger = logging.getLogger("prism.memory")
 
 
+def _now_iso() -> str:
+    from datetime import datetime
+    return datetime.now().isoformat()
+
+
+def _short(text: str, limit: int = 64) -> str:
+    text = text.replace(chr(10), ' ').replace(chr(13), ' ')
+    return text[:limit]
+
+
 @dataclass
 class Memory:
     """记忆条目"""
