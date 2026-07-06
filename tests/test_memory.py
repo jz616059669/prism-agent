@@ -48,7 +48,7 @@ def test_decay_reduces_confidence(tmp_memory):
     tmp_memory.decay_half_life_days = 1
     mem = tmp_memory._index["temp"]
     from datetime import datetime, timedelta
-    mem.created_at = (datetime.now() - timedelta(days=2)).isoformat()
+    mem.last_accessed_at = (datetime.now() - timedelta(days=2)).isoformat()
     tmp_memory._apply_decay()
     assert mem.confidence < 1.0
 
