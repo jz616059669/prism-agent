@@ -100,7 +100,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.api_key_textfield = ft.TextField(label=_("api_key"), password=True, can_reveal_password=True, value=prism_config.get("model.api_key", "") or "", width=280)
 
         self.review_enabled_switch = ft.Switch(label="后台复盘", value=bool(int(os.getenv("PRISM_REVIEW_ENABLED", "1") or 1)), width=80)
-        self.review_interval_field = ft.TextField(label="间隔", value=str(int(os.getenv("PRISM_REVIEW_INTERVAL", "5") or 5)), width=80, keyboard_type=ft.KeyboardType.NUMBER, dense=True, content_padding=ft.Padding(4, 2, 4, 2), text_size=12)
+        self.review_interval_field = ft.TextField(label="", value=str(int(os.getenv("PRISM_REVIEW_INTERVAL", "5") or 5)), width=80, keyboard_type=ft.KeyboardType.NUMBER, dense=True, content_padding=ft.Padding(4, 2, 4, 2), text_size=12)
         self.review_enabled_switch.on_change = lambda e: (self._apply_review_env(), self._save_settings())
         self.review_interval_field.on_change = lambda e: (self._apply_review_env(), self._save_settings())
 
