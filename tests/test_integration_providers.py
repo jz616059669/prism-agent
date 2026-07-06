@@ -30,7 +30,8 @@ def test_memory_decay_and_forget(tmp_path):
     mem.remember("temp", "v", category="test")
     mem.decay_half_life_days = 1
     entry = mem._index["temp"]
-    entry.created_at = (datetime.now() - timedelta(days=2)).isoformat()
+    old_accessed = entry.last_accessed_at
+    entry.last_accessed_at = (datetime.now() - timedelta(days=2)).isoformat()
     mem._apply_decay()
     assert entry.confidence < 1.0
     assert mem.forget("temp") is True
