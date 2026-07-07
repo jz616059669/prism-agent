@@ -776,6 +776,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             color=ft.Colors.ON_SURFACE_VARIANT if self._browser_deps_ok else ft.Colors.ERROR,
             opacity=0.9,
         )
+        self.url_field = ft.TextField(hint_text="输入网址...", width=260, border_radius=12)
         browser_open_btn = ft.Button("打开网页", icon=ft.Icons.LANGUAGE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=ft.Padding(10, 8, 10, 8), bgcolor=ft.Colors.SURFACE_CONTAINER,
                      color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT), disabled=not self._browser_deps_ok)
         browser_open_btn.on_click = lambda e: self._browser_open()
@@ -978,13 +979,14 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.input_field.on_submit = lambda e: self._send()
         def _on_input_change():
             try:
-                if hasattr(self, "input_count") and self.input_count:
+                if hasattr(self, "input_count") and self.input_count and getattr(self.input_count, "page", None):
                     count = len(self.input_field.value or "")
                     self.input_count.value = f"{count} 字"
                     self.input_count.update()
-                if hasattr(self, "send_btn"):
+                if hasattr(self, "send_btn") and self.send_btn:
                     self.send_btn.disabled = not (self.input_field.value or "").strip()
-                    self.send_btn.update()
+                    if getattr(self.send_btn, "page", None):
+                        self.send_btn.update()
             except Exception:
                 logger.debug('desktop exception: %s', traceback.format_exc())
         self._on_input_change = _on_input_change
