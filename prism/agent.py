@@ -153,6 +153,57 @@ class Agent:
         except Exception:
             logger.debug("inject memory context failed: %s", traceback.format_exc())
 
+    def _run_self_validation(self, user_message: str, assistant_content: str, tool_calls: list) -> Optional[str]:
+        """
+        自我校验：检查回复是否真正回答用户问题、是否有明显错误/矛盾。
+        返回修正文本；若无需修正则返回 None。
+        """
+        try:
+            if not getattr(self, "validation_enabled", False):
+                return None
+            if not assistant_content or assistant_content.startswith("Error:"):
+                return None
+            context = ""
+            recent = [m for m in getattr(self, "messages", []) or []][-8:]
+            if recent:
+                parts = []
+                for m in recent:
+                    role = getattr(m, "role", "")
+                    c = (getattr(m, "content", "") or "").strip().replace("\n", " ")
+                    if role == "user":
+                        parts.append(f"USER: {c[:200]}")
+                    elif role == "assistant":
+                        parts.append(f"ASSISTANT: {c[:200]}")
+                if parts:
+                    context = "近期对话摘要：\n" + "\n".join(parts[-6:]) + "\n\n"
+            prompt = (
+                "你是 PRISM 的内部校验器，只做 3 件事：\n"
+                "1. 检查助手回复是否真正回答用户问题；\n"
+                "2. 检查是否存在与前文明显矛盾；\n"
+                "3. 检查是否存在明显事实错误/幻觉。\n\n"
+                f"{context}"
+                f"用户：{user_message[:500]}\n"
+                f"助手：{assistant_content[:1000]}\n\n"
+                "若存在上述问题，只输出一段简洁的修正文本，不要解释原因。\n"
+                "若没有问题，只输出：__PRISM_VALIDATION_PASS__"
+            )
+            from prism.agent import create_agent
+            validator = create_agent(enable_auto_memory=False)
+            validator.session_id = getattr(self, "session_id", "") or ""
+            validator._persist_disabled = True
+            validator._session_json_enabled = False
+            result = validator.chat(user_message=prompt)
+            try:
+                validator.close()
+            except Exception:
+                pass
+            text = (result or "").strip()
+            if text == "__PRISM_VALIDATION_PASS__":
+                return None
+            return text
+        except Exception:
+            return None
+
     def chat(self, user_message: str, on_stream=None, **kwargs) -> str:
         """
         发送消息并获取回复
@@ -165,6 +216,15 @@ class Agent:
         hook_result = hook_manager.run_hooks("before_chat", {"message": user_message, "agent": self})
         if not hook_result.passed:
             return f"[blocked by hook: {hook_result.hook.name}] {hook_result.error}"
+
+        # 自我校验：前置检查是否已有足够信息回答
+        try:
+            if getattr(self, "validation_enabled", False):
+                clarification = self._run_clarification_check(user_message)
+                if clarification:
+                    return clarification
+        except Exception:
+            logger.debug("pre-validation failed: %s", traceback.format_exc())
 
         # 添加用户消息
         self.messages.append(Message(role="user", content=user_message))
@@ -199,6 +259,15 @@ class Agent:
             )
 
         logger.info("chat success model=%s tool_calls=%s", result.get('model'), len(tool_calls))
+
+        # 自我校验：后置检查回复质量
+        try:
+            if getattr(self, "validation_enabled", False):
+                fixed = self._run_self_validation(user_message, assistant_content, tool_calls)
+                if fixed is not None:
+                    assistant_content = fixed
+        except Exception:
+            logger.debug("post-validation failed: %s", traceback.format_exc())
 
         # 添加助手回复
         self.messages.append(Message(role="assistant", content=assistant_content))

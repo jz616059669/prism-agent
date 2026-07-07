@@ -35,6 +35,13 @@ class OpenAIProvider(Provider):
         self.base_url = base_url.rstrip('/')
         self.api_key = api_key
         self.model = model
+        if not self.base_url or not self.api_key or not self.model:
+            raise ValueError(
+                f"OpenAIProvider({name}) 缺少必要参数："
+                f"base_url={'已配置' if self.base_url else '未配置'}, "
+                f"api_key={'已配置' if self.api_key else '未配置'}, "
+                f"model={'已配置' if self.model else '未配置'}"
+            )
         # 延迟导入：避免 import prism.providers.manager 时强制要求 openai/httpx 已安装
         try:
             from openai import OpenAI
