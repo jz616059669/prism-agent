@@ -1130,28 +1130,50 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 self._right_skills_tab,
             ],
         )
-        right_tab_bar = ft.TabBar(
-            tabs=[
-                ft.Tab(label="终端"),
-                ft.Tab(label="MCP"),
-                ft.Tab(label="Skills"),
-            ],
-            selected_index=0,
-            on_change=self._on_right_tab_changed,
-        )
-        self._right_tab_bar = right_tab_bar
-        self._right_tab_view = ft.TabBarView(
-            expand=True,
-            controls=[
-                terminal_tab,
-                mcp_tab,
-                self._right_skills_tab,
-            ],
-        )
+        # Right panel tabs
+        self._right_tab_buttons_row = ft.Row([], spacing=2, tight=True)
+        self._right_tab_contents = ft.Column([terminal_tab, mcp_tab, self._right_skills_tab], expand=True, spacing=0)
+        for idx, label in enumerate(["终端", "MCP", "Skills"]):
+            btn = ft.TextButton(
+                label,
+                style=ft.ButtonStyle(
+                    shape=ft.RoundedRectangleBorder(radius=10),
+                    bgcolor=ft.Colors.PRIMARY_CONTAINER if idx == 0 else ft.Colors.SURFACE_CONTAINER,
+                    color=ft.Colors.ON_PRIMARY_CONTAINER if idx == 0 else ft.Colors.ON_SURFACE,
+                    padding=ft.Padding(10, 6, 10, 6),
+                ),
+                on_click=lambda e, i=idx: self._switch_right_tab(i),
+            )
+            self._right_tab_buttons_row.controls.append(btn)
+        self._right_tab_contents.visible = True
+        self._right_tab_contents.opacity = 1.0
+        self._right_tab_contents.scroll = ft.ScrollMode.AUTO
+        self._active_right_tab_index = 0
+
+        def _show_tab(index: int):
+            self._active_right_tab_index = index
+            for i, ctrl in enumerate(self._right_tab_contents.controls):
+                ctrl.visible = (i == index)
+            for i, btn in enumerate(self._right_tab_buttons_row.controls):
+                btn.style = ft.ButtonStyle(
+                    shape=ft.RoundedRectangleBorder(radius=10),
+                    bgcolor=ft.Colors.PRIMARY_CONTAINER if i == index else ft.Colors.SURFACE_CONTAINER,
+                    color=ft.Colors.ON_PRIMARY_CONTAINER if i == index else ft.Colors.ON_SURFACE,
+                    padding=ft.Padding(10, 6, 10, 6),
+                )
+            try:
+                self._right_tab_contents.update()
+                self._right_tab_buttons_row.update()
+            except Exception:
+                pass
+
+        self._switch_right_tab = lambda i: _show_tab(i)
+        _show_tab(0)
+
         return ft.Column(
             [
-                right_tab_bar,
-                self._right_tab_view,
+                self._right_tab_buttons_row,
+                self._right_tab_contents,
             ],
             expand=True,
             spacing=8,
@@ -1419,9 +1441,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._terminal_lines.append(text)
         if len(self._terminal_lines) > 300:
             self._terminal_lines = self._terminal_lines[-300:]
-        if not hasattr(self, "terminal_list") or self.terminal_list is None:
+        if not hasattr(self, "terminal_list") or self.terminal_list is None or not hasattr(self.terminal_list, "page") or self.terminal_list.page is None:
             return
-        # Syntax highlighting
         color = ft.Colors.ON_SURFACE_VARIANT
         if 'error' in text.lower() or '失败' in text or '错误' in text:
             color = ft.Colors.ERROR
@@ -1432,30 +1453,42 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         elif 'info' in text.lower() or '信息' in text:
             color = ft.Colors.BLUE_400
         self.terminal_list.controls.append(ft.Text(text, size=12, color=color, selectable=True, font_family="Consolas, Monaco, monospace", height=18))
-        self.terminal_list.update()
+        try:
+            self.terminal_list.update()
+        except Exception:
+            pass
 
     def _append_mcp(self, text: str):
         self._mcp_logs.append(text)
         if len(self._mcp_logs) > 200:
             self._mcp_logs = self._mcp_logs[-200:]
-        if not hasattr(self, "mcp_list") or self.mcp_list is None:
+        if not hasattr(self, "mcp_list") or self.mcp_list is None or not hasattr(self.mcp_list, "page") or self.mcp_list.page is None:
             return
         self.mcp_list.controls.clear()
         for line in self._mcp_logs[-80:]:
             self.mcp_list.controls.append(ft.Text(line, size=12, color=ft.Colors.ON_SURFACE, selectable=True, font_family="Consolas, Monaco, monospace", height=18))
-        self.mcp_list.update()
+        try:
+            self.mcp_list.update()
+        except Exception:
+            pass
 
     def _clear_terminal(self):
         self._terminal_lines = []
-        if hasattr(self, "terminal_list") and self.terminal_list is not None:
+        if hasattr(self, "terminal_list") and self.terminal_list is not None and hasattr(self.terminal_list, "page") and self.terminal_list.page is not None:
             self.terminal_list.controls.clear()
-            self.terminal_list.update()
+            try:
+                self.terminal_list.update()
+            except Exception:
+                pass
 
     def _clear_mcp(self):
         self._mcp_logs = []
-        if hasattr(self, "mcp_list") and self.mcp_list is not None:
+        if hasattr(self, "mcp_list") and self.mcp_list is not None and hasattr(self.mcp_list, "page") and self.mcp_list.page is not None:
             self.mcp_list.controls.clear()
-            self.mcp_list.update()
+            try:
+                self.mcp_list.update()
+            except Exception:
+                pass
 
 
     def _refresh_skills(self):
