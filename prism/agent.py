@@ -103,12 +103,8 @@ class Agent:
 - 安全第一，危险操作先确认
 """
     
-    def chat(self, user_message: str, on_stream=None, **kwargs) -> str:
-        """
-        发送消息并获取回复
-        on_stream: 可选回调，逐 token 接收文本
-        """
-        # 动态注入记忆上下文：身份类优先，再按当前query召回相关记忆
+    def _inject_memory_context(self, user_message: str) -> None:
+        """动态注入记忆上下文：身份类优先，再按当前query召回相关记忆"""
         try:
             base = (self.system_prompt or "").rstrip()
             # 移除旧记忆块，避免重复堆叠
@@ -126,9 +122,9 @@ class Agent:
             # 只根据当前 query 做轻量召回，避免堆满 context
             query_matches = persistent_memory.search(user_message, category=None, limit=3)
             query_block = ""
+            seen = set()
             if query_matches:
                 lines = ["【相关】"]
-                seen = set()
                 for m in query_matches:
                     if m.key in seen:
                         continue
@@ -156,6 +152,14 @@ class Agent:
                     self.messages[0].content = self.system_prompt
         except Exception:
             logger.debug("inject memory context failed: %s", traceback.format_exc())
+
+    def chat(self, user_message: str, on_stream=None, **kwargs) -> str:
+        """
+        发送消息并获取回复
+        on_stream: 可选回调，逐 token 接收文本
+        """
+        # 动态注入记忆上下文：身份类优先，再按当前query召回相关记忆
+        self._inject_memory_context(user_message)
 
         # Run before_chat hooks
         hook_result = hook_manager.run_hooks("before_chat", {"message": user_message, "agent": self})
