@@ -3,6 +3,7 @@ PRISM Agent - 统一配置系统
 整合 Hermes/Codex/OpenClaw 配置优势
 """
 
+import json
 import os
 import yaml
 from pathlib import Path
@@ -53,40 +54,43 @@ class Config:
 
         # 合并桌面端快捷配置，避免同一 key 在 config.yaml 和桌面端各存一份
         # 桌面端配置优先级更高，直接覆盖 config.yaml 中的对应值
-        desktop_settings_file = self.config_dir / "desktop_settings.json"
-        if desktop_settings_file.exists():
-            try:
-                import json
-                with open(desktop_settings_file, 'r', encoding='utf-8') as f:
-                    desktop = json.load(f) or {}
-                model_section = self._config.setdefault('model', {})
-                desktop_model_map = {
-                    'api_key': 'api_key',
-                    'provider': 'provider',
-                    'base_url': 'base_url',
-                    'default': 'model',
-                }
-                for config_key, desktop_key in desktop_model_map.items():
-                    env_key = {
-                        'api_key': 'PRISM_API_KEY',
-                        'provider': 'PRISM_MODEL_PROVIDER',
-                        'base_url': 'PRISM_BASE_URL',
-                        'default': 'PRISM_DEFAULT_MODEL',
-                    }[config_key]
-                    value = desktop.get(desktop_key)
-                    if value:
-                        model_section[config_key] = value
-                    if not model_section.get(config_key):
-                        value = os.getenv(env_key)
-                        if value:
-                            model_section[config_key] = value
-            except Exception:
-                pass
+        self._merge_desktop_settings()
 
         # Load hooks config
         self._load_hooks()
         # Load workspaces config
         self._load_workspaces()
+
+    def _merge_desktop_settings(self) -> None:
+        desktop_settings_file = self.config_dir / "desktop_settings.json"
+        if not desktop_settings_file.exists():
+            return
+        try:
+            with open(desktop_settings_file, 'r', encoding='utf-8') as f:
+                desktop = json.load(f) or {}
+            model_section = self._config.setdefault('model', {})
+            desktop_model_map = {
+                'api_key': 'api_key',
+                'provider': 'provider',
+                'base_url': 'base_url',
+                'default': 'model',
+            }
+            env_map = {
+                'api_key': 'PRISM_API_KEY',
+                'provider': 'PRISM_MODEL_PROVIDER',
+                'base_url': 'PRISM_BASE_URL',
+                'default': 'PRISM_DEFAULT_MODEL',
+            }
+            for config_key, desktop_key in desktop_model_map.items():
+                value = desktop.get(desktop_key)
+                if value:
+                    model_section[config_key] = value
+                if not model_section.get(config_key):
+                    env_value = os.getenv(env_map[config_key])
+                    if env_value:
+                        model_section[config_key] = env_value
+        except Exception:
+            pass
     
     def _save(self) -> None:
         """保存配置文件"""
