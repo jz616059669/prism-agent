@@ -79,19 +79,19 @@ class SkillRegistry:
         # 5. 小说写作 skill
         self.register(Skill(
             name="novel_writing",
-            description="网文创作：章节生成、大纲规划、人物设定",
-            triggers=["写小说", "创作", "章节", "大纲", "人物"],
+            description="网文创作基础工具：大纲模板、人物设定、章节模板生成（无需 API key）",
+            triggers=["写小说", "创作", "章节", "大纲", "人物", "生成大纲", "人物设定", "角色"],
             handler=self._skill_novel_writing,
-            status="placeholder",
+            status="stable",
         ))
         
         # 6. 小说优化 skill
         self.register(Skill(
             name="novel_optimization",
-            description="网文优化：去AI味、重复检测、节奏调整",
-            triggers=["优化", "去AI味", "重复", "润色", "修改"],
+            description="网文优化基础工具：去AI味、重复检测、节奏分析（无需 API key）",
+            triggers=["优化", "去AI味", "重复", "润色", "修改", "节奏", "检测重复"],
             handler=self._skill_novel_optimization,
-            status="placeholder",
+            status="stable",
         ))
 
         # 7. 章节推送 skill
@@ -138,39 +138,103 @@ class SkillRegistry:
             return {"success": False, "error": str(exc), "query": query}
     
     def _skill_code_execution(self, **kwargs) -> Dict[str, Any]:
-        """代码执行 skill（简化版）"""
-        return {
-            'success': True,
-            'message': 'Code execution requires sandbox setup',
-            'code': kwargs.get('code'),
-        }
+        """代码执行 skill（真正执行并返回结果）"""
+        from prism.tools.registry import registry
+        return registry.execute('code_execute', 
+            code=kwargs.get('code'), 
+            timeout=kwargs.get('timeout', 30))
     
     def _skill_novel_writing(self, **kwargs) -> Dict[str, Any]:
-        """小说写作 skill"""
-        action = kwargs.get('action', 'generate')
-        if action == 'generate':
+        """小说写作 skill（基础规则版，无需 API key）"""
+        action = kwargs.get('action', 'outline')
+        if action == 'generate_chapter':
+            outline = kwargs.get('outline') or '未提供大纲'
             return {
                 'success': True,
-                'message': 'Novel generation requires LLM integration',
-                'chapter': kwargs.get('chapter'),
-                'outline': kwargs.get('outline'),
+                'message': '基础章节生成完成（模板版，需要 LLM key 才能生成高质量正文）',
+                'chapter': {
+                    'title': kwargs.get('title', '未命名章节'),
+                    'outline': outline,
+                    'body': f'【{kwargs.get("title", "未命名章节")}】\n根据大纲：{outline}\n\n此处为基础模板，配置 API Key 后可生成高质量网文正文。',
+                    'note': '请先在设置中配置 model.api_key 以启用 AI 生成'
+                }
+            }
+        elif action == 'generate_outline':
+            theme = kwargs.get('theme') or '未提供主题'
+            return {
+                'success': True,
+                'message': '基础大纲生成完成（模板版）',
+                'outline': [
+                    f'第一章：{theme}的开端',
+                    '第二章：主角登场',
+                    '第三章：冲突升级',
+                    '第四章：危机爆发',
+                    '第五章：逆袭反转',
+                ],
+                'note': '模板大纲，配置 API Key 后可生成定制化大纲'
+            }
+        elif action == 'create_character':
+            name = kwargs.get('name') or '无名'
+            role = kwargs.get('role') or '配角'
+            return {
+                'success': True,
+                'message': '基础人物设定完成',
+                'character': {
+                    'name': name,
+                    'role': role,
+                    'personality': kwargs.get('personality', '沉稳'),
+                    'background': kwargs.get('background', '待补充'),
+                    'traits': ['勇敢', '机智', '重情义']
+                }
             }
         return {'success': False, 'error': f'Unknown action: {action}'}
     
     def _skill_novel_optimization(self, **kwargs) -> Dict[str, Any]:
-        """小说优化 skill"""
-        action = kwargs.get('action', 'detect')
-        if action == 'detect':
+        """小说优化 skill（基础规则版，无需 API key）"""
+        action = kwargs.get('action', 'remove_ai_flavor')
+        text = kwargs.get('text') or ''
+        if action == 'remove_ai_flavor':
+            ai_patterns = [
+                ('——', '——'), ('这——就是——', '这就是'),
+                ('值得一提的是', '值得注意的是'), ('综上所述', '总而言之一句话'),
+                ('在这个...中', '在...里'), ('不可否认', '不得不承认'),
+            ]
+            result = text
+            replacements = []
+            for old, new in ai_patterns:
+                if old in result:
+                    result = result.replace(old, new)
+                    replacements.append(f'{old} -> {new}')
             return {
                 'success': True,
-                'message': 'AI flavor detection requires pattern matching',
-                'patterns': kwargs.get('patterns', ['——', '这——就是——']),
+                'message': f'已替换 {len(replacements)} 处 AI 味表达',
+                'replacements': replacements,
+                'text': result
             }
-        elif action == 'remove':
+        elif action == 'detect_repetition':
+            sentences = [s.strip() for s in text.replace('。', '。|').replace('！', '！|').replace('？', '？|').split('|') if s.strip()]
+            seen = {}
+            duplicates = []
+            for s in sentences:
+                key = s[:20]
+                seen[key] = seen.get(key, 0) + 1
+                if seen[key] > 1:
+                    duplicates.append(s)
             return {
                 'success': True,
-                'message': 'AI flavor removal requires batch processing',
-                'target': kwargs.get('target'),
+                'message': f'检测到 {len(duplicates)} 处疑似重复',
+                'duplicates': duplicates[:10],
+                'total_sentences': len(sentences)
+            }
+        elif action == 'suggest_pacing':
+            paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
+            long_paras = [i for i, p in enumerate(paragraphs, 1) if len(p) > 500]
+            return {
+                'success': True,
+                'message': '节奏分析完成',
+                'total_paragraphs': len(paragraphs),
+                'long_paragraphs': long_paras[:5],
+                'suggestion': '建议将超长段落拆分为 2-3 段，每段 300-500 字，提升阅读节奏。' if long_paras else '段落长度分布合理，节奏良好。'
             }
         return {'success': False, 'error': f'Unknown action: {action}'}
     
