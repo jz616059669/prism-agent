@@ -142,10 +142,9 @@ class SettingsMixin:
                             self._append(role_label, content)
                     self.chat_list.update()
             draft = state.get("chat_draft") or ""
-            if draft and hasattr(self, "input_field"):
+            if draft and hasattr(self, "input_field") and self.input_field is not None:
                 self.input_field.value = draft
                 if hasattr(self, "_on_input_change"):
                     self._on_input_change()
-                self.input_field.update()
         except Exception:
             logger.debug("restore runtime state failed: %s", traceback.format_exc())

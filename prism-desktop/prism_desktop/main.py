@@ -776,6 +776,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             color=ft.Colors.ON_SURFACE_VARIANT if self._browser_deps_ok else ft.Colors.ERROR,
             opacity=0.9,
         )
+        browser_open_btn = ft.Button("打开网页", icon=ft.Icons.LANGUAGE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=ft.Padding(10, 8, 10, 8), bgcolor=ft.Colors.SURFACE_CONTAINER,
+                     color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT), disabled=not self._browser_deps_ok)
         browser_open_btn.on_click = lambda e: self._browser_open()
         browser_snapshot_btn = ft.Button("读取页面快照", icon=ft.Icons.ARTICLE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=ft.Padding(10, 8, 10, 8), bgcolor=ft.Colors.SURFACE_CONTAINER,
                      color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT), disabled=not self._browser_deps_ok)
