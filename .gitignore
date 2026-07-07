@@ -1,28 +1,52 @@
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
 *.egg-info/
 dist/
 build/
+.eggs/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
 .venv/
-.env
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+Desktop.ini
 .DS_Store
 
-# 本地保留教程，不上传 GitHub
-INSTALL_FEISHU.md
-VIDEO_TUTORIAL.md
-PRISM_*使用文档.md
+# User data (should NOT be in git)
+~/.prism/
+config.local.yaml
+desktop_settings.json
 
-# Runtime artifacts
-prism_screenshot_*.png
+# PRISM temp files
+tmp/
+logs/
 *.log
 
-# Windows 打包产物（体积大，不上传 Git）
-dist-windows/
-build-windows/
+# Build artifacts
+*.exe
+*.spec
 
-# Desktop build artifacts
-prism-desktop/main.spec
-prism-desktop/dist/
-prism-desktop/build/
-prism-desktop/run_prism.bat
-scripts/build-windows-new/
+# User files
+*.bat
+*.md
+!README.md
+!CHANGELOG.md
