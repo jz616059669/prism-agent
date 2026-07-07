@@ -9,6 +9,7 @@ import json
 import logging
 import traceback
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -18,7 +19,6 @@ logger = logging.getLogger("prism.memory")
 
 
 def _now_iso() -> str:
-    from datetime import datetime
     return datetime.now().isoformat()
 
 
@@ -248,7 +248,6 @@ class PersistentMemory:
         # 仍过多则按综合重要度丢弃最低的条目
         if len(self._index) > max_entries:
             # 最近 7 天内访问过的记忆优先保留，不参与淘汰
-            from datetime import datetime, timedelta
             recent_cutoff = datetime.now() - timedelta(days=7)
             recent_keys = {
                 k for k, m in self._index.items()
@@ -277,8 +276,6 @@ class PersistentMemory:
         confidence: float = 1.0,
         source: str = "user",
     ) -> None:
-        from datetime import datetime
-
         now = _now_iso()
         # 防重复：相同 category 下若已有 digest 相似条目，则只更新 access_count
         if key not in self._index:
@@ -343,7 +340,6 @@ class PersistentMemory:
         """按时间衰减调整 confidence，基于 last_accessed_at；支持分类半衰期。"""
         if self.decay_half_life_days is None:
             return
-        from datetime import datetime
         now = datetime.now()
         for memory in self._index.values():
             if memory.confidence <= self.decay_min_confidence:
@@ -411,21 +407,21 @@ class PersistentMemory:
     def _importance(self, memory: Memory, now: Optional[datetime] = None) -> float:
         """综合重要度：confidence + access_count 加成 + 分类加成 + 访问时间加成。"""
         if now is None:
-            from datetime import datetime
             now = datetime.now()
         score = float(memory.confidence)
-        # 分类重要性加成
         score *= float(self.category_importance.get(memory.category, 1.0))
-        # 访问越多越重要
         score += min(float(memory.access_count) * 0.05, 0.5)
-        # 最近访问过再稍微加权
-        if memory.last_accessed_at:
-            try:
-                last_dt = datetime.fromisoformat(memory.last_accessed_at)
+        try:
+            last = memory.last_accessed_at or memory.updated_at or memory.created_at
+            if last:
+                last_dt = datetime.fromisoformat(last)
                 hours = max((now - last_dt).total_seconds() / 3600.0, 0.0)
-                score += max(0.3 - hours * 0.001, 0.0)
-            except Exception:
-                pass
+                if hours < 24:
+                    score += 0.3
+                elif hours < 168:
+                    score += 0.15
+        except Exception:
+            pass
         return score
 
     def summarize(self, category: Optional[str] = None, max_chars: int = 800) -> str:
