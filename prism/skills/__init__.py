@@ -103,6 +103,114 @@ class SkillRegistry:
             status="stable",
         ))
     
+        # 8. 学习/蒸馏 skill
+        self.register(Skill(
+            name="learn",
+            description="从对话/工作流蒸馏可复用 skill",
+            triggers=["/learn", "learn", "蒸馏", "distill", "学习"],
+            handler=self._skill_learn,
+            status="stable",
+        ))
+
+        # 9. memory graph skill
+        self.register(Skill(
+            name="memory_graph",
+            description="记忆可视化：构建记忆/技能关系图，输出 JSON 或 Mermaid",
+            triggers=["记忆图", "memory graph", "journey", "可视化记忆"],
+            handler=self._skill_memory_graph,
+            status="stable",
+        ))
+
+        # 10. background fan-out skill
+        self.register(Skill(
+            name="background_fanout",
+            description="并行多子Agent：同时运行多个子任务并汇总结果",
+            triggers=["并行", "fanout", "多任务", "同时", "并发"],
+            handler=self._skill_background_fanout,
+            status="stable",
+        ))
+
+        # 11. completion contracts skill
+        self.register(Skill(
+            name="completion_contracts",
+            description="输出自验证：校验 agent 输出是否符合预设规则",
+            triggers=["completion contract", "验证", "校验", "verify", "contract"],
+            handler=self._skill_completion_contracts,
+            status="stable",
+        ))
+    
+    def _skill_learn(self, **kwargs) -> Dict[str, Any]:
+        """学习/蒸馏 skill"""
+        request = kwargs.get('request') or kwargs.get('user_request') or ''
+        skill_name = kwargs.get('skill_name') or 'distilled-skill'
+        try:
+            from prism.skills.learn import build_learn_prompt, distill_from_conversation
+            prompt = build_learn_prompt(request)
+            return distill_from_conversation(
+                conversation_text=prompt,
+                skill_name=skill_name,
+                description=kwargs.get('description') or f'Auto-distilled skill: {skill_name}',
+                triggers=kwargs.get('triggers') or [skill_name],
+            )
+        except Exception as exc:
+            return {'success': False, 'error': str(exc)}
+
+    def _skill_memory_graph(self, **kwargs) -> Dict[str, Any]:
+        """记忆可视化 skill"""
+        try:
+            from prism.memory_graph import build_memory_graph, render_graph_mermaid
+            payload = build_memory_graph(
+                max_memories=int(kwargs.get('max_memories', 200)),
+                min_overlap=int(kwargs.get('min_overlap', 2)),
+            )
+            output_format = kwargs.get('format', 'json')
+            if output_format == 'mermaid':
+                payload['mermaid'] = render_graph_mermaid(payload)
+            return payload
+        except Exception as exc:
+            return {'success': False, 'error': str(exc)}
+
+    def _skill_background_fanout(self, **kwargs) -> Dict[str, Any]:
+        """background fan-out skill"""
+        try:
+            from prism.fanout import BackgroundFanOut
+            tasks = kwargs.get('tasks') or {}
+            if not tasks:
+                return {'success': False, 'error': 'tasks is required: dict of name -> prompt'}
+            def agent_factory(name: str):
+                from prism.agent import Agent
+                return Agent()
+            runner = BackgroundFanOut(agent_factory)
+            results = runner.run(tasks)
+            return {
+                'success': True,
+                'results': results,
+                'summary': runner.aggregate(results),
+            }
+        except Exception as exc:
+            return {'success': False, 'error': str(exc)}
+
+    def _skill_completion_contracts(self, **kwargs) -> Dict[str, Any]:
+        """completion contracts skill"""
+        try:
+            from prism.completion_contracts import evaluate, validate_and_retry, CompletionContract
+            output = kwargs.get('output') or ''
+            contract_defs = kwargs.get('contracts') or []
+            contracts = []
+            for item in contract_defs:
+                if isinstance(item, dict):
+                    contracts.append(CompletionContract(
+                        name=item.get('name', 'unnamed'),
+                        rule=item.get('rule', 'contains'),
+                        value=item.get('value'),
+                        required=bool(item.get('required', True)),
+                    ))
+            if not contracts:
+                return {'success': False, 'error': 'contracts is required: list of {name, rule, value}'}
+            return evaluate(output, contracts)
+        except Exception as exc:
+            return {'success': False, 'error': str(exc)}
+    
     def _skill_file_operations(self, **kwargs) -> Dict[str, Any]:
         """文件操作 skill"""
         from prism.tools.registry import registry
