@@ -52,6 +52,7 @@ class Config:
             self._save()
 
         # 合并桌面端快捷配置，避免同一 key 在 config.yaml 和桌面端各存一份
+        # 桌面端配置优先级更高，直接覆盖 config.yaml 中的对应值
         desktop_settings_file = self.config_dir / "desktop_settings.json"
         if desktop_settings_file.exists():
             try:
@@ -59,20 +60,26 @@ class Config:
                 with open(desktop_settings_file, 'r', encoding='utf-8') as f:
                     desktop = json.load(f) or {}
                 model_section = self._config.setdefault('model', {})
-                for key, env_key in (
-                    ('api_key', 'PRISM_API_KEY'),
-                    ('provider', 'PRISM_MODEL_PROVIDER'),
-                    ('base_url', 'PRISM_BASE_URL'),
-                    ('default', 'PRISM_DEFAULT_MODEL'),
-                ):
-                    if not model_section.get(key):
-                        value = desktop.get(key)
+                desktop_model_map = {
+                    'api_key': 'api_key',
+                    'provider': 'provider',
+                    'base_url': 'base_url',
+                    'default': 'model',
+                }
+                for config_key, desktop_key in desktop_model_map.items():
+                    env_key = {
+                        'api_key': 'PRISM_API_KEY',
+                        'provider': 'PRISM_MODEL_PROVIDER',
+                        'base_url': 'PRISM_BASE_URL',
+                        'default': 'PRISM_DEFAULT_MODEL',
+                    }[config_key]
+                    value = desktop.get(desktop_key)
+                    if value:
+                        model_section[config_key] = value
+                    if not model_section.get(config_key):
+                        value = os.getenv(env_key)
                         if value:
-                            model_section[key] = value
-                        else:
-                            value = os.getenv(env_key)
-                            if value:
-                                model_section[key] = value
+                            model_section[config_key] = value
             except Exception:
                 pass
 
