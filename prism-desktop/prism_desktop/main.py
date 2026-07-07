@@ -1122,14 +1122,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             expand=True,
             spacing=8,
         )
-        self._right_tab_view = ft.TabBarView(
-            expand=True,
-            controls=[
-                terminal_tab,
-                mcp_tab,
-                self._right_skills_tab,
-            ],
-        )
         # Right panel tabs
         self._right_tab_buttons_row = ft.Row([], spacing=2, tight=True)
         self._right_tab_contents = ft.Column([terminal_tab, mcp_tab, self._right_skills_tab], expand=True, spacing=0)
@@ -1179,21 +1171,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             spacing=8,
         )
     
-    def _on_right_tab_changed(self, e: ft.ControlEvent) -> None:
-        try:
-            idx = int(e.data) if hasattr(e, "data") else 0
-        except Exception as exc:
-            self._log_error("tab change parse", exc)
-            idx = 0
-        try:
-            if hasattr(self, "_right_tab_bar") and hasattr(self, "_right_tab_view"):
-                self._right_tab_bar.selected_index = idx
-                self._right_tab_bar.update()
-                self._right_tab_view.selected_index = idx
-                self._right_tab_view.update()
-        except Exception as exc:
-            self._log_error("right tab change", exc)
-
     def _append(self, role: str, text: str, retry: bool = False, retry_text: str = "", placeholder: bool = False):
         if hasattr(self, "_chat_placeholder") and self._chat_placeholder:
             try:
