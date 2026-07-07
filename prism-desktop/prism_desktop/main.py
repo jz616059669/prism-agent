@@ -102,14 +102,13 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             label="默认模型",
             options=[ft.dropdown.Option("step-3.7-flash")],
             value=prism_config.get("model.default", "step-3.7-flash") or "step-3.7-flash",
-            width=280,
+            width=260,
         )
-        self.provider_textfield = ft.TextField(label=_("model_provider"), value=prism_config.get("model.provider", "stepfun") or "stepfun", width=280)
-        self.base_url_textfield = ft.TextField(label=_("base_url"), value=prism_config.get("model.base_url", "https://api.stepfun.com/step_plan/v1") or "https://api.stepfun.com/step_plan/v1", width=280)
-        self.api_key_textfield = ft.TextField(label=_("api_key"), password=True, can_reveal_password=True, value=prism_config.get("model.api_key", "") or "", width=280)
-
-        self.review_enabled_switch = ft.Switch(label="后台复盘", value=bool(int(os.getenv("PRISM_REVIEW_ENABLED", "1") or 1)), width=80)
-        self.review_interval_field = ft.TextField(label="", value=str(int(os.getenv("PRISM_REVIEW_INTERVAL", "5") or 5)), width=80, keyboard_type=ft.KeyboardType.NUMBER, dense=True, content_padding=ft.Padding(4, 2, 4, 2), text_size=12)
+        self.provider_textfield = ft.TextField(label=_("model_provider"), value=prism_config.get("model.provider", "stepfun") or "stepfun", width=260)
+        self.base_url_textfield = ft.TextField(label=_("base_url"), value=prism_config.get("model.base_url", "https://api.stepfun.com/step_plan/v1") or "https://api.stepfun.com/step_plan/v1", width=260)
+        self.api_key_textfield = ft.TextField(label=_("api_key"), password=True, can_reveal_password=True, value=prism_config.get("model.api_key", "") or "", width=260)
+        self.review_enabled_switch = ft.Switch(label="后台复盘", value=bool(int(os.getenv("PRISM_REVIEW_ENABLED", "1") or 1)))
+        self.review_interval_field = ft.TextField(label="", value=str(int(os.getenv("PRISM_REVIEW_INTERVAL", "5") or 5)), width=64, keyboard_type=ft.KeyboardType.NUMBER, dense=True, content_padding=ft.Padding(4, 2, 4, 2), text_size=12)
         self.review_enabled_switch.on_change = lambda e: (self._apply_review_env(), self._save_settings())
         self.review_interval_field.on_change = lambda e: (self._apply_review_env(), self._save_settings())
 
@@ -766,7 +765,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             border_radius=34,
         )
 
-        save_btn = ft.Button(_("save_settings"), icon=ft.Icons.SAVE_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
+        save_btn = ft.Button(_("save_settings"), icon=ft.Icons.SAVE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=ft.Padding(10, 8, 10, 8), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         save_btn.on_click = lambda e: self._save_config()
 
         browser_deps = self._check_browser_dependencies()
@@ -777,51 +776,48 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             color=ft.Colors.ON_SURFACE_VARIANT if self._browser_deps_ok else ft.Colors.ERROR,
             opacity=0.9,
         )
-        self.url_field = ft.TextField(hint_text="输入网址...", width=280, border_radius=14)
-        browser_open_btn = ft.Button("打开网页", icon=ft.Icons.LANGUAGE_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
-                     color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT), disabled=not self._browser_deps_ok)
         browser_open_btn.on_click = lambda e: self._browser_open()
-        browser_snapshot_btn = ft.Button("读取页面快照", icon=ft.Icons.ARTICLE_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
+        browser_snapshot_btn = ft.Button("读取页面快照", icon=ft.Icons.ARTICLE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=ft.Padding(10, 8, 10, 8), bgcolor=ft.Colors.SURFACE_CONTAINER,
                      color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT), disabled=not self._browser_deps_ok)
         browser_snapshot_btn.on_click = lambda e: self._browser_snapshot()
-        browser_close_btn = ft.Button(_("close_browser"), icon=ft.Icons.CLOSE_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT), disabled=not self._browser_deps_ok)
+        browser_close_btn = ft.Button(_("close_browser"), icon=ft.Icons.CLOSE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=ft.Padding(10, 8, 10, 8), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT), disabled=not self._browser_deps_ok)
         browser_close_btn.on_click = lambda e: self._browser_close()
 
         # MCP
-        self.mcp_refresh_btn = ft.Button(_("refresh_mcp"), icon=ft.Icons.REFRESH_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
+        self.mcp_refresh_btn = ft.Button(_("refresh_mcp"), icon=ft.Icons.REFRESH_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=ft.Padding(10, 8, 10, 8), bgcolor=ft.Colors.SURFACE_CONTAINER,
                      color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         self.mcp_refresh_btn.on_click = lambda e: self._refresh_mcp()
-        self.mcp_server_list = ft.Column(spacing=6, tight=True)
+        self.mcp_server_list = ft.Column(spacing=4, tight=True)
 
         # Skills
-        self.skill_refresh_btn = ft.Button(_("refresh_skills"), icon=ft.Icons.REFRESH_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
+        self.skill_refresh_btn = ft.Button(_("refresh_skills"), icon=ft.Icons.REFRESH_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=ft.Padding(10, 8, 10, 8), bgcolor=ft.Colors.SURFACE_CONTAINER,
                      color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         self.skill_refresh_btn.on_click = lambda e: self._refresh_skills()
-        self.skill_search = ft.TextField(hint_text=_("skill_search_placeholder"), width=260, border_radius=18, dense=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), content_padding=ft.Padding(10, 8, 10, 8), bgcolor=ft.Colors.SURFACE_CONTAINER, on_change=lambda e: self._filter_skills(e.control.value or ""))
-        self.skill_install_field = ft.TextField(hint_text=_("install_skill_placeholder"), width=280, border_radius=14)
-        self.skill_install_btn = ft.Button(_("install_skill"), icon=ft.Icons.DOWNLOAD_ROUNDED, width=280, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
+        self.skill_search = ft.TextField(hint_text=_("skill_search_placeholder"), width=240, border_radius=16, dense=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), content_padding=ft.Padding(8, 6, 8, 6), bgcolor=ft.Colors.SURFACE_CONTAINER, on_change=lambda e: self._filter_skills(e.control.value or ""))
+        self.skill_install_field = ft.TextField(hint_text=_("install_skill_placeholder"), width=260, border_radius=12)
+        self.skill_install_btn = ft.Button(_("install_skill"), icon=ft.Icons.DOWNLOAD_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=ft.Padding(10, 8, 10, 8), bgcolor=ft.Colors.SURFACE_CONTAINER,
                      color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         self.skill_install_btn.on_click = lambda e: self._install_skill_from_ui()
-        self.skill_list = ft.Column(spacing=6, tight=True)
+        self.skill_list = ft.Column(spacing=4, tight=True)
         self._skill_all_items: List[dict] = []
-        self.hub_search = ft.TextField(hint_text=_("skill_hub_search"), width=220, border_radius=18, dense=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), content_padding=ft.Padding(10, 8, 10, 8), bgcolor=ft.Colors.SURFACE_CONTAINER)
-        self.hub_browse_btn = ft.Button(_("skill_hub_browse"), icon=ft.Icons.PUBLIC_ROUNDED, width=120, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER, color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
+        self.hub_search = ft.TextField(hint_text=_("skill_hub_search"), width=200, border_radius=16, dense=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), content_padding=ft.Padding(8, 6, 8, 6), bgcolor=ft.Colors.SURFACE_CONTAINER)
+        self.hub_browse_btn = ft.Button(_("skill_hub_browse"), icon=ft.Icons.PUBLIC_ROUNDED, width=100, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=ft.Padding(10, 8, 10, 8), bgcolor=ft.Colors.SURFACE_CONTAINER, color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         self.hub_browse_btn.on_click = lambda e: self._browse_hub_skills()
-        self.hub_list = ft.Column(spacing=6, tight=True)
+        self.hub_list = ft.Column(spacing=4, tight=True)
         self._hub_all_items: List[dict] = []
 
         # 会话
         self.session_new_btn = ft.IconButton(icon=ft.Icons.ADD_ROUNDED, tooltip="新建对话", icon_color=ft.Colors.PRIMARY, bgcolor=ft.Colors.with_opacity(0.08, ft.Colors.PRIMARY), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.PRIMARY)))
         self.session_new_btn.on_click = lambda e: self._new_session()
-        self.session_name_field = ft.TextField(hint_text="会话名称", width=200, border_radius=14)
-        self.session_save_btn = ft.Button("保存会话", icon=ft.Icons.BOOKMARK_ROUNDED, width=120, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(22, 20, 22, 20), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
+        self.session_name_field = ft.TextField(hint_text="会话名称", width=180, border_radius=12)
+        self.session_save_btn = ft.Button("保存会话", icon=ft.Icons.BOOKMARK_ROUNDED, width=100, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=ft.Padding(10, 8, 10, 8), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         self.session_save_btn.on_click = lambda e: self._save_session()
         self.session_search = ft.TextField(
             hint_text="搜索会话...",
             dense=True,
-            border_radius=18,
-            height=36,
-            content_padding=ft.Padding(10, 8, 10, 8),
+            border_radius=16,
+            height=32,
+            content_padding=ft.Padding(8, 6, 8, 6),
             on_change=lambda e: self._filter_sessions(e.control.value or ""),
         )
         self.session_list = ft.Column(spacing=6, tight=True, scroll=ft.ScrollMode.AUTO)
@@ -1151,7 +1147,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             spacing=0,
         )
         self.right_tabs = ft.Tabs(
-            3,
+            length=3,
             content=self._right_tab_container,
             selected_index=0,
             on_change=self._on_right_tab_changed,
