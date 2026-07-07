@@ -1131,8 +1131,11 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             ],
         )
         self.right_tabs = ft.Tabs(
-            content=self._right_tab_view,
-            length=3,
+            tabs=[
+                ft.Tab(text="终端", content=terminal_tab),
+                ft.Tab(text="MCP", content=mcp_tab),
+                ft.Tab(text="Skills", content=self._right_skills_tab),
+            ],
             selected_index=0,
             on_change=self._on_right_tab_changed,
             expand=True,
@@ -1153,9 +1156,9 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self._log_error("tab change parse", exc)
             idx = 0
         try:
-            if hasattr(self, "_right_tab_container"):
-                self._right_tab_container.content.controls[1].selected_index = idx
-                self._right_tab_container.update()
+            if hasattr(self, "right_tabs"):
+                self.right_tabs.selected_index = idx
+                self.right_tabs.update()
         except Exception as exc:
             self._log_error("right tab change", exc)
 
