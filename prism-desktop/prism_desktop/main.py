@@ -7,7 +7,7 @@ PRISM Agent - 桌面客户端
 import sys
 from pathlib import Path
 
-# 让桌面端可直接导入上层 prism 包和同目录 prism_desktop 包
+# 让桌面端优先加载项目根 prism 包，避免被 venv site-packages 里的旧副本覆盖
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DESKTOP_ROOT = Path(__file__).resolve().parent.parent
 for _p in (str(REPO_ROOT), str(DESKTOP_ROOT)):
@@ -30,7 +30,6 @@ import traceback
 from prism.config import config as prism_config
 from prism.agent import create_agent
 from prism.tools.browser_bridge import open_page, page_snapshot, close_browser
-from prism_desktop.i18n import gettext as _
 INIT_ERROR_LOG = Path.home() / '.prism' / 'init-error.log'
 
 
