@@ -1118,36 +1118,16 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             expand=True,
             spacing=8,
         )
-        self._right_tab_content = ft.Column(
-            [
+        self._right_tab_view = ft.TabBarView(
+            expand=True,
+            controls=[
                 terminal_tab,
-                ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.25),
-                ft.Container(height=4),
                 mcp_tab,
-                ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.25),
-                ft.Container(height=4),
                 self._right_skills_tab,
             ],
-            expand=True,
-            spacing=0,
-        )
-        self._right_tab_container = ft.Column(
-            [
-                ft.TabBar(tabs=[ft.Tab("终端"), ft.Tab("MCP"), ft.Tab("Skills")]),
-                ft.TabBarView(
-                    expand=True,
-                    controls=[
-                        terminal_tab,
-                        mcp_tab,
-                        self._right_skills_tab,
-                    ],
-                ),
-            ],
-            expand=True,
-            spacing=0,
         )
         self.right_tabs = ft.Tabs(
-            content=self._right_tab_container,
+            content=self._right_tab_view,
             length=3,
             selected_index=0,
             on_change=self._on_right_tab_changed,
