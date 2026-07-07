@@ -113,16 +113,46 @@ class OpenAIProvider(Provider):
 
 class ProviderPool:
     """提供商池 - 支持多key轮转、自动降级、MoA多模型投票"""
-    
+
     def __init__(self):
         self.providers: List[Provider] = []
         self._loaded = False
+        self._config_fingerprint: Optional[str] = None
+
+    def _fingerprint_from_config(self) -> str:
+        try:
+            from prism.config import config as cfg
+        except Exception:
+            return ""
+        parts = [
+            cfg.get("model.default", ""),
+            cfg.get("model.provider", ""),
+            cfg.get("model.base_url", ""),
+            cfg.get("model.api_key", ""),
+            cfg.get("moa.base_url", ""),
+            cfg.get("moa.api_key", ""),
+            ",".join(cfg.get("moa.ensemble", []) or []),
+            ",".join(cfg.get("fallback.chain", []) or []),
+        ]
+        try:
+            fallbacks = cfg.get("fallback.chain", []) or []
+            for fb in fallbacks:
+                p_name = fb.split("/", 1)[0] if "/" in fb else "openai"
+                parts.append(cfg.get(f"providers.{p_name}.api_key", ""))
+                parts.append(cfg.get(f"providers.{p_name}.base_url", ""))
+        except Exception:
+            pass
+        return "|".join(str(x) for x in parts)
 
     def _load_from_config(self):
-        """从配置文件加载提供商；每次调用前重置加载状态，保证配置变更后即时生效。"""
+        fingerprint = self._fingerprint_from_config()
+        if self._loaded and fingerprint == self._config_fingerprint:
+            return
         self._loaded = False
-        if self.providers:
-            self.providers = []
+        self.providers = []
+        self._loaded = True
+        self._config_fingerprint = fingerprint
+
         try:
             from prism.config import config as cfg
         except Exception:

@@ -162,23 +162,23 @@ class TerminalTool(Tool):
     """终端执行工具"""
     
     name = "terminal"
-    description = "执行shell命令，支持background/pty/timeout"
+    description = "执行 shell 命令，返回 stdout/stderr/exit_code"
     input_schema = {
         "type": "object",
         "properties": {
             "command": {"type": "string", "description": "要执行的命令"},
             "timeout": {"type": "integer", "description": "超时秒数", "default": 180},
-            "background": {"type": "boolean", "description": "是否后台执行", "default": False},
             "workdir": {"type": "string", "description": "工作目录"},
         },
         "required": ["command"],
     }
     
-    def execute(self, command: str, timeout: int = 180, 
-                background: bool = False, workdir: Optional[str] = None) -> Dict[str, Any]:
-        try:
-            cwd = workdir or os.getcwd()
-            
+    def execute(self, command: str, timeout: int = 180, workdir: Optional[str] = None) -> Dict[str, Any]:
+            if not command or not command.strip():
+                return {'success': False, 'error': 'Empty command'}
+            if len(command) > 4096:
+                return {'success': False, 'error': 'Command too long (max 4096 chars)', 'exit_code': -1}
+        
             # 安全检查：禁止明显危险的命令模式
             dangerous_patterns = [
                 r'rm\s+-rf\s+/',
@@ -186,7 +186,7 @@ class TerminalTool(Tool):
                 r'format\s+[c-z]:',
                 r'shutdown',
                 r'reboot',
-                r':>',  # Windows 重定向破坏
+                r':>',
             ]
             cmd_lower = command.lower()
             for pattern in dangerous_patterns:
@@ -196,27 +196,25 @@ class TerminalTool(Tool):
                         'error': f'Dangerous command blocked: pattern matched {pattern}',
                         'exit_code': -1,
                     }
-            
-            # 使用 shlex.split 解析命令，避免 shell=True
-            if os.name == 'nt':
-                # Windows 下尽量用参数数组，避免 shell 注入
-                import shlex
-                try:
-                    args = shlex.split(command, posix=False)
-                    if not args:
-                        return {'success': False, 'error': 'Empty command'}
+        
+            cwd = workdir or os.getcwd()
+            env = {**os.environ, 'PYTHONIOENCODING': 'utf-8'}
+            try:
+                args = shlex.split(command, posix=(os.name != 'nt'))
+            except ValueError:
+                args = None
+        
+            try:
+                if args:
                     result = subprocess.run(
                         args,
                         capture_output=True,
                         text=True,
                         timeout=timeout,
                         cwd=cwd,
-                        env={**os.environ, 'PYTHONIOENCODING': 'utf-8'},
+                        env=env,
                     )
-                except ValueError:
-                    # 回退：复杂 shell 语法仍允许 shell=True，但做长度限制
-                    if len(command) > 4096:
-                        return {'success': False, 'error': 'Command too long (max 4096 chars)', 'exit_code': -1}
+                else:
                     result = subprocess.run(
                         command,
                         shell=True,
@@ -224,46 +222,18 @@ class TerminalTool(Tool):
                         text=True,
                         timeout=timeout,
                         cwd=cwd,
-                        env={**os.environ, 'PYTHONIOENCODING': 'utf-8'},
+                        env=env,
                     )
-            else:
-                # Unix 下尽量用 shlex 避免 shell 注入
-                try:
-                    args = shlex.split(command)
-                    if not args:
-                        return {'success': False, 'error': 'Empty command'}
-                    result = subprocess.run(
-                        args,
-                        capture_output=True,
-                        text=True,
-                        timeout=timeout,
-                        cwd=cwd,
-                        env={**os.environ, 'PYTHONIOENCODING': 'utf-8'},
-                    )
-                except ValueError:
-                    # 回退：复杂 shell 语法仍允许 shell=True
-                    if len(command) > 4096:
-                        return {'success': False, 'error': 'Command too long (max 4096 chars)', 'exit_code': -1}
-                    result = subprocess.run(
-                        command,
-                        shell=True,
-                        capture_output=True,
-                        text=True,
-                        timeout=timeout,
-                        cwd=cwd,
-                        env={**os.environ, 'PYTHONIOENCODING': 'utf-8'},
-                    )
-            
-            return {
-                'success': result.returncode == 0,
-                'output': result.stdout,
-                'error': result.stderr,
-                'exit_code': result.returncode,
-            }
-        except subprocess.TimeoutExpired:
-            return {'success': False, 'error': f'Command timed out after {timeout}s'}
-        except Exception as e:
-            return {'success': False, 'error': str(e)}
+                return {
+                    'success': result.returncode == 0,
+                    'output': result.stdout,
+                    'error': result.stderr,
+                    'exit_code': result.returncode,
+                }
+            except subprocess.TimeoutExpired:
+                return {'success': False, 'error': f'Command timed out after {timeout}s'}
+            except Exception as e:
+                return {'success': False, 'error': str(e)}
 
 
 class WebSearchTool(Tool):
