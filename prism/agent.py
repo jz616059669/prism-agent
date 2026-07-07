@@ -170,6 +170,8 @@ class Agent:
 - 复杂任务拆成步骤
 - 遇到问题主动报告，不要隐瞒
 - 安全第一，危险操作先确认
+- 工具使用：只调用用户请求中明确需要或与当前任务直接相关的工具；若无工具调用必要，不要为了演示而执行工具。
+- 当用户要求生成文件、保存文件、安装包、执行脚本时，优先直接生成或完成，减少反复确认。
 """
     
     def _inject_memory_context(self, user_message: str) -> None:
@@ -396,6 +398,21 @@ class Agent:
         执行工具
         整合了 Codex 的终端执行 + OpenClaw 的浏览器控制 + MCP 外部工具
         """
+        # 重复执行风险检查：相同内容 60 秒内不重复执行
+        if tool_name in {"execute_tool", "run_terminal", "web_search", "browser"}:
+            marker = f"{tool_name}:{json.dumps(kwargs, ensure_ascii=False, sort_keys=True)}"
+            last = getattr(self, "_last_executed", {})
+            last_time = last.get(marker, 0)
+            now = datetime.now().timestamp()
+            if now - last_time < 60:
+                return {
+                    "success": False,
+                    "error": f"为避免重复执行，已拦截 {tool_name}（60 秒内相同调用不重跑）",
+                    "provider": getattr(self, "name", "local"),
+                }
+            last[marker] = now
+            self._last_executed = last
+
         if not self.tools_enabled:
             return {'success': False, 'error': 'Tools disabled'}
         
