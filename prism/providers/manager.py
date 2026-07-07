@@ -83,27 +83,29 @@ class OpenAIProvider(Provider):
 
     def stream_chat(self, messages: List[Dict], on_chunk, stop_callback=None, **kwargs) -> Dict[str, Any]:
         """流式聊天请求，逐 chunk 回调"""
+        full_content: List[str] = []
         try:
             stream = self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
                 stream=True,
-                **kwargs
+                **kwargs,
             )
-            full_content = []
             for chunk in stream:
                 if stop_callback and stop_callback():
                     break
                 delta = chunk.choices[0].delta if chunk.choices else None
-                content = delta.content if delta and delta.content else ''
+                content = delta.content if delta and delta.content else ""
                 if content:
                     full_content.append(content)
                     if on_chunk:
                         on_chunk(content)
-            text = ''.join(full_content)
-            return {'success': True, 'content': text}
         except Exception as e:
-            return {'success': False, 'error': str(e), 'provider': self.name}
+            text = "".join(full_content)
+            if text:
+                return {"success": True, "content": text, "provider": self.name, "partial": True, "error": str(e)}
+            return {"success": False, "error": str(e), "provider": self.name}
+        return {"success": True, "content": "".join(full_content)}
 
     def is_available(self) -> bool:
         """检查API Key是否有效"""

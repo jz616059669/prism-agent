@@ -102,6 +102,18 @@ class ChatMixin:
 
         stream_widget = None
         stream_text = ""
+        _last_update = [0.0]
+
+        def _throttled_update(w, value: str):
+            now = __import__("time").time()
+            if now - _last_update[0] >= 0.08 or not value:
+                try:
+                    stream_content = w.content.controls[2]
+                    stream_content.value = value
+                    w.update()
+                    _last_update[0] = now
+                except Exception:
+                    logger.debug("stream chunk update failed: %s", traceback.format_exc())
 
         def _ensure_stream_widget():
             nonlocal stream_widget
@@ -138,13 +150,8 @@ class ChatMixin:
         def _stream_chunk(c: str):
             nonlocal stream_text
             stream_text += c
-            try:
-                w = _ensure_stream_widget()
-                stream_content = w.content.controls[2]
-                stream_content.value = stream_text
-                w.update()
-            except Exception:
-                logger.debug("stream chunk update failed: %s", traceback.format_exc())
+            w = _ensure_stream_widget()
+            _throttled_update(w, stream_text)
 
         def _run_chat():
             nonlocal stream_widget, stream_text

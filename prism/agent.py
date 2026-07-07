@@ -717,22 +717,34 @@ class SubagentManager:
 
 
 class AgentWithSubagents:
-    """带 subagent 支持的 Agent 包装器。"""
+    """带 subagent 支持的 Agent 包装器，增加编排与容错。"""
 
     def __init__(self, agent: Agent) -> None:
         self.agent = agent
         self.subagents = SubagentManager(agent)
 
-    def delegate(self, subagent_name: str, task: str) -> str:
-        """委托任务给子 Agent。"""
+    def delegate(self, subagent_name: str, task: str, max_retries: int = 2) -> str:
+        """委托任务给子 Agent，失败自动重试并降级回父级执行。"""
         child = self.subagents.spawn(subagent_name)
-        result = child.chat(task)
+        last_result = ""
+        for attempt in range(max(1, max_retries)):
+            try:
+                last_result = child.chat(task)
+                if isinstance(last_result, str) and last_result.strip().lower().startswith("error"):
+                    if attempt < max_retries - 1:
+                        continue
+                break
+            except Exception:
+                if attempt < max_retries - 1:
+                    continue
+                last_result = "[delegate failed]"
+                break
         summary = self.subagents.summarize_back(subagent_name)
         self.agent.messages.append(Message(
             role="tool",
             content=f"[subagent:{subagent_name}] {summary}",
         ))
-        return result
+        return last_result or summary
 
 
 # 在 Agent 类中添加 subagent 支持
