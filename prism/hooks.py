@@ -199,13 +199,18 @@ class HookManager:
             try:
                 if hook.action == "run":
                     import subprocess
+                    env = {
+                        k: str(v)
+                        for k, v in os.environ.items()
+                        if k.isupper() and k not in {"SECRET_KEY", "API_KEY", "TOKEN", "PASSWORD"}
+                    }
                     result = subprocess.run(
                         hook.command,
                         shell=True,
                         capture_output=True,
                         text=True,
                         timeout=hook.timeout,
-                        env={},
+                        env=env,
                     )
                     output = (result.stdout or result.stderr or "").strip()
                     passed = result.returncode == 0
