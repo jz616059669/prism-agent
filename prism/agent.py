@@ -76,15 +76,84 @@ class Agent:
         ))
 
     def _trim_messages(self):
-        """保留 system + 最新 max_messages 条，超出时丢弃最早的 user/assistant 对"""
+        """保留 system + 最新 max_messages 条；超出时对旧消息做摘要压缩。"""
         if len(self.messages) <= self.max_messages:
             return
         # 保留 system 和最后 N 条
         system = self.messages[:1]
         tail = self.messages[-(self.max_messages - 1):]
+        old = self.messages[1:len(self.messages) - len(tail)]
+        if old and not getattr(self, "_trimming_in_progress", False):
+            try:
+                self._trimming_in_progress = True
+                summary = self._summarize_messages(old)
+                if summary:
+                    system.append(Message(role="system", content=f"[历史摘要] {summary}"))
+            finally:
+                self._trimming_in_progress = False
         self.messages = system + tail
-        logger.info("messages trimmed: total=%d, kept=%d", len(self.messages), len(system) + len(tail))
-    
+        logger.info("messages trimmed: total=%d, kept=%d", len(old) + len(system) + len(tail), len(system) + len(tail))
+
+    def _summarize_messages(self, messages: list) -> Optional[str]:
+        """对一批旧消息做简短摘要，返回可读文本；失败时返回 None。"""
+        try:
+            if not messages:
+                return None
+            lines = []
+            for m in messages:
+                role = getattr(m, "role", "")
+                c = (getattr(m, "content", "") or "").strip().replace("\n", " ")
+                if role == "user":
+                    lines.append(f"USER: {c[:220]}")
+                elif role == "assistant":
+                    lines.append(f"ASSISTANT: {c[:220]}")
+            if not lines:
+                return None
+            text = "\n".join(lines)
+            if len(text) > 500:
+                text = text[:497] + "..."
+            return text
+        except Exception:
+            return None
+
+    def decompose_plan(self, user_message: str) -> Optional[str]:
+        """
+        任务规划：将复杂请求拆成 2-5 个可执行步骤，返回 plan 文本。
+        仅在任务明显复杂时启用，避免简单请求过度拆解。
+        """
+        try:
+            text = (user_message or "").strip()
+            if len(text) < 20:
+                return None
+            # 保守触发：只有包含明显的多阶段暗示词才拆解
+            hints = ["步骤", "先", "然后", "最后", "整个", "完整", "系列", "批量", "规划", "计划", "analyse", "analyze", "plan", "project", "设计", "开发"]
+            if not any(h in text.lower() for h in hints):
+                return None
+            prompt = (
+                "用户请求：\n" + text + "\n\n"
+                "请将任务拆成 2-5 个可执行步骤，输出严格 JSON：\n"
+                '{"plan": ["步骤1", "步骤2", "步骤3"]}\n'
+                "要求：每步具体、可执行、无冗余。"
+            )
+            from prism.agent import create_agent
+            planner = create_agent(enable_auto_memory=False)
+            planner.session_id = getattr(self, "session_id", "") or ""
+            planner._persist_disabled = True
+            planner._session_json_enabled = False
+            result = planner.chat(user_message=prompt)
+            try:
+                planner.close()
+            except Exception:
+                pass
+            data = json.loads(result or "{}")
+            plan = data.get("plan") or []
+            if not isinstance(plan, list) or len(plan) < 2:
+                return None
+            lines = ["【任务规划】"] + [f"{i+1}. {step}" for i, step in enumerate(plan[:5])]
+            return "\n".join(lines)
+        except Exception:
+            return None
+
     def _default_system_prompt(self) -> str:
         """默认系统提示词"""
         return """你是 PRISM Agent，一个强大的 AI 助手。
@@ -203,6 +272,17 @@ class Agent:
             return text
         except Exception:
             return None
+
+    @staticmethod
+    def _run_clarification_check(user_message: str) -> Optional[str]:
+        """
+        前置澄清：如果用户query过于模糊、缺少关键信息，先追问再执行。
+        当前实现为保守策略：只拦截极短/无意义输入，避免误判。
+        """
+        text = (user_message or "").strip()
+        if len(text) < 2:
+            return "请再详细说明一下你的需求，我来帮你。"
+        return None
 
     def chat(self, user_message: str, on_stream=None, **kwargs) -> str:
         """
@@ -334,22 +414,44 @@ class Agent:
             self._append_tool_message(tool_name, mcp_result)
             return mcp_result
         
-        # 本地工具
-        result = registry.execute(tool_name, **kwargs)
-        logger.info("execute tool=%s result=%s", tool_name, result.get('success'))
+        # 本地工具：失败自动重试，最多 2 次
+        for attempt in range(2):
+            result = registry.execute(tool_name, **kwargs)
+            logger.info("execute tool=%s attempt=%d result=%s", tool_name, attempt + 1, result.get('success'))
+            if result.get('success'):
+                self.tool_calls.append(ToolCall(
+                    id=f"call_{len(self.tool_calls)}",
+                    name=tool_name,
+                    arguments=kwargs,
+                    result=result,
+                ))
+                self._append_tool_message(tool_name, result)
+                return result
+            # 第二次失败时，尝试降级策略
+            if attempt == 0:
+                kwargs = self._fallback_tool_args(tool_name, kwargs)
         
-        # 记录工具调用
+        # 最终失败
+        result = registry.execute(tool_name, **kwargs)
         self.tool_calls.append(ToolCall(
             id=f"call_{len(self.tool_calls)}",
             name=tool_name,
             arguments=kwargs,
             result=result,
         ))
-        
-        # 浏览器事件回传给消息流
         self._append_tool_message(tool_name, result)
-        
         return result
+    
+    @staticmethod
+    def _fallback_tool_args(tool_name: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        """工具调用失败时的降级参数策略"""
+        if tool_name == "terminal":
+            # 增加超时
+            return {**kwargs, "timeout": min(int(kwargs.get("timeout", 180)) + 120, 600)}
+        if tool_name in ("web_search",):
+            # 放宽限制
+            return {**kwargs, "limit": max(int(kwargs.get("limit", 5)) + 5, 10)}
+        return kwargs
     
     def _try_execute_mcp_tool(self, tool_name: str, **kwargs) -> Optional[Dict[str, Any]]:
         """尝试将工具调用路由到 MCP 外部服务器"""

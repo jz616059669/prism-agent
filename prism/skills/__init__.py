@@ -486,6 +486,34 @@ class SkillRegistry:
         
         return matched
 
+    def recommend(self, text: str, max_items: int = 5) -> List[Dict[str, Any]]:
+        """根据用户 query 推荐可用 skill，按匹配强度排序。"""
+        matched = self.match(text)
+        if not matched:
+            return []
+        scored = []
+        text_lower = text.lower()
+        for skill in matched:
+            score = 0
+            for trigger in skill.triggers:
+                if not trigger:
+                    continue
+                if trigger.lower() in text_lower:
+                    score += 2
+                if trigger in text:
+                    score += 1
+            scored.append((score, skill))
+        scored.sort(key=lambda x: x[0], reverse=True)
+        return [
+            {
+                'name': s.name,
+                'description': s.description,
+                'score': score,
+                'triggers': s.triggers,
+            }
+            for score, s in scored[: max(1, max_items)]
+        ]
+
     def install_skill(self, name: str) -> Dict[str, Any]:
         """安装 Skill"""
         if name in self.skills:

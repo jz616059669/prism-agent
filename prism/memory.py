@@ -48,6 +48,13 @@ class _EmbeddingClient:
     """基于现有 OpenAIProvider 的 embedding 客户端，零额外依赖。"""
 
     def __init__(self, base_url: str, api_key: str, model: str, timeout: int = 60) -> None:
+        if not base_url or not api_key or not model:
+            raise ValueError(
+                f"MemoryEmbeddingIndex 配置不完整："
+                f"base_url={'已配置' if base_url else '未配置'}, "
+                f"api_key={'已配置' if api_key else '未配置'}, "
+                f"model={'已配置' if model else '未配置'}"
+            )
         try:
             from openai import OpenAI
             import httpx

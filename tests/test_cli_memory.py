@@ -34,7 +34,10 @@ def test_memory_disable_embeddings_shows_success(monkeypatch):
 
 
 def test_memory_status_reports_unconfigured_by_default():
-    mem_mod.persistent_memory.configure_embeddings(base_url='', api_key='', model='')
+    try:
+        mem_mod.persistent_memory.configure_embeddings(base_url='', api_key='', model='')
+    except ValueError:
+        pass
     mem_mod.persistent_memory._embedding_index._client = None
     mem_mod.persistent_memory._embedding_index._model = ''
 
