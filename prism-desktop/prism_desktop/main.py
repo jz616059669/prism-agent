@@ -10,7 +10,7 @@ from pathlib import Path
 # 让桌面端优先加载项目根 prism 包，避免被 venv site-packages 里的旧副本覆盖
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DESKTOP_ROOT = Path(__file__).resolve().parent.parent
-for _p in (str(REPO_ROOT), str(DESKTOP_ROOT)):
+for _p in (str(REPO_ROOT), str(DESKTOP_ROOT), str(Path.cwd())):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
@@ -1152,6 +1152,11 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     color=ft.Colors.ON_PRIMARY_CONTAINER if i == index else ft.Colors.ON_SURFACE,
                     padding=ft.Padding(10, 6, 10, 6),
                 )
+            if index == 2 and hasattr(self, "_refresh_skills"):
+                try:
+                    self._refresh_skills()
+                except Exception:
+                    pass
             try:
                 self._right_tab_contents.update()
                 self._right_tab_buttons_row.update()

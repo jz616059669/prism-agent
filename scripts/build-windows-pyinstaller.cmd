@@ -24,6 +24,18 @@ uv run python -m PyInstaller ^
     --distpath "%OUTPUT_DIR%" ^
     --workpath "%BUILD_DIR%" ^
     --specpath "%BUILD_DIR%" ^
+    --paths "%REPO_ROOT%" ^
+    --hidden-import "prism" ^
+    --hidden-import "prism.logging" ^
+    --hidden-import "prism.config" ^
+    --hidden-import "prism.agent" ^
+    --hidden-import "prism.providers" ^
+    --hidden-import "prism.providers.manager" ^
+    --hidden-import "prism.tools" ^
+    --hidden-import "prism.tools.registry" ^
+    --hidden-import "prism.hooks" ^
+    --hidden-import "prism.memory" ^
+    --hidden-import "prism.skills" ^
     prism_desktop\main.py
 
 if %ERRORLEVEL% neq 0 (

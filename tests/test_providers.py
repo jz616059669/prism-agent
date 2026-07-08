@@ -47,8 +47,9 @@ def test_provider_pool_no_retry_on_auth(monkeypatch):
     assert "401" in result.get("error", "")
 
 
-def test_provider_pool_empty():
+def test_provider_pool_empty(monkeypatch):
     pool = ProviderPool()
+    monkeypatch.setattr(pool, "_load_from_config", lambda: None)
     pool.providers = []
     result = pool.chat([{"role": "user", "content": "hi"}])
     assert result["success"] is False
