@@ -23,6 +23,8 @@ class WechatConfig:
     token: Optional[str] = None
     encoding_aes_key: Optional[str] = None
     base_url: str = "https://qyapi.weixin.qq.com/cgi-bin"
+    callback_host: str = "127.0.0.1"
+    callback_port: int = 9999
 
 
 class WechatAdapter(PlatformAdapter):
@@ -80,14 +82,71 @@ class WechatAdapter(PlatformAdapter):
         raise RuntimeError(f"发送消息失败: {data}")
 
     def start_polling(self, handler: Callable[[Message], None]) -> None:
-        """启动接收（企业微信需部署回调服务）"""
+        """启动接收（企业微信部署回调服务）"""
         if not callable(handler):
             raise TypeError("handler must be callable")
         self.handler = handler
-        raise NotImplementedError(
-            "WeChat adapter callback service is not implemented yet. "
-            "Deploy a callback service and route inbound events to the registered handler."
-        )
+        self.running = True
+        try:
+            from http.server import HTTPServer, BaseHTTPRequestHandler
+            import threading
+
+            class WechatWebhookHandler(BaseHTTPRequestHandler):
+                adapter = self
+
+                def do_POST(self):
+                    try:
+                        import json as _json
+                        length = int(self.headers.get('content-length', '0'))
+                        body = self.rfile.read(length)
+                        data = _json.loads(body.decode('utf-8')) if body else {}
+                        msg = self.adapter._parse_callback(data)
+                        if msg and self.adapter.handler:
+                            self.adapter.handler(msg)
+                        self.send_response(200)
+                        self.end_headers()
+                        self.wfile.write(b'ok')
+                    except Exception as exc:
+                        print(f"[Wechat] callback error: {exc}")
+                        try:
+                            self.send_response(500)
+                            self.end_headers()
+                            self.wfile.write(b'error')
+                        except Exception:
+                            pass
+
+                def log_message(self, format, *args):
+                    print(f"[Wechat] {args[0]}")
+
+            host = self.config.callback_host
+            server = HTTPServer((host, self.config.callback_port), WechatWebhookHandler)
+            t = threading.Thread(target=server.serve_forever, daemon=True)
+            t.start()
+            print(f"[Wechat] callback service started on http://{server.server_address[0]}:{server.server_address[1]}")
+        except Exception as exc:
+            print(f"[Wechat] failed to start callback service: {exc}")
+            self.running = False
+            raise RuntimeError(f"企业微信回调服务启动失败: {exc}")
+
+    def _parse_callback(self, data: Dict[str, Any]) -> Optional[Message]:
+        """解析企业微信回调数据为 Message"""
+        try:
+            msg = data.get("msg") or data.get("message") or {}
+            text = ""
+            if isinstance(msg, dict):
+                text = msg.get("content") or msg.get("text") or ""
+            chat_id = msg.get("chatid") or msg.get("chat_id") or data.get("chatid") or ""
+            user_id = msg.get("from") or data.get("from") or ""
+            return Message(
+                platform="wechat",
+                chat_id=str(chat_id),
+                user_id=str(user_id),
+                text=str(text),
+                raw=data,
+            )
+        except Exception as exc:
+            print(f"[Wechat] parse callback failed: {exc}")
+            return None
 
     def stop(self) -> None:
         self.running = False
