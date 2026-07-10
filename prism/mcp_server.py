@@ -143,7 +143,7 @@ class PrismMCPServer:
                 "resources": {},
                 "prompts": {},
             },
-            "serverInfo": {"name": "prism", "version": "2.1.2"},
+            "serverInfo": {"name": "prism", "version": "2.1.4"},
         }
 
     def handle_request(self, payload: Dict[str, Any]) -> Dict[str, Any]:

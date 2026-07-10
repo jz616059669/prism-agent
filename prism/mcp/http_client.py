@@ -56,7 +56,7 @@ class MCPHTTPClient:
             'params': {
                 'protocolVersion': '2024-11-05',
                 'capabilities': {},
-                'clientInfo': {'name': 'prism', 'version': '2.1.2'},
+                'clientInfo': {'name': 'prism', 'version': '2.1.4'},
             },
         }
         
