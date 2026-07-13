@@ -118,7 +118,7 @@ class ChatMixin:
 
         def _throttled_update(w, value: str):
             now = __import__("time").time()
-            if now - _last_update[0] >= 0.08 or not value:
+            if now - _last_update[0] >= 0.1 or len(value) - len(w.content.controls[2].value or "") >= 24:
                 try:
                     stream_content = w.content.controls[2]
                     stream_content.value = value
