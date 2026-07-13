@@ -41,7 +41,9 @@ class AgentPackage:
 class Marketplace:
     def __init__(self) -> None:
         self._packages: Dict[str, AgentPackage] = {}
+        self._remote_index: List[Dict[str, Any]] = []
         self._load_local()
+        self._load_remote()
 
     def _load_local(self) -> None:
         for pkg_file in _MARKET_DIR.glob("*.json"):
@@ -52,6 +54,17 @@ class Marketplace:
             except Exception:
                 continue
 
+    def _load_remote(self) -> None:
+        remote_path = _MARKET_DIR / "remote_index.json"
+        if not remote_path.exists():
+            return
+        try:
+            data = json.loads(remote_path.read_text(encoding="utf-8"))
+            if isinstance(data, list):
+                self._remote_index = data
+        except Exception:
+            pass
+
     def publish(self, pkg: AgentPackage) -> AgentPackage:
         payload = json.dumps(pkg.to_dict(), ensure_ascii=False, sort_keys=True).encode("utf-8")
         pkg.compute_sha(payload)
@@ -59,11 +72,24 @@ class Marketplace:
         self._packages[pkg.name] = pkg
         return pkg
 
-    def list_packages(self) -> List[Dict[str, Any]]:
-        return [p.to_dict() for p in self._packages.values()]
+    def list_packages(self, include_remote: bool = True) -> List[Dict[str, Any]]:
+        items = [p.to_dict() for p in self._packages.values()]
+        if include_remote:
+            for item in self._remote_index:
+                if item.get("name") not in self._packages:
+                    items.append(item)
+        return items
 
     def get(self, name: str) -> Optional[AgentPackage]:
-        return self._packages.get(name)
+        if name in self._packages:
+            return self._packages[name]
+        for item in self._remote_index:
+            if item.get("name") == name:
+                try:
+                    return AgentPackage(**item)
+                except Exception:
+                    return None
+        return None
 
     def install(self, name: str) -> Dict[str, Any]:
         pkg = self._packages.get(name)
@@ -80,6 +106,17 @@ class Marketplace:
         except Exception:
             pass
         return True
+
+    def refresh_remote(self, remote_index_path: Optional[str] = None) -> Dict[str, Any]:
+        remote_path = Path(remote_index_path) if remote_index_path else (_MARKET_DIR / "remote_index.json")
+        if not remote_path.exists():
+            return {"success": False, "error": "remote index not found"}
+        try:
+            data = json.loads(remote_path.read_text(encoding="utf-8"))
+            self._remote_index = data if isinstance(data, list) else []
+            return {"success": True, "count": len(self._remote_index)}
+        except Exception as exc:
+            return {"success": False, "error": str(exc)}
 
 
 marketplace = Marketplace()

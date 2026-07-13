@@ -39,6 +39,7 @@ class ScheduleVisualizer:
     def __init__(self) -> None:
         self._events: Dict[str, ScheduleEvent] = {}
         self._load()
+        self._load_cron()
 
     def _load(self) -> None:
         for event_file in _SCHED_DIR.glob("*.json"):
@@ -48,6 +49,30 @@ class ScheduleVisualizer:
                 self._events[ev.name] = ev
             except Exception:
                 continue
+
+    def _load_cron(self) -> None:
+        try:
+            from crontab import CronTab
+            cron = CronTab(user=True)
+            for job in cron:
+                name = job.comment or job.command[:20]
+                self._events[name] = ScheduleEvent(name=name, cron=str(job.slices), status="enabled")
+        except Exception:
+            try:
+                import subprocess
+                out = subprocess.check_output(["crontab", "-l"], text=True, timeout=5)
+                for line in out.splitlines():
+                    line = line.strip()
+                    if not line or line.startswith("#"):
+                        continue
+                    parts = line.split(None, 5)
+                    if len(parts) < 6:
+                        continue
+                    name = parts[-1][:20]
+                    cron = " ".join(parts[:5])
+                    self._events[name] = ScheduleEvent(name=name, cron=cron, status="enabled")
+            except Exception:
+                pass
 
     def add(self, event: ScheduleEvent) -> ScheduleEvent:
         self._events[event.name] = event

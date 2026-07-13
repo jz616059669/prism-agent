@@ -40,6 +40,7 @@ class SkillTemplate:
 class SkillTemplateStore:
     def __init__(self) -> None:
         self._templates: Dict[str, SkillTemplate] = {}
+        self._active: set = set()
         self._load()
 
     def _load(self) -> None:
@@ -61,6 +62,28 @@ class SkillTemplateStore:
 
     def list_templates(self) -> List[Dict[str, Any]]:
         return [t.to_dict() for t in self._templates.values()]
+
+    def activate(self, name: str) -> Dict[str, Any]:
+        template = self._templates.get(name)
+        if not template:
+            return {"success": False, "error": "template not found"}
+        self._active.add(name)
+        try:
+            from prism.skills import _load_external_skills
+            for skill_name in template.skills:
+                _load_external_skills([skill_name])
+        except Exception as exc:
+            return {"success": False, "error": str(exc)}
+        return {"success": True, "template": template.to_dict()}
+
+    def deactivate(self, name: str) -> Dict[str, Any]:
+        if name not in self._active:
+            return {"success": False, "error": "not active"}
+        self._active.discard(name)
+        return {"success": True}
+
+    def active(self) -> List[str]:
+        return sorted(self._active)
 
     def _save(self, template: SkillTemplate) -> None:
         try:
