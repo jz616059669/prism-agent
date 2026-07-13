@@ -1,6 +1,6 @@
 [project]
 name = "prism-agent"
-version = "2.1.4"
+version = "2.1.5"
 description = "统一 AI Agent CLI：整合 Hermes/Codex/OpenClaw 能力"
 readme = "README.md"
 license = {file = "LICENSE"}
