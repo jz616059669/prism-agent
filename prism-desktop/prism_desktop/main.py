@@ -243,6 +243,9 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             elif e.ctrl and e.key == "n":
                 if hasattr(self, "_new_chat"):
                     self._new_chat()
+            elif e.ctrl and e.key == "v":
+                if hasattr(self, "_paste_attachment"):
+                    self._paste_attachment()
         except Exception as exc:
             self._log_error("keyboard handler", exc)
 
@@ -1103,6 +1106,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.voice_record_btn.on_click = lambda e: self._start_voice_input()
         self.voice_speak_btn = ft.IconButton(icon=ft.Icons.VOLUME_UP_ROUNDED, tooltip="语音播报", bgcolor=ft.Colors.SURFACE_CONTAINER, icon_color=ft.Colors.ON_SURFACE, style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE_VARIANT)), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT), visible=False)
         self.voice_speak_btn.on_click = lambda e: self._speak_last_reply()
+        self._attach_btn = ft.IconButton(icon=ft.Icons.ATTACHMENT_ROUNDED, tooltip="粘贴附件", bgcolor=ft.Colors.SURFACE_CONTAINER, icon_color=ft.Colors.ON_SURFACE, style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE_VARIANT)), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
+        self._attach_btn.on_click = lambda e: self._paste_attachment()
         def _on_input_change():
             try:
                 self._input_pending = True
@@ -1162,7 +1167,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 self.chat_list,
                 ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT, opacity=0.3),
                 ft.Container(
-                    content=ft.Row([self.input_field, self.send_btn, self.stop_btn, self.voice_record_btn, self.voice_speak_btn], spacing=10, expand=True),
+                    content=ft.Row([self.input_field, self.send_btn, self.stop_btn, self._attach_btn, self.voice_record_btn, self.voice_speak_btn], spacing=10, expand=True),
                     bgcolor=ft.Colors.SURFACE_CONTAINER,
                     
                     border_radius=34,
@@ -1176,7 +1181,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.25),
                 ft.Row([clear_chat_btn, self.input_count], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=8),
                 ft.Container(height=6),
-                ft.Text("Enter 发送 / Shift+Enter 换行", size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.9),
+                ft.Text("Enter 发送 / Shift+Enter 换行 / Ctrl+Enter 强制发送", size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.9),
             ],
             expand=True,
             spacing=6,
@@ -1392,6 +1397,9 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 ),
                 padding=ft.Padding(14, 10, 14, 10),
                 bgcolor=ft.Colors.PRIMARY_CONTAINER if is_user else ft.Colors.SURFACE_CONTAINER,
+                on_click=lambda e, t=text: (
+                    self._copy_to_clipboard(t) if hasattr(self, "_copy_to_clipboard") else None
+                ),
             )
             self.chat_list.controls.append(message_widget)
             try:
@@ -1399,9 +1407,10 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             except Exception:
                 logger.debug("chat_list update failed: %s", traceback.format_exc())
             try:
-                self.page.update()
+                if hasattr(self.chat_list, "scroll_to"):
+                    self.chat_list.scroll_to(delta=99999, duration=150)
             except Exception:
-                logger.debug("page update failed: %s", traceback.format_exc())
+                logger.debug("chat scroll failed: %s", traceback.format_exc())
         except Exception:
             logger.debug("append message failed: %s", traceback.format_exc())
             try:
@@ -1423,6 +1432,43 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._update_input_count()
         self._set_status("新对话")
         self._append_terminal("new session")
+
+    def _copy_to_clipboard(self, text: str):
+        try:
+            if hasattr(self.page, "clipboard") and self.page.clipboard is not None:
+                self.page.clipboard.set_text(text or "")
+                self._set_status("已复制", ft.Colors.GREEN_400)
+            else:
+                self._set_status("复制不可用", ft.Colors.AMBER_400)
+        except Exception as exc:
+            self._log_error("copy failed", exc)
+            self._set_status("复制失败", ft.Colors.RED_400)
+
+    def _update_input_count(self):
+        try:
+            if hasattr(self, "input_count") and self.input_count is not None:
+                text = (getattr(self, "input_field", None).value or "")
+                self.input_count.value = f"{len(text)} 字"
+                if hasattr(self.input_count, "page") and self.input_count.page is not None:
+                    self.input_count.update()
+        except Exception:
+            pass
+
+    def _paste_attachment(self):
+        try:
+            if hasattr(self.page, "clipboard") and self.page.clipboard is not None:
+                text = self.page.clipboard.get_text() or ""
+                if text.strip():
+                    self.input_field.value = (self.input_field.value or "") + text
+                    self._on_input_change()
+                    self._set_status("已粘贴", ft.Colors.GREEN_400)
+                else:
+                    self._set_status("剪贴板为空", ft.Colors.AMBER_400)
+            else:
+                self._set_status("粘贴不可用", ft.Colors.AMBER_400)
+        except Exception as exc:
+            self._log_error("paste failed", exc)
+            self._set_status("粘贴失败", ft.Colors.RED_400)
 
     def _save_session(self):
         def _run():
