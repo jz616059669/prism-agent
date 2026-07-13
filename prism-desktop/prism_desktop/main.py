@@ -791,7 +791,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.skill_refresh_btn = ft.Button(_("refresh_skills"), icon=ft.Icons.REFRESH_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=ft.Padding(10, 8, 10, 8), bgcolor=ft.Colors.SURFACE_CONTAINER,
                      color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         self.skill_refresh_btn.on_click = lambda e: self._refresh_skills()
-        self.skill_search = ft.TextField(hint_text=_("skill_search_placeholder"), width=240, border_radius=16, dense=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), content_padding=ft.Padding(8, 6, 8, 6), bgcolor=ft.Colors.SURFACE_CONTAINER, on_change=lambda e: self._filter_skills(e.control.value or ""))
+        self.skill_search = ft.TextField(hint_text=_("skill_search_placeholder"), width=240, border_radius=12, dense=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), content_padding=ft.Padding(8, 6, 8, 6), bgcolor=ft.Colors.SURFACE_CONTAINER, on_change=lambda e: self._filter_skills(e.control.value or ""))
         self.skill_install_field = ft.TextField(hint_text=_("install_skill_placeholder"), width=260, border_radius=12)
         self.skill_install_btn = ft.Button(_("install_skill"), icon=ft.Icons.DOWNLOAD_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=ft.Padding(10, 8, 10, 8), bgcolor=ft.Colors.SURFACE_CONTAINER,
                      color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
@@ -1093,7 +1093,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         )
         mcp_tab = ft.Column(
             [
-                ft.Text("MCP", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, opacity=0.9),
+                ft.Text("MCP", size=13, weight=ft.FontWeight.W_600, color=ft.Colors.ON_SURFACE, opacity=0.95),
                 ft.Row([clear_mcp_btn], alignment=ft.MainAxisAlignment.END),
                 ft.Container(self.mcp_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=34, padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE),
             ],
@@ -1125,7 +1125,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     shape=ft.RoundedRectangleBorder(radius=10),
                     bgcolor=ft.Colors.PRIMARY_CONTAINER if idx == 0 else ft.Colors.SURFACE_CONTAINER,
                     color=ft.Colors.ON_PRIMARY_CONTAINER if idx == 0 else ft.Colors.ON_SURFACE,
-                    padding=ft.Padding(10, 6, 10, 6),
+                    padding=ft.Padding(12, 8, 12, 8),
                 ),
                 on_click=lambda e, i=idx: self._switch_right_tab(i),
             )
@@ -1138,7 +1138,14 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         def _show_tab(index: int):
             self._active_right_tab_index = index
             for i, ctrl in enumerate(self._right_tab_contents.controls):
-                ctrl.visible = (i == index)
+                if i == index:
+                    ctrl.visible = True
+                    ctrl.opacity = 1.0
+                    ctrl.disabled = False
+                else:
+                    ctrl.visible = True
+                    ctrl.opacity = 0.0
+                    ctrl.disabled = True
             for i, btn in enumerate(self._right_tab_buttons_row.controls):
                 btn.style = ft.ButtonStyle(
                     shape=ft.RoundedRectangleBorder(radius=10),
