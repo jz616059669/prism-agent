@@ -845,6 +845,13 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.hub_list = ft.Column(spacing=4, tight=True)
         self._hub_all_items: List[dict] = []
 
+        # Workflow
+        self.workflow_refresh_btn = ft.Button("刷新工作流", icon=ft.Icons.REFRESH_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
+                     color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
+        self.workflow_refresh_btn.on_click = lambda e: self._refresh_workflows()
+        self.workflow_list = ft.Column(spacing=4, tight=True)
+        self._workflow_items: List[dict] = []
+
         # 会话
         self.session_new_btn = ft.IconButton(icon=ft.Icons.ADD_ROUNDED, tooltip="新建对话", icon_color=ft.Colors.PRIMARY, bgcolor=ft.Colors.with_opacity(0.08, ft.Colors.PRIMARY), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.PRIMARY)))
         self.session_new_btn.on_click = lambda e: self._new_session()
@@ -937,6 +944,22 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     ft.Container(height=10),
                     ft.Text("运行状态", size=12, color=ft.Colors.ON_SURFACE),
                     self.mcp_status_list,
+                ], tight=True, spacing=6),
+                bgcolor=ft.Colors.SURFACE_CONTAINER,
+                
+                border_radius=34,
+                padding=18,
+                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.06, ft.Colors.ON_SURFACE))),
+            ),
+            ft.Container(height=14),
+            ft.Container(
+                content=ft.Column([
+                    ft.Row([ft.Icon(ft.Icons.ACCOUNT_TREE_ROUNDED, size=14, color=ft.Colors.PRIMARY), ft.Text("工作流", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE)], spacing=8, tight=True),
+                    ft.Container(height=14),
+                    self.workflow_refresh_btn,
+                    ft.Container(height=6),
+                    ft.Text("预定义工作流", size=12, color=ft.Colors.ON_SURFACE),
+                    self.workflow_list,
                 ], tight=True, spacing=6),
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 
@@ -1170,17 +1193,26 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             expand=True,
             spacing=8,
         )
+        self._right_workflow_tab = ft.Column(
+            [
+                ft.Row([ft.Text("工作流", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), ft.Container(expand=True)], alignment=ft.MainAxisAlignment.START, spacing=8),
+                self.workflow_refresh_btn,
+                ft.Container(self.workflow_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=34, padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE),
+            ],
+            expand=True,
+            spacing=8,
+        )
         # Right panel tabs
         self._right_tab_buttons_row = ft.Row([], spacing=2, tight=True)
-        self._right_tab_contents = ft.Column([terminal_tab, mcp_tab, self._right_skills_tab], expand=True, spacing=0)
-        for idx, label in enumerate(["终端", "MCP", "Skills"]):
+        self._right_tab_contents = ft.Column([terminal_tab, mcp_tab, self._right_skills_tab, self._right_workflow_tab], expand=True, spacing=0)
+        for idx, label in enumerate(["终端", "MCP", "Skills", "工作流"]):
             btn = ft.TextButton(
                 label,
                 style=ft.ButtonStyle(
                     shape=ft.RoundedRectangleBorder(radius=10),
                     bgcolor=ft.Colors.PRIMARY_CONTAINER if idx == 0 else ft.Colors.SURFACE_CONTAINER,
                     color=ft.Colors.ON_PRIMARY_CONTAINER if idx == 0 else ft.Colors.ON_SURFACE,
-                    padding=ft.Padding(12, 8, 12, 8),
+                    padding=ft.Padding(10, 6, 10, 6),
                 ),
                 on_click=lambda e, i=idx: self._switch_right_tab(i),
             )
@@ -1917,6 +1949,71 @@ def _speak_last_reply(self):
     except Exception as exc:
         self._set_status("语音线程启动失败", ft.Colors.RED_400)
         self._append_terminal(f"[voice] thread error: {exc}")
+
+
+def _refresh_workflows(self):
+    if not hasattr(self, "workflow_list") or self.workflow_list is None:
+        return
+    self._append_terminal("refresh workflows ...")
+    try:
+        from prism.workflow import list_workflows
+        items = list_workflows()
+        self._workflow_items = items
+        self._render_workflow_items(items)
+        self._append_terminal(f"workflows refreshed: {len(items)} 个")
+    except Exception as exc:
+        self._append_terminal(f"workflow error: {exc}")
+        self._set_status("工作流刷新失败", ft.Colors.RED_400)
+
+
+def _render_workflow_items(self, items):
+    if not hasattr(self, "workflow_list") or self.workflow_list is None:
+        return
+    self.workflow_list.controls.clear()
+    if not items:
+        self.workflow_list.controls.append(ft.Container(
+            content=ft.Column([
+                ft.Icon(ft.Icons.ACCOUNT_TREE_OFF_ROUNDED, size=28, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.5),
+                ft.Text("暂无工作流", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.95),
+            ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER, tight=True),
+            padding=ft.Padding(48, 48, 48, 48),
+            border_radius=12,
+            bgcolor=ft.Colors.with_opacity(0.6, ft.Colors.SURFACE_CONTAINER),
+        ))
+    else:
+        for item in items:
+            steps = item.get("steps", [])
+            step_count = len(steps) if isinstance(steps, list) else 0
+            row = ft.Row([
+                ft.Column([
+                    ft.Text(item.get("name", "unknown"), size=12, weight=ft.FontWeight.W_500, color=ft.Colors.ON_SURFACE),
+                    ft.Text(f"{step_count} 步骤 · {item.get('description', '')}", size=10, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.85, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
+                ], spacing=2, expand=True),
+                ft.TextButton("运行", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), on_click=lambda e, n=item.get("name"): self._run_workflow_from_ui(n)),
+            ], spacing=8, tight=True)
+            self.workflow_list.controls.append(row)
+    self.workflow_list.update()
+
+
+def _run_workflow_from_ui(self, name: str):
+    if not name:
+        return
+    self._append_terminal(f"run workflow: {name}")
+    self._set_status(f"执行工作流: {name}", ft.Colors.AMBER_400)
+    try:
+        from prism.workflow import run_workflow
+        result = run_workflow(name, parent_agent=getattr(self, "agent", None))
+        if result.get("success"):
+            output = result.get("result", "")
+            if hasattr(self, "agent") and self.agent is not None:
+                self._append("PRISM", output)
+            self._set_status("工作流完成", ft.Colors.GREEN_400)
+            self._append_terminal(f"workflow done: {name}")
+        else:
+            self._set_status(f"工作流失败: {result.get('error', 'unknown')}", ft.Colors.RED_400)
+    except Exception as exc:
+        self._set_status("工作流执行异常", ft.Colors.RED_400)
+        self._append_terminal(f"workflow run error: {exc}")
 
 
 def main():
