@@ -1293,8 +1293,22 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     export_btn.on_click = lambda e, n=name: self._export_session(n)
                     session_row = ft.Row([pin_btn, load_btn, rename_btn, export_btn, del_btn], spacing=6, tight=True)
                     session_row._session_name = name
+                    session_wrap = ft.Container(
+                        content=session_row,
+                        padding=ft.Padding(4, 4, 4, 4),
+                        border_radius=10,
+                        bgcolor=ft.Colors.TRANSPARENT,
+                        animate=ft.Animation(duration=120, curve=ft.AnimationCurve.EASE_OUT),
+                    )
+                    def _on_session_hover(e, w=session_wrap):
+                        w.bgcolor = ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE) if e.data == 'true' else ft.Colors.TRANSPARENT
+                        try:
+                            w.update()
+                        except Exception:
+                            logger.debug("session hover update failed: %s", traceback.format_exc())
+                    session_wrap.on_hover = _on_session_hover
                     self._session_all_items.append(session_row)
-                    self.session_list.controls.append(session_row)
+                    self.session_list.controls.append(session_wrap)
             self.session_list.update()
         try:
             self.page.run_task(_run)
