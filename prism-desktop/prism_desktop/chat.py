@@ -57,6 +57,26 @@ class ChatMixin:
                 opacity=0,
                 animate_opacity=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_OUT),
             )
+            copy_btn = ft.IconButton(
+                icon=ft.Icons.COPY_ROUNDED,
+                tooltip="复制",
+                icon_size=14,
+                icon_color=ft.Colors.ON_SURFACE_VARIANT,
+                bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT),
+                style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE_VARIANT)),
+                on_click=lambda e, t=text: self._copy_to_clipboard(t) if hasattr(self, "_copy_to_clipboard") else None,
+            )
+            message_widget = ft.Stack(
+                [
+                    message_widget,
+                    ft.Container(
+                        content=copy_btn,
+                        alignment=ft.alignment.top_right,
+                        padding=ft.Padding(6, 6, 6, 6),
+                    ),
+                ],
+                height=None,
+            )
             self.chat_list.controls.append(message_widget)
             message_widget.opacity = 1
             try:
