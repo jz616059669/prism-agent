@@ -851,6 +851,11 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.workflow_refresh_btn.on_click = lambda e: self._refresh_workflows()
         self.workflow_list = ft.Column(spacing=4, tight=True)
         self._workflow_items: List[dict] = []
+        self.usage_calls_text = ft.Text("0", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE)
+        self.usage_success_text = ft.Text("0%", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE)
+        self.usage_latency_text = ft.Text("0ms", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE)
+        self.usage_tokens_text = ft.Text("0", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE)
+        self.usage_cost_text = ft.Text("$0", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE)
 
         # 会话
         self.session_new_btn = ft.IconButton(icon=ft.Icons.ADD_ROUNDED, tooltip="新建对话", icon_color=ft.Colors.PRIMARY, bgcolor=ft.Colors.with_opacity(0.08, ft.Colors.PRIMARY), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.PRIMARY)))
@@ -988,6 +993,25 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 ], tight=True, spacing=6),
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 
+                border_radius=34,
+                padding=18,
+                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.06, ft.Colors.ON_SURFACE))),
+            ),
+            ft.Container(height=14),
+            ft.Container(
+                content=ft.Column([
+                    ft.Text("对话统计", size=13, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
+                    ft.Icon(ft.Icons.SHOW_CHART_ROUNDED, size=14, color=ft.Colors.PRIMARY),
+                    ft.Container(height=14),
+                    ft.Row([ft.Text("调用次数", size=11, color=ft.Colors.ON_SURFACE_VARIANT), self.usage_calls_text], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    ft.Row([ft.Text("成功率", size=11, color=ft.Colors.ON_SURFACE_VARIANT), self.usage_success_text], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    ft.Row([ft.Text("平均延迟", size=11, color=ft.Colors.ON_SURFACE_VARIANT), self.usage_latency_text], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    ft.Row([ft.Text("Token 消耗", size=11, color=ft.Colors.ON_SURFACE_VARIANT), self.usage_tokens_text], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    ft.Row([ft.Text("估算成本", size=11, color=ft.Colors.ON_SURFACE_VARIANT), self.usage_cost_text], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    ft.Container(height=8),
+                    ft.TextButton("刷新统计", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.SURFACE_CONTAINER, color=ft.Colors.ON_SURFACE), on_click=lambda e: self._refresh_usage_dash()),
+                ], tight=True, spacing=6),
+                bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=34,
                 padding=18,
                 border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.06, ft.Colors.ON_SURFACE))),
@@ -2014,6 +2038,25 @@ def _run_workflow_from_ui(self, name: str):
     except Exception as exc:
         self._set_status("工作流执行异常", ft.Colors.RED_400)
         self._append_terminal(f"workflow run error: {exc}")
+
+
+def _refresh_usage_dash(self):
+    try:
+        from prism.usage import usage_tracker
+        s = usage_tracker.stats()
+        if hasattr(self, "usage_calls_text") and self.usage_calls_text:
+            self.usage_calls_text.value = str(s.get("total_calls", 0))
+            self.usage_success_text.value = f"{s.get('success_rate', 0.0)}%"
+            self.usage_latency_text.value = f"{s.get('avg_latency_ms', 0.0)}ms"
+            self.usage_tokens_text.value = str(int(s.get("total_prompt_tokens", 0)) + int(s.get("total_completion_tokens", 0)))
+            self.usage_cost_text.value = f"${s.get('total_cost_usd', 0.0)}"
+            self.usage_calls_text.update()
+            self.usage_success_text.update()
+            self.usage_latency_text.update()
+            self.usage_tokens_text.update()
+            self.usage_cost_text.update()
+    except Exception as exc:
+        self._append_terminal(f"usage dash error: {exc}")
 
 
 def main():

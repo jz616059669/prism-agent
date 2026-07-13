@@ -401,6 +401,19 @@ class Agent:
 
         logger.info("chat success model=%s tool_calls=%s", result.get('model'), len(tool_calls))
 
+        try:
+            from prism.usage import usage_tracker
+            usage_tracker.record(
+                model=str(result.get('model') or ''),
+                prompt_tokens=int(result.get('prompt_tokens') or 0),
+                completion_tokens=int(result.get('completion_tokens') or 0),
+                latency_ms=float(result.get('latency') or result.get('latency_ms') or 0.0),
+                success=True,
+                session_id=getattr(self, 'session_id', ''),
+            )
+        except (ImportError, Exception):
+            pass
+
         # 自我校验：后置检查回复质量
         try:
             if getattr(self, "validation_enabled", False):
