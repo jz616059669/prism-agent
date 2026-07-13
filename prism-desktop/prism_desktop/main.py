@@ -1140,7 +1140,26 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT, opacity=0.3),
                 ft.Container(height=14),
                 self._init_error_banner,
-                self.chat_list,
+                ft.Stack(
+                    [
+                        self.chat_list,
+                        ft.Container(
+                            content=ft.IconButton(
+                                icon=ft.Icons.ARROW_DOWNWARD_ROUNDED,
+                                tooltip="回到底部",
+                                icon_color=ft.Colors.ON_PRIMARY_CONTAINER,
+                                bgcolor=ft.Colors.PRIMARY,
+                                style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.18, ft.Colors.ON_PRIMARY)),
+                                animate_scale=ft.Animation(duration=150, curve=ft.AnimationCurve.EASE_IN_OUT),
+                                on_click=lambda e: getattr(self.chat_list, "scroll_to", lambda **kw: None)(delta=99999, duration=180),
+                            ),
+                            alignment=ft.alignment.bottom_right,
+                            padding=ft.Padding(0, 0, 12, 12),
+                            visible=False,
+                        ),
+                    ],
+                    expand=True,
+                ),
                 ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT, opacity=0.3),
                 ft.Container(
                     content=ft.Row([self.input_field, self.send_btn, self.stop_btn, self._attach_btn, self.voice_record_btn, self.voice_speak_btn], spacing=10, expand=True),
