@@ -355,8 +355,16 @@ class Agent:
             logger.debug("pre-validation failed: %s", traceback.format_exc())
 
         # 添加用户消息
-        self.messages.append(Message(role="user", content=user_message))
+        message_id = f"msg_{int(__import__('time').time()*1000)}_{len(self.messages)}"
+        user_msg = Message(role="user", content=user_message)
+        user_msg.id = message_id
+        self.messages.append(user_msg)
         self._trim_messages()
+        try:
+            from prism.message_store import message_store
+            message_store.add(user_msg)
+        except Exception:
+            pass
 
         # 在关键操作前自动保存快照（用于 /rollback）
         # 每 5 轮对话保存一次，避免频繁 IO
@@ -424,8 +432,17 @@ class Agent:
             logger.debug("post-validation failed: %s", traceback.format_exc())
 
         # 添加助手回复
-        self.messages.append(Message(role="assistant", content=assistant_content))
+        assistant_content = assistant_content or ""
+        assistant_msg = Message(role="assistant", content=assistant_content)
+        if hasattr(user_msg, "id") and user_msg.id:
+            assistant_msg.id = f"reply_{user_msg.id}"
+        self.messages.append(assistant_msg)
         self._trim_messages()
+        try:
+            from prism.message_store import message_store
+            message_store.add(assistant_msg)
+        except Exception:
+            pass
 
         # Run after_chat hooks
         hook_manager.run_hooks("after_chat", {
@@ -505,7 +522,10 @@ class Agent:
         
         # 本地工具：失败自动重试，最多 2 次
         for attempt in range(2):
-            result = registry.execute(tool_name, **kwargs)
+            try:
+                result = registry.execute(tool_name, **kwargs)
+            except (TypeError, AttributeError, Exception) as exc:
+                result = {"success": False, "error": str(exc)}
             logger.info("execute tool=%s attempt=%d result=%s", tool_name, attempt + 1, result.get('success'))
             if result.get('success'):
                 self.tool_calls.append(ToolCall(
@@ -520,7 +540,19 @@ class Agent:
             if attempt == 0:
                 kwargs = self._fallback_tool_args(tool_name, kwargs)
         
-        # 最终失败
+        # 最终失败，写入持久化重试队列
+        try:
+            from prism.retry_strategy import retry_strategy
+            retry_strategy.submit(
+                task_id=f"tool:{tool_name}:{len(self.tool_calls)}",
+                func=tool_name,
+                args=[],
+                kwargs=kwargs,
+                max_attempts=3,
+                backoff=2.0,
+            )
+        except Exception:
+            pass
         result = registry.execute(tool_name, **kwargs)
         self.tool_calls.append(ToolCall(
             id=f"call_{len(self.tool_calls)}",

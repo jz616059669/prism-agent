@@ -40,5 +40,22 @@ class SmartCompleter:
     def complete_code(self, code: str, language: str = "python") -> List[str]:
         return self.complete(prefix=code.splitlines()[-1] if code else "", context=code, limit=10)
 
+    def learn(self, prefix: str, completion: str) -> None:
+        try:
+            store = getattr(self, "_store", None)
+            if store is None:
+                store = {}
+                self._store = store
+            store.setdefault(prefix, [])
+            completions = store[prefix]
+            if completion not in completions:
+                completions.append(completion)
+        except Exception:
+            pass
+
+    def suggest_from_history(self, prefix: str, limit: int = 5) -> List[str]:
+        store = getattr(self, "_store", {}) or {}
+        return store.get(prefix, [])[:limit]
+
 
 smart_completer = SmartCompleter()

@@ -1,5 +1,5 @@
 """
-PRISM Agent - Webhook 触发器
+PRISM Agent - Webhook 触发器 + HTTP Server
 接收外部 webhook 自动触发任务
 """
 
@@ -9,7 +9,9 @@ import json
 import logging
 import os
 import subprocess
+import threading
 from dataclasses import dataclass, field
+from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -73,6 +75,52 @@ class WebhookTrigger:
 
     def list_webhooks(self) -> List[Dict[str, Any]]:
         return [w.to_dict() for w in self._webhooks.values()]
+
+    def start_server(self, host: str = "127.0.0.1", port: int = 9900) -> Optional[threading.Thread]:
+        trigger = self
+
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, format, *args):
+                logger.debug(format, *args)
+
+            def _send_json(self, status, data):
+                body = json.dumps(data, ensure_ascii=False).encode("utf-8")
+                self.send_response(status)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def do_GET(self):
+                paths = {w.path: w for w in trigger._webhooks.values() if w.enabled}
+                webhook = paths.get(self.path)
+                if not webhook:
+                    self._send_json(404, {"success": False, "error": "not found"})
+                    return
+                result = trigger.trigger(webhook.id)
+                self._send_json(200, result)
+
+            def do_POST(self):
+                paths = {w.path: w for w in trigger._webhooks.values() if w.enabled}
+                webhook = paths.get(self.path)
+                if not webhook:
+                    self._send_json(404, {"success": False, "error": "not found"})
+                    return
+                length = int(self.headers.get("Content-Length", 0))
+                payload = {}
+                if length:
+                    try:
+                        payload = json.loads(self.rfile.read(length).decode("utf-8"))
+                    except Exception:
+                        pass
+                result = trigger.trigger(webhook.id, payload=payload)
+                self._send_json(200, result)
+
+        server = HTTPServer((host, port), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        logger.info("webhook server started on %s:%d", host, port)
+        return thread
 
     def _save(self, webhook: Webhook) -> None:
         try:
