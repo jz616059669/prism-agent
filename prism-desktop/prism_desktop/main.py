@@ -856,6 +856,15 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.usage_latency_text = ft.Text("0ms", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE)
         self.usage_tokens_text = ft.Text("0", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE)
         self.usage_cost_text = ft.Text("$0", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE)
+        self.persona_dropdown = ft.Dropdown(
+            options=[],
+            label="选择角色",
+            width=260,
+            border_radius=16,
+            bgcolor=ft.Colors.SURFACE_CONTAINER,
+            value="default",
+            on_change=lambda e: self._apply_persona(e.control.value),
+        )
 
         # 会话
         self.session_new_btn = ft.IconButton(icon=ft.Icons.ADD_ROUNDED, tooltip="新建对话", icon_color=ft.Colors.PRIMARY, bgcolor=ft.Colors.with_opacity(0.08, ft.Colors.PRIMARY), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.PRIMARY)))
@@ -1034,6 +1043,19 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 ], tight=True, spacing=6),
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 
+                border_radius=34,
+                padding=18,
+                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.06, ft.Colors.ON_SURFACE))),
+            ),
+            ft.Container(height=14),
+            ft.Container(
+                content=ft.Column([
+                    ft.Row([ft.Text("角色人格", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), ft.Icon(ft.Icons.PERSON_ROUNDED, size=14, color=ft.Colors.PRIMARY)], spacing=8, tight=True),
+                    ft.Container(height=10),
+                    self.persona_dropdown,
+                    ft.Text("切换后独立记忆 + 系统提示词", size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.85),
+                ], tight=True, spacing=4),
+                bgcolor=ft.Colors.SURFACE_CONTAINER,
                 border_radius=34,
                 padding=18,
                 border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.06, ft.Colors.ON_SURFACE))),
@@ -2057,6 +2079,21 @@ def _refresh_usage_dash(self):
             self.usage_cost_text.update()
     except Exception as exc:
         self._append_terminal(f"usage dash error: {exc}")
+
+
+def _apply_persona(self, name: str):
+    try:
+        from prism.personas import persona_manager
+        persona = persona_manager.activate(name)
+        if not persona:
+            self._set_status(f"角色不存在: {name}", ft.Colors.RED_400)
+            return
+        self._set_status(f"已切换角色: {persona.name}", ft.Colors.GREEN_400)
+        if getattr(self, "agent", None) and persona.system_prompt:
+            self.agent.system_prompt = persona.system_prompt
+    except Exception as exc:
+        self._set_status("角色切换失败", ft.Colors.RED_400)
+        self._append_terminal(f"persona error: {exc}")
 
 
 def main():
