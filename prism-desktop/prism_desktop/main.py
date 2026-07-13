@@ -903,6 +903,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             content_padding=ft.Padding(8, 6, 8, 6),
             on_change=lambda e: self._filter_sessions(e.control.value or ""),
         )
+        self._session_search_field = ft.TextField(hint_text="搜索会话...", width=260, border_radius=12, dense=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), content_padding=ft.Padding(10, 8, 10, 8), bgcolor=ft.Colors.SURFACE_CONTAINER)
+        self._session_search_field.on_change = lambda e: self._filter_sessions(self._session_search_field.value or "")
         self.session_list = ft.Column(spacing=6, tight=True, scroll=ft.ScrollMode.AUTO)
         self._session_empty_state = ft.Container(
             content=ft.Column(
@@ -1010,6 +1012,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             ]),
             ft.Container(height=14),
             _section_card("会话管理", ft.Icons.CHAT, [
+                self._session_search_field,
                 ft.Row([self.session_name_field, self.session_save_btn], spacing=6),
                 ft.Container(height=6),
                 ft.Text("已保存会话", size=12, color=ft.Colors.ON_SURFACE),
@@ -1030,6 +1033,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             _section_card("状态", ft.Icons.INFO, [
                 ft.Row([self.browser_status_icon, self.browser_status_text], spacing=10, alignment=ft.MainAxisAlignment.START),
                 ft.Row([self.status_text, self.perf_text, ft.Container(expand=True), self._clock_text], spacing=10),
+                ft.Row([ft.IconButton(icon=ft.Icons.PALETTE_ROUNDED, tooltip="切换主题", icon_size=16, icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE_VARIANT)), on_click=lambda e: self._cycle_theme())], alignment=ft.MainAxisAlignment.END),
                 ft.Container(height=8),
                 ft.Row([ft.Icon(ft.Icons.AUTO_STORIES_ROUNDED, size=14, color=ft.Colors.PRIMARY), ft.Text("后台复盘", size=11, color=ft.Colors.ON_SURFACE), self.review_enabled_switch, ft.Text(f"每 {self.review_interval_field.value} 轮", size=10, color=ft.Colors.ON_SURFACE_VARIANT)], spacing=8, tight=True),
             ]),
@@ -1488,6 +1492,80 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             except Exception as e:
                 self._append_terminal(f"session save failed: {e}")
                 self._set_status("会话保存失败", ft.Colors.RED_400)
+        try:
+            self.page.run_task(_run)
+        except Exception:
+            _run()
+
+    def _filter_sessions(self, q: str):
+        query = (q or "").strip().lower()
+        if not query:
+            self._refresh_sessions()
+            return
+        def _run():
+            try:
+                names = self.agent.list_sessions()
+            except Exception:
+                names = []
+            pinned = self._settings.get("pinned_sessions", {}) or {}
+            names = [n for n in names if query in n.lower()]
+            names = sorted(names, key=lambda n: (not pinned.get(n, False), n))
+            self.session_list.controls.clear()
+            if not names:
+                self.session_list.controls.append(ft.Text("无匹配会话", color=ft.Colors.ON_SURFACE_VARIANT, size=12))
+                try:
+                    self.session_list.update()
+                except Exception:
+                    pass
+                return
+            for name in names:
+                is_current = name == self._current_session_name
+                pin_btn = ft.IconButton(
+                    icon=ft.Icons.PUSH_PIN_ROUNDED if pinned.get(name) else ft.Icons.PUSH_PIN_OUTLINE_ROUNDED,
+                    tooltip="置顶" if pinned.get(name) else "取消置顶",
+                    icon_color=ft.Colors.ON_SURFACE_VARIANT,
+                    width=36,
+                    height=36,
+                )
+                pin_btn.on_click = lambda e, n=name: self._toggle_pin_session(n)
+                rename_btn = ft.IconButton(icon=ft.Icons.EDIT_OUTLINE, tooltip="重命名", icon_color=ft.Colors.ON_SURFACE_VARIANT, width=36, height=36)
+                rename_btn.on_click = lambda e, n=name: self._rename_session(n)
+                load_btn = ft.Button(
+                    name,
+                    expand=True,
+                    style=ft.ButtonStyle(
+                        bgcolor=ft.Colors.PRIMARY_CONTAINER if is_current else None,
+                        color=ft.Colors.ON_PRIMARY_CONTAINER if is_current else None,
+                        shape=ft.RoundedRectangleBorder(radius=8),
+                        padding=ft.Padding(22, 20, 22, 20),
+                    ),
+                )
+                load_btn.on_click = lambda e, n=name: self._load_session(n)
+                del_btn = ft.IconButton(icon=ft.Icons.DELETE_OUTLINE, tooltip="删除会话", icon_color=ft.Colors.ERROR, width=36, height=36)
+                del_btn.on_click = lambda e, n=name: self._delete_session(n)
+                export_btn = ft.IconButton(icon=ft.Icons.DOWNLOAD_OUTLINED, tooltip="导出 Markdown", icon_color=ft.Colors.ON_SURFACE_VARIANT, width=36, height=36)
+                export_btn.on_click = lambda e, n=name: self._export_session(n)
+                session_row = ft.Row([pin_btn, load_btn, rename_btn, export_btn, del_btn], spacing=6, tight=True)
+                session_row._session_name = name
+                session_wrap = ft.Container(
+                    content=session_row,
+                    padding=ft.Padding(4, 4, 4, 4),
+                    border_radius=10,
+                    bgcolor=ft.Colors.TRANSPARENT,
+                    animate=ft.Animation(duration=120, curve=ft.AnimationCurve.EASE_OUT),
+                )
+                def _on_session_hover(e, w=session_wrap):
+                    w.bgcolor = ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE) if e.data == 'true' else ft.Colors.TRANSPARENT
+                    try:
+                        w.update()
+                    except Exception:
+                        logger.debug("session hover update failed: %s", traceback.format_exc())
+                session_wrap.on_hover = _on_session_hover
+                self.session_list.controls.append(session_wrap)
+            try:
+                self.session_list.update()
+            except Exception:
+                pass
         try:
             self.page.run_task(_run)
         except Exception:
