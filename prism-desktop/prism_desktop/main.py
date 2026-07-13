@@ -363,6 +363,45 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         except Exception as exc:
             self._log_error("init mcp servers", exc)
 
+    def _refresh_mcp(self) -> None:
+        if not hasattr(self, "mcp_server_list") or self.mcp_server_list is None:
+            return
+        try:
+            from prism.mcp import mcp_client
+            servers = getattr(mcp_client, "servers", {})
+            tools_map = getattr(mcp_client, "tools", {})
+            self.mcp_server_list.controls.clear()
+            self.mcp_status_list.controls.clear()
+            self._mcp_tool_counts = {}
+            if not servers:
+                self.mcp_server_list.controls.append(ft.Text("未配置 MCP 服务器", size=11, color=ft.Colors.ON_SURFACE_VARIANT))
+            else:
+                for name, srv in servers.items():
+                    status = getattr(srv, "status", "unknown")
+                    icon = ft.Icons.CHECK_CIRCLE_ROUNDED if status == "connected" else ft.Icons.ERROR_ROUNDED
+                    color = ft.Colors.GREEN_400 if status == "connected" else ft.Colors.RED_400
+                    row = ft.Row([
+                        ft.Icon(icon, size=14, color=color),
+                        ft.Text(f"{name}", size=11, color=ft.Colors.ON_SURFACE, expand=True),
+                        ft.Text(status, size=10, color=ft.Colors.ON_SURFACE_VARIANT),
+                    ], spacing=6, tight=True)
+                    self.mcp_server_list.controls.append(row)
+                    try:
+                        tool_names = [t.get("name") for t in tools_map.get(name, {}).get("tools", []) if isinstance(t, dict)]
+                        self._mcp_tool_counts[name] = len(tool_names)
+                    except Exception:
+                        self._mcp_tool_counts[name] = 0
+                    status_row = ft.Row([
+                        ft.Text("工具数", size=10, color=ft.Colors.ON_SURFACE_VARIANT),
+                        ft.Text(str(self._mcp_tool_counts.get(name, 0)), size=10, color=ft.Colors.ON_SURFACE),
+                    ], spacing=6, tight=True)
+                    self.mcp_status_list.controls.append(status_row)
+            self.mcp_server_list.update()
+            self.mcp_status_list.update()
+            self._append_terminal(f"mcp refreshed: {len(servers)} servers")
+        except Exception as exc:
+            self._log_error("refresh mcp", exc)
+
     def _save_settings_debounced(self) -> None:
         if self._save_settings_timer is not None:
             self._save_settings_timer.cancel()
@@ -786,6 +825,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                      color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         self.mcp_refresh_btn.on_click = lambda e: self._refresh_mcp()
         self.mcp_server_list = ft.Column(spacing=4, tight=True)
+        self.mcp_status_list = ft.Column(spacing=3, tight=True)
+        self._mcp_tool_counts: Dict[str, int] = {}
 
         # Skills
         self.skill_refresh_btn = ft.Button(_("refresh_skills"), icon=ft.Icons.REFRESH_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
@@ -893,6 +934,9 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     ft.Container(height=6),
                     ft.Text("已配置服务器", size=12, color=ft.Colors.ON_SURFACE),
                     self.mcp_server_list,
+                    ft.Container(height=10),
+                    ft.Text("运行状态", size=12, color=ft.Colors.ON_SURFACE),
+                    self.mcp_status_list,
                 ], tight=True, spacing=6),
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 
@@ -933,6 +977,13 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     ft.Container(height=14),
                     ft.Row([self.browser_status_icon, self.browser_status_text], spacing=10, alignment=ft.MainAxisAlignment.START),
                     ft.Row([self.status_text, self.perf_text, ft.Container(expand=True), self._clock_text], spacing=10),
+                    ft.Container(height=8),
+                    ft.Row([
+                        ft.Icon(ft.Icons.AUTO_STORIES_ROUNDED, size=14, color=ft.Colors.PRIMARY),
+                        ft.Text("后台复盘", size=11, color=ft.Colors.ON_SURFACE),
+                        self.review_enabled_switch,
+                        ft.Text(f"每 {self.review_interval_field.value} 轮", size=10, color=ft.Colors.ON_SURFACE_VARIANT),
+                    ], spacing=8, tight=True),
                 ], tight=True, spacing=6),
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
                 
@@ -974,6 +1025,10 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.stop_btn = ft.IconButton(icon=ft.Icons.STOP_ROUNDED, tooltip="停止生成", visible=False, bgcolor=ft.Colors.ERROR, icon_color=ft.Colors.ON_ERROR, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.ON_ERROR)), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT), animate_opacity=ft.Animation(duration=120, curve=ft.AnimationCurve.EASE_IN_OUT))
         self.stop_btn.on_click = lambda e: self._stop_send()
         self.input_field.on_submit = lambda e: self._send()
+        self.voice_record_btn = ft.IconButton(icon=ft.Icons.MIC_ROUNDED, tooltip="语音输入", bgcolor=ft.Colors.SURFACE_CONTAINER, icon_color=ft.Colors.ON_SURFACE, style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE_VARIANT)), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
+        self.voice_record_btn.on_click = lambda e: self._start_voice_input()
+        self.voice_speak_btn = ft.IconButton(icon=ft.Icons.VOLUME_UP_ROUNDED, tooltip="语音播报", bgcolor=ft.Colors.SURFACE_CONTAINER, icon_color=ft.Colors.ON_SURFACE, style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE_VARIANT)), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT), visible=False)
+        self.voice_speak_btn.on_click = lambda e: self._speak_last_reply()
         def _on_input_change():
             try:
                 self._input_pending = True
@@ -1033,7 +1088,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 self.chat_list,
                 ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT, opacity=0.3),
                 ft.Container(
-                    content=ft.Row([self.input_field, self.send_btn, self.stop_btn], spacing=10, expand=True),
+                    content=ft.Row([self.input_field, self.send_btn, self.stop_btn, self.voice_record_btn, self.voice_speak_btn], spacing=10, expand=True),
                     bgcolor=ft.Colors.SURFACE_CONTAINER,
                     
                     border_radius=34,
@@ -1803,6 +1858,65 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         except Exception as e:
             self._append_terminal(f"终端执行失败：{e}")
         self._set_status("就绪")
+
+
+def _start_voice_input(self):
+    if not hasattr(self, "voice_record_btn") or self.voice_record_btn is None:
+        return
+    self._set_status("正在录音...", ft.Colors.AMBER_400)
+    self._append_terminal("[voice] start recording")
+
+    def _bg():
+        try:
+            from prism.voice import VoiceInteraction
+            vi = VoiceInteraction()
+            text = vi.listen()
+            if not text:
+                self._set_status("未识别到语音", ft.Colors.RED_400)
+                return
+            if hasattr(self, "input_field") and self.input_field is not None:
+                self.input_field.value = text
+                if hasattr(self.input_field, "update"):
+                    self.input_field.update()
+            self._set_status("语音转写完成", ft.Colors.GREEN_400)
+            self._append_terminal(f"[voice] recognized: {text[:120]}")
+        except Exception as exc:
+            self._set_status("语音输入失败", ft.Colors.RED_400)
+            self._append_terminal(f"[voice] error: {exc}")
+
+    try:
+        threading.Thread(target=_bg, daemon=True).start()
+    except Exception as exc:
+        self._set_status("语音线程启动失败", ft.Colors.RED_400)
+        self._append_terminal(f"[voice] thread error: {exc}")
+
+
+def _speak_last_reply(self):
+    if not hasattr(self, "voice_speak_btn") or self.voice_speak_btn is None:
+        return
+    last = getattr(self, "_last_assistant_reply", "") or ""
+    if not last.strip():
+        self._set_status("没有可播报的内容", ft.Colors.RED_400)
+        return
+    self._set_status("正在播报...", ft.Colors.AMBER_400)
+    self._append_terminal("[voice] tts start")
+
+    def _bg():
+        try:
+            from prism.voice import VoiceInteraction
+            vi = VoiceInteraction()
+            vi.speak(last)
+            self._set_status("播报完成", ft.Colors.GREEN_400)
+            self._append_terminal("[voice] tts done")
+        except Exception as exc:
+            self._set_status("语音播报失败", ft.Colors.RED_400)
+            self._append_terminal(f"[voice] tts error: {exc}")
+
+    try:
+        threading.Thread(target=_bg, daemon=True).start()
+    except Exception as exc:
+        self._set_status("语音线程启动失败", ft.Colors.RED_400)
+        self._append_terminal(f"[voice] thread error: {exc}")
 
 
 def main():
