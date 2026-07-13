@@ -1,13 +1,12 @@
 """
 PRISM Agent - Batch Processing
-批量执行 prompt，支持并行度控制、ShareGPT 格式导出、失败自动重试。
+批量执行 prompt，支持并发度控制、ShareGPT 格式导出、失败自动重试。
 """
 
 from __future__ import annotations
 
+import asyncio
 import json
-import os
-import threading
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
 
@@ -48,53 +47,33 @@ class BatchProcessor:
         self.agent_factory = agent_factory
         self.max_workers = max(1, max_workers)
         self.retry = max(0, retry)
-        self._lock = threading.Lock()
         self._results: List[BatchResult] = []
 
-    def run(self, items: List[BatchItem]) -> List[BatchResult]:
-        results: List[Optional[BatchResult]] = [None] * len(items)
-        threads: Dict[int, threading.Thread] = {}
+    async def run(self, items: List[BatchItem]) -> List[BatchResult]:
+        if not items:
+            return []
+        semaphore = asyncio.Semaphore(self.max_workers)
+        tasks = []
+        for idx, item in enumerate(items):
+            tasks.append(self._process_item(idx, item, semaphore))
+        self._results = list(await asyncio.gather(*tasks))
+        return list(self._results)
 
-        def _worker(idx: int, item: BatchItem) -> None:
-            res = self._process_item(idx, item)
-            results[idx] = res
-
-        # 分块调度，避免瞬间起太多线程
-        pending = list(range(len(items)))
-        active: Dict[int, threading.Thread] = {}
-        it = 0
-        while pending or active:
-            while pending and len(active) < self.max_workers:
-                idx = pending.pop(0)
-                t = threading.Thread(target=_worker, args=(idx, items[idx]), daemon=True)
-                active[idx] = t
-                t.start()
-            # 等待任意线程结束
-            done = [k for k, t in active.items() if not t.is_alive()]
-            for k in done:
-                active[k].join(timeout=180)
-                active.pop(k)
-            if not done and active:
-                import time
-                time.sleep(0.05)
-
-        self._results = [r for r in results if isinstance(r, BatchResult)]
-        return self._results
-
-    def _process_item(self, idx: int, item: BatchItem) -> BatchResult:
+    async def _process_item(self, idx: int, item: BatchItem, semaphore: asyncio.Semaphore) -> BatchResult:
         last_err = ""
         for attempt in range(1 + self.retry):
             try:
-                agent = self.agent_factory(f"batch-{idx}")
-                content = agent.chat(item.prompt)
-                return BatchResult(
-                    index=idx,
-                    prompt=item.prompt,
-                    success=True,
-                    content=content or "",
-                    model=getattr(agent, "model", "") or "",
-                    meta=item.meta or {},
-                )
+                async with semaphore:
+                    agent = self.agent_factory(f"batch-{idx}")
+                    content = await asyncio.get_running_loop().run_in_executor(None, agent.chat, item.prompt)
+                    return BatchResult(
+                        index=idx,
+                        prompt=item.prompt,
+                        success=True,
+                        content=content or "",
+                        model=getattr(agent, "model", "") or "",
+                        meta=item.meta or {},
+                    )
             except Exception as exc:  # noqa: BLE001
                 last_err = str(exc)
                 logger.debug("batch item %d attempt %d failed: %s", idx, attempt, exc)
@@ -107,17 +86,6 @@ class BatchProcessor:
         )
 
     def to_sharegpt(self, results: Optional[List[BatchResult]] = None) -> List[Dict[str, Any]]:
-        """
-        将结果转换为 ShareGPT conversations 格式：
-        [
-          {
-            "conversations": [
-              {"from": "human", "value": "<prompt>"},
-              {"from": "gpt", "value": "<content>"}
-            ]
-          }
-        ]
-        """
         results = results or self._results
         out: List[Dict[str, Any]] = []
         for r in results:

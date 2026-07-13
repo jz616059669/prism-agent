@@ -5,21 +5,18 @@ PRISM Agent - API Server Mode
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import threading
 from typing import Any, Dict, List, Optional
 
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+import uvicorn
+
 from prism.logging import logger
 
-
-try:
-    from fastapi import FastAPI, Request
-    from fastapi.responses import JSONResponse
-    import uvicorn
-    _FASTAPI_AVAILABLE = True
-except Exception:  # noqa: BLE001
-    _FASTAPI_AVAILABLE = False
 
 try:
     from prism.agent import Agent, create_agent
@@ -28,6 +25,9 @@ except Exception:  # noqa: BLE001
     Agent = None  # type: ignore[misc,assignment]
     create_agent = None  # type: ignore[misc,assignment]
     provider_pool = None  # type: ignore[misc,assignment]
+
+
+_REQUEST_TIMEOUT = float(os.getenv("PRISM_API_REQUEST_TIMEOUT", "8"))
 
 
 class PRISMApiServer:
@@ -44,8 +44,6 @@ class PRISMApiServer:
         port: int = 8000,
         agent_factory: Optional[Any] = None,
     ) -> None:
-        if not _FASTAPI_AVAILABLE:
-            raise RuntimeError("API server requires fastapi + uvicorn: `pip install fastapi uvicorn`")
         self.host = host
         self.port = port
         self._agent_factory = agent_factory or self._default_factory
@@ -110,7 +108,16 @@ class PRISMApiServer:
                     )
                 sid = body.get("session_id") or body.get("user") or "api"
                 agent = self._agent_factory(session_id=sid)
-                response_text = agent.chat(user_content or "")
+                try:
+                    response_text = await asyncio.wait_for(
+                        asyncio.get_running_loop().run_in_executor(None, agent.chat, user_content or ""),
+                        timeout=_REQUEST_TIMEOUT,
+                    )
+                except asyncio.TimeoutError:
+                    return JSONResponse(
+                        {"error": {"message": f"request timeout after {_REQUEST_TIMEOUT}s", "type": "timeout_error"}},
+                        status_code=504,
+                    )
                 data = {
                     "id": f"chatcmpl-{sid}",
                     "object": "chat.completion",
@@ -160,3 +167,4 @@ class PRISMApiServer:
 
 
 __all__ = ["PRISMApiServer"]
+

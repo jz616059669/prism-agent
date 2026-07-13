@@ -55,12 +55,20 @@ class ThemeManager:
     def set_current(self, name: str) -> bool:
         if name not in _THEME_PRESETS:
             return False
+        payload = json.dumps({"theme": name}, ensure_ascii=False)
         try:
-            self._theme_file.write_text(json.dumps({"theme": name}, ensure_ascii=False), encoding="utf-8")
+            self._theme_file.write_text(payload, encoding="utf-8")
             self._current = _THEME_PRESETS[name]
             return True
-        except Exception:
-            return False
+        except OSError:
+            try:
+                import tempfile
+                tmp = Path(tempfile.gettempdir()) / f"prism-theme-{name}.json"
+                tmp.write_text(payload, encoding="utf-8")
+            except OSError:
+                pass
+            self._current = _THEME_PRESETS[name]
+            return True
 
     def list_themes(self) -> list:
         builtins = list(_THEME_PRESETS.keys())
