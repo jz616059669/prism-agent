@@ -162,6 +162,11 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         except Exception:
             pass
         try:
+            from prism.notification_system import notification_system
+            notification_system.set_ui_callback(self._append_notification)
+        except Exception:
+            pass
+        try:
             self._restore_runtime_state()
         except Exception:
             logger.debug('desktop exception: %s', traceback.format_exc())
@@ -1275,10 +1280,28 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             spacing=8,
         )
         self.webhook_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO, padding=ft.Padding(6, 4, 6, 4))
+        self._right_schedule_tab = ft.Column(
+            [
+                ft.Row([ft.Text("定时", size=13, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, opacity=0.95), ft.Container(expand=True), ft.Row([ft.TextButton("同步", on_click=lambda e: self._refresh_schedule())], spacing=4, tight=True)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=8),
+                ft.Container(self.schedule_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=34, padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE),
+            ],
+            expand=True,
+            spacing=8,
+        )
+        self.schedule_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO, padding=ft.Padding(6, 4, 6, 4))
+        self._right_notification_tab = ft.Column(
+            [
+                ft.Row([ft.Text("通知", size=13, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, opacity=0.95), ft.Container(expand=True)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=8),
+                ft.Container(self.notification_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=34, padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE),
+            ],
+            expand=True,
+            spacing=8,
+        )
+        self.notification_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO, padding=ft.Padding(6, 4, 6, 4))
         # Right panel tabs
         self._right_tab_buttons_row = ft.Row([], spacing=2, tight=True)
-        self._right_tab_contents = ft.Column([terminal_tab, mcp_tab, self._right_skills_tab, self._right_workflow_tab, self._right_message_tab, self._right_retry_tab, self._right_webhook_tab], expand=True, spacing=0)
-        for idx, label in enumerate(["终端", "MCP", "Skills", "工作流", "消息", "重试", "Webhook"]):
+        self._right_tab_contents = ft.Column([terminal_tab, mcp_tab, self._right_skills_tab, self._right_workflow_tab, self._right_message_tab, self._right_retry_tab, self._right_webhook_tab, self._right_schedule_tab, self._right_notification_tab], expand=True, spacing=0)
+        for idx, label in enumerate(["终端", "MCP", "Skills", "工作流", "消息", "重试", "Webhook", "定时", "通知"]):
             btn = ft.TextButton(
                 label,
                 style=ft.ButtonStyle(
@@ -1643,6 +1666,31 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         except Exception as exc:
             self._log_error("webhook start", exc)
             self._set_status("Webhook 启动失败", ft.Colors.RED_400)
+
+    def _refresh_schedule(self):
+        def _run():
+            self.schedule_list.controls.clear()
+            try:
+                from prism.schedule_visualizer import schedule_visualizer
+                widgets = schedule_visualizer.to_timeline_widgets(days=7)
+            except Exception:
+                widgets = []
+            if not widgets:
+                self.schedule_list.controls.append(ft.Text("无定时任务", color=ft.Colors.ON_SURFACE_VARIANT))
+            for item in widgets:
+                title = item.get("title", "")
+                time = item.get("time", "")
+                status = item.get("status", "")
+                row = ft.Row([ft.Text(f"{title} {time}", size=12, color=ft.Colors.ON_SURFACE_VARIANT), ft.Text(status, size=11, color=ft.Colors.GREEN_400)], spacing=8)
+                self.schedule_list.controls.append(row)
+            try:
+                self.schedule_list.update()
+            except Exception:
+                pass
+        try:
+            self.page.run_task(_run)
+        except Exception:
+            _run()
 
 
     def _append_terminal(self, text: str):

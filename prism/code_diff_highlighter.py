@@ -73,5 +73,27 @@ class CodeDiffHighlighter:
             rows.append(f"<tr style='background:{color}'><td style='color:#888'>{line.old_no}</td><td style='color:#888'>{line.new_no}</td><td style='font-family:monospace'>{content}</td></tr>")
         return f"<table style='width:100%;border-collapse:collapse'>{''.join(rows)}</table>"
 
+    def semantic_diff(self, old_text: str, new_text: str) -> Dict[str, Any]:
+        try:
+            import ast
+            old_tree = ast.parse(old_text or "")
+            new_tree = ast.parse(new_text or "")
+            old_names = {n.name: type(n).__name__ for n in old_tree.body if hasattr(n, "name")}
+            new_names = {n.name: type(n).__name__ for n in new_tree.body if hasattr(n, "name")}
+            added = [name for name in new_names if name not in old_names]
+            removed = [name for name in old_names if name not in new_names]
+            changed = []
+            for name in old_names:
+                if name in new_names and old_names[name] != new_names[name]:
+                    changed.append({"name": name, "from": old_names[name], "to": new_names[name]})
+            return {
+                "added": added,
+                "removed": removed,
+                "changed": changed,
+                "summary": f"+{len(added)} -{len(removed)} ~{len(changed)}",
+            }
+        except Exception as exc:
+            return {"error": str(exc), "fallback": "line_diff"}
+
 
 code_diff_highlighter = CodeDiffHighlighter()

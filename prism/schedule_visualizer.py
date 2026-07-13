@@ -107,6 +107,19 @@ class ScheduleVisualizer:
         except Exception:
             return 0.0
 
+    def to_timeline_widgets(self, days: int = 7) -> List[Dict[str, Any]]:
+        items = self.timeline(days=days)
+        widgets = []
+        for item in items:
+            dt = __import__("datetime").datetime.fromtimestamp(item.get("next_ts", 0))
+            widgets.append({
+                "title": item.get("name", ""),
+                "subtitle": item.get("cron", ""),
+                "time": dt.strftime("%m-%d %H:%M"),
+                "status": item.get("status", "enabled"),
+            })
+        return widgets
+
     def _save(self, event: ScheduleEvent) -> None:
         try:
             (_SCHED_DIR / f"{event.name}.json").write_text(
