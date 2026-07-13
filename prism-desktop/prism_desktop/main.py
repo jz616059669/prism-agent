@@ -1441,7 +1441,9 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             color = ft.Colors.GREEN_400
         elif 'info' in text.lower() or '信息' in text:
             color = ft.Colors.BLUE_400
-        self.terminal_list.controls.append(ft.Text(text, size=12, color=color, selectable=True, font_family="Consolas, Monaco, monospace", height=18))
+        line = ft.Text(text, size=12, color=color, selectable=True, font_family="Consolas, Monaco, monospace", height=18, opacity=0, animate_opacity=ft.Animation(duration=120, curve=ft.AnimationCurve.EASE_OUT))
+        self.terminal_list.controls.append(line)
+        line.opacity = 1
         try:
             self.terminal_list.update()
         except Exception:
@@ -1455,7 +1457,9 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             return
         self.mcp_list.controls.clear()
         for line in self._mcp_logs[-80:]:
-            self.mcp_list.controls.append(ft.Text(line, size=12, color=ft.Colors.ON_SURFACE, selectable=True, font_family="Consolas, Monaco, monospace", height=18))
+            item = ft.Text(line, size=12, color=ft.Colors.ON_SURFACE, selectable=True, font_family="Consolas, Monaco, monospace", height=18, opacity=0, animate_opacity=ft.Animation(duration=100, curve=ft.AnimationCurve.EASE_OUT))
+            item.opacity = 1
+            self.mcp_list.controls.append(item)
         try:
             self.mcp_list.update()
         except Exception:
