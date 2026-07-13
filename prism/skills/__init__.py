@@ -358,7 +358,7 @@ class SkillRegistry:
         """从 skills 目录加载外部 skills"""
         if not self.skills_dir.exists():
             return
-        
+
         for skill_file in self.skills_dir.glob("*.py"):
             try:
                 spec = importlib.util.spec_from_file_location(
@@ -366,11 +366,25 @@ class SkillRegistry:
                 )
                 module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(module)
-                
+
                 if hasattr(module, 'register'):
                     module.register(self)
             except Exception as e:
                 logger.warning("load external skill failed: %s", skill_file, exc_info=True)
+
+    def reload(self) -> None:
+        """重新加载外部 skills（不清空内置）"""
+        for skill_file in self.skills_dir.glob("*.py"):
+            try:
+                spec = importlib.util.spec_from_file_location(
+                    skill_file.stem, skill_file
+                )
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                if hasattr(module, 'register'):
+                    module.register(self)
+            except Exception:
+                logger.debug("reload skill failed: %s", skill_file, exc_info=True)
     
     def search_hub(self, query: str) -> List[Dict[str, Any]]:
         """搜索远程 Hub Skills"""
