@@ -146,6 +146,15 @@ class Config:
                 'servers': [],
                 'auto_discover': True,
             },
+            'batch': {
+                'max_workers': 4,
+                'retry': 1,
+            },
+            'api_server': {
+                'enabled': False,
+                'host': '127.0.0.1',
+                'port': 8000,
+            },
             'moa': {
                 'enabled': False,
                 'ensemble': [],

@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from prism.paths import memory_dir
+from prism.memory_providers import memory_provider_registry, MemoryProviderRegistry, MemoryRecord
 
 logger = logging.getLogger("prism.memory")
 

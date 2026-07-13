@@ -291,6 +291,13 @@ class Agent:
         发送消息并获取回复
         on_stream: 可选回调，逐 token 接收文本
         """
+        # 展开用户消息中的 @引用（文件/目录/URL）
+        try:
+            from prism.context_refs import expand_references
+            user_message = expand_references(user_message)
+        except Exception:
+            pass
+
         # 动态注入记忆上下文：身份类优先，再按当前query召回相关记忆
         self._inject_memory_context(user_message)
 
@@ -311,6 +318,13 @@ class Agent:
         # 添加用户消息
         self.messages.append(Message(role="user", content=user_message))
         self._trim_messages()
+
+        # 在关键操作前自动保存快照（用于 /rollback）
+        try:
+            from prism.checkpoint import save_checkpoint
+            save_checkpoint(self, label="before_chat")
+        except Exception:
+            pass
 
         # 构建 API 消息格式
         api_messages = [

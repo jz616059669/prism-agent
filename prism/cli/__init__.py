@@ -175,6 +175,14 @@ def chat():
                     agent.clear_history()
                     console.print("[green]历史已清空[/green]")
                     continue
+                elif cmd == '/rollback':
+                    from prism.checkpoint import rollback
+                    result = rollback(agent)
+                    if result.get("success"):
+                        console.print(f"[green]已回滚到最近快照，恢复 {result.get('restored_messages', 0)} 条消息[/green]")
+                    else:
+                        console.print(f"[red]回滚失败: {result.get('error', '未知错误')}[/red]")
+                    continue
                 else:
                     console.print(f"[red]未知命令: {cmd}[/red]")
                     continue
@@ -230,6 +238,10 @@ from prism.cli.config_cmds import config  # noqa: E402
 from prism.cli.workspace import workspace  # noqa: E402
 from prism.cli.memory import memory  # noqa: E402
 from prism.cli.mcp import mcp  # noqa: E402
+from prism.cli.batch import batch  # noqa: E402
+from prism.cli.api_server import api_server  # noqa: E402
+from prism.cli.plugin import plugin  # noqa: E402
+from prism.cli.theme import theme  # noqa: E402
 
 cli.add_command(gateway)
 cli.add_command(session)
@@ -239,6 +251,10 @@ cli.add_command(config)
 cli.add_command(workspace)
 cli.add_command(memory)
 cli.add_command(mcp)
+cli.add_command(batch)
+cli.add_command(api_server)
+cli.add_command(plugin)
+cli.add_command(theme)
 
 
 def main():
