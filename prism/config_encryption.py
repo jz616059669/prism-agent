@@ -16,69 +16,82 @@ from typing import Any, Dict, Optional
 logger = logging.getLogger(__name__)
 
 _CRYPTO_DIR = Path.home() / ".prism" / "crypto"
-_CRYPTO_DIR.mkdir(parents=True, exist_ok=True)
 _KEY_FILE = _CRYPTO_DIR / "key.bin"
 
 
 def _get_or_create_key() -> bytes:
-    if _KEY_FILE.exists():
-        try:
-            return _KEY_FILE.read_bytes()
-        except Exception:
-            pass
-    key = os.urandom(32)
     try:
-        _KEY_FILE.write_bytes(key)
+        _CRYPTO_DIR.mkdir(parents=True, exist_ok=True)
+        if _KEY_FILE.exists():
+            try:
+                return _KEY_FILE.read_bytes()
+            except Exception:
+                pass
+        key = os.urandom(32)
         try:
-            os.chmod(str(_KEY_FILE), 0o600)
+            _KEY_FILE.write_bytes(key)
+            try:
+                os.chmod(str(_KEY_FILE), 0o600)
+            except Exception:
+                pass
         except Exception:
             pass
+        return key
     except Exception:
-        pass
-    return key
+        return os.urandom(32)
 
 
 class ConfigEncryption:
     def __init__(self) -> None:
-        self._key = _get_or_create_key()
         self._available = None  # 延迟检测
+        self._hkdf = None
+        self._fernet = None
+        self._key = None
+        self._key_loaded = False
+
+    def _ensure_key(self) -> bytes:
+        if not self._key_loaded:
+            self._key = _get_or_create_key()
+            self._key_loaded = True
+        return self._key
 
     def _ensure(self) -> bool:
         if self._available is None:
             try:
-                from cryptography.fernet import Fernet  # noqa: F401
-                from cryptography.hazmat.primitives import hashlib  # noqa: F401
-                from cryptography.hazmat.primitives.kdf.hkdf import HKDF  # noqa: F401
+                from cryptography.fernet import Fernet
+                from cryptography.hazmat.primitives import hashlib
+                from cryptography.hazmat.primitives.kdf.hkdf import HKDF
                 self._available = True
+                self._hkdf = HKDF
+                self._fernet = Fernet
             except Exception:
                 self._available = False
         return bool(self._available)
 
+    def _get_fernet(self):
+        if not self._ensure() or self._fernet is None:
+            return None
+        from cryptography.hazmat.primitives import hashlib
+        from cryptography.hazmat.backends import default_backend
+        hkdf = self._hkdf(algorithm=hashlib.SHA256(), length=32, salt=None, info=b"prism-config", backend=default_backend())
+        key = hkdf.derive(self._ensure_key())
+        return self._fernet(base64.urlsafe_b64encode(key))
+
     def encrypt(self, plaintext: str) -> str:
-        if not self._ensure():
+        fernet = self._get_fernet()
+        if not fernet:
             return plaintext
         try:
-            from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-            from cryptography.hazmat.primitives import hashlib
-            from cryptography.hazmat.backends import default_backend
-            from cryptography.fernet import Fernet
-            hkdf = HKDF(algorithm=hashlib.SHA256(), length=32, salt=None, info=b"prism-config", backend=default_backend())
-            key = hkdf.derive(self._key)
-            return Fernet(base64.urlsafe_b64encode(key)).encrypt(plaintext.encode("utf-8")).decode("utf-8")
+            return fernet.encrypt(plaintext.encode("utf-8")).decode("utf-8")
         except Exception:
             return plaintext
 
     def decrypt(self, ciphertext: str) -> str:
-        if not self._ensure():
+        fernet = self._get_fernet()
+        if not fernet:
             return ciphertext
         try:
-            from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-            from cryptography.hazmat.primitives import hashlib
-            from cryptography.hazmat.backends import default_backend
-            from cryptography.fernet import Fernet
-            hkdf = HKDF(algorithm=hashlib.SHA256(), length=32, salt=None, info=b"prism-config", backend=default_backend())
-            key = hkdf.derive(self._key)
-            return Fernet(base64.urlsafe_b64encode(key)).decrypt(ciphertext.encode("utf-8")).decode("utf-8")
+            return fernet.decrypt(ciphertext.encode("utf-8")).decode("utf-8")
         except Exception:
             return ciphertext
 
@@ -87,4 +100,11 @@ class ConfigEncryption:
         return text.startswith("gAAAAAB") or text.startswith("ENC:")
 
 
-config_encryption = ConfigEncryption()
+_config_encryption_singleton: Optional[ConfigEncryption] = None
+
+
+def get_config_encryption() -> ConfigEncryption:
+    global _config_encryption_singleton
+    if _config_encryption_singleton is None:
+        _config_encryption_singleton = ConfigEncryption()
+    return _config_encryption_singleton
