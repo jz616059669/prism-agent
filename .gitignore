@@ -50,3 +50,4 @@ logs/
 *.md
 !README.md
 !CHANGELOG.md
+build-windows/
