@@ -70,12 +70,15 @@ def run_sandbox(code: str, timeout: int = 30) -> Dict[str, Any]:
         globals_dict = _make_safe_globals()
         old_cwd = Path.cwd()
         try:
+            os.environ.setdefault("MPLBACKEND", "Agg")
             os.chdir(str(_SANDBOX_DIR))
             try:
                 import matplotlib
-                matplotlib.use("Agg")
-                import matplotlib.pyplot as plt
-                plt.ion()
+                try:
+                    import matplotlib.pyplot as plt
+                    plt.close("all")
+                except Exception:
+                    pass
             except Exception:
                 pass
             try:
@@ -123,4 +126,3 @@ def run_sandbox(code: str, timeout: int = 30) -> Dict[str, Any]:
     except Exception as exc:  # noqa: BLE001
         result["error"] = str(exc)
     return result
-

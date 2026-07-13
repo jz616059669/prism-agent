@@ -36,6 +36,7 @@ def test_sandbox_blocked_module():
 
 
 def test_sandbox_plot_generation():
+    pytest.importorskip("matplotlib")
     res = run_sandbox("import matplotlib.pyplot as plt; fig = plt.figure(); plt.plot([1, 2, 3]); plt.savefig('/tmp/test.png')")
     assert res["success"] is True
     assert len(res["plots"]) >= 1
