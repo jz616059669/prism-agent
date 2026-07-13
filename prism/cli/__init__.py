@@ -239,7 +239,10 @@ from prism.cli.workspace import workspace  # noqa: E402
 from prism.cli.memory import memory  # noqa: E402
 from prism.cli.mcp import mcp  # noqa: E402
 from prism.cli.batch import batch  # noqa: E402
-from prism.cli.api_server import api_server  # noqa: E402
+try:
+    from prism.cli.api_server import api_server  # noqa: E402
+except Exception:  # noqa: BLE001
+    api_server = None  # type: ignore[misc,assignment]
 from prism.cli.plugin import plugin  # noqa: E402
 from prism.cli.theme import theme  # noqa: E402
 
@@ -252,7 +255,8 @@ cli.add_command(workspace)
 cli.add_command(memory)
 cli.add_command(mcp)
 cli.add_command(batch)
-cli.add_command(api_server)
+if api_server is not None:
+    cli.add_command(api_server)
 cli.add_command(plugin)
 cli.add_command(theme)
 

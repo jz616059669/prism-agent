@@ -11,11 +11,20 @@ import os
 import threading
 from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-import uvicorn
-
 from prism.logging import logger
+
+try:
+    from fastapi import FastAPI, Request  # type: ignore[import-untyped]
+    from fastapi.responses import JSONResponse  # type: ignore[import-untyped]
+    import uvicorn  # type: ignore[import-untyped]
+
+    _FASTAPI_AVAILABLE = True
+except Exception:  # noqa: BLE001
+    FastAPI = None  # type: ignore[misc,assignment]
+    Request = None  # type: ignore[misc,assignment]
+    JSONResponse = None  # type: ignore[misc,assignment]
+    uvicorn = None  # type: ignore[misc,assignment]
+    _FASTAPI_AVAILABLE = False
 
 
 try:
@@ -44,6 +53,8 @@ class PRISMApiServer:
         port: int = 8000,
         agent_factory: Optional[Any] = None,
     ) -> None:
+        if not _FASTAPI_AVAILABLE:
+            raise RuntimeError("fastapi/uvicorn 未安装，无法启动 API 服务")
         self.host = host
         self.port = port
         self._agent_factory = agent_factory or self._default_factory
