@@ -63,7 +63,17 @@ class ThemeManager:
             return False
 
     def list_themes(self) -> list:
-        return list(_THEME_PRESETS.keys())
+        builtins = list(_THEME_PRESETS.keys())
+        try:
+            for p in self.theme_dir.glob("*.json"):
+                if p.name == "current.json":
+                    continue
+                name = p.stem
+                if name not in builtins:
+                    builtins.append(name)
+        except OSError:
+            pass
+        return builtins
 
     def _load_current_name(self) -> str:
         if not self._theme_file.exists():

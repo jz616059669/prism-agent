@@ -24,9 +24,9 @@ def _ensure_checkpoint_dir() -> None:
             for old in files[:-MAX_CHECKPOINTS]:
                 try:
                     old.unlink()
-                except Exception:
+                except OSError:
                     pass
-    except Exception:
+    except OSError:
         pass
 
 
@@ -56,11 +56,11 @@ def save_checkpoint(agent, label: Optional[str] = None) -> Optional[Path]:
         path = CHECKPOINT_DIR / f"{ts}.json"
         path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
         return path
-    except Exception as exc:
+    except OSError as exc:
         try:
             from prism.logging import logger
             logger.debug("save checkpoint failed: %s", exc)
-        except Exception:
+        except OSError:
             pass
         return None
 

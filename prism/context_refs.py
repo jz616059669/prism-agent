@@ -24,19 +24,20 @@ def _read_file(path_str: str, max_chars: int = 12000) -> str:
         p = Path(path_str)
         if not p.exists():
             return f"[引用缺失: {path_str}]"
-        if p.is_file():
-            text = p.read_text(encoding="utf-8", errors="replace")
-            if len(text) > max_chars:
-                text = text[:max_chars] + f"\n...[截断，共 {len(text)} 字符]"
-            return f"[文件: {path_str}]\n{text}"
-        if p.is_dir():
-            entries = []
-            for child in sorted(p.iterdir()):
-                entries.append(child.name + ("/" if child.is_dir() else ""))
-            listing = "\n".join(entries[:200])
-            return f"[目录: {path_str}]\n{listing}"
-        return f"[引用未知类型: {path_str}]"
-    except Exception as exc:
+        if not p.is_file():
+            return f"[引用不是文件: {path_str}]"
+        # 限制读取大小，避免超大文件撑爆上下文
+        try:
+            size = p.stat().st_size
+        except OSError:
+            size = None
+        if size is not None and size > max_chars * 4:
+            return f"[引用文件过大: {path_str} ({size} bytes)，已跳过]"
+        text = p.read_text(encoding="utf-8", errors="replace")
+        if len(text) > max_chars:
+            text = text[:max_chars] + f"\n...[截断，共 {len(text)} 字符]"
+        return f"[文件: {path_str}]\n{text}"
+    except OSError as exc:
         return f"[引用失败: {path_str} -> {exc}]"
 
 

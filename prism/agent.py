@@ -21,7 +21,7 @@ from prism.memory import persistent_memory
 
 try:
     from prism.mcp import mcp_client
-except Exception:
+except Exception:  # noqa: BLE001
     mcp_client = None  # type: ignore[assignment]
 
 
@@ -99,7 +99,7 @@ class Agent:
         try:
             if not messages:
                 return None
-            lines = []
+            lines: List[str] = []
             for m in messages:
                 role = getattr(m, "role", "")
                 c = (getattr(m, "content", "") or "").strip().replace("\n", " ")
@@ -113,7 +113,7 @@ class Agent:
             if len(text) > 500:
                 text = text[:497] + "..."
             return text
-        except Exception:
+        except (TypeError, AttributeError):
             return None
 
     def decompose_plan(self, user_message: str) -> Optional[str]:
@@ -151,7 +151,7 @@ class Agent:
                 return None
             lines = ["【任务规划】"] + [f"{i+1}. {step}" for i, step in enumerate(plan[:5])]
             return "\n".join(lines)
-        except Exception:
+        except (TypeError, ValueError, Exception):
             return None
 
     def _default_system_prompt(self) -> str:
@@ -221,7 +221,7 @@ class Agent:
                 self.system_prompt = base + "\n## 记忆上下文" + injection
                 if self.messages and getattr(self.messages[0], "role", "") == "system":
                     self.messages[0].content = self.system_prompt
-        except Exception:
+        except (TypeError, AttributeError, Exception):
             logger.debug("inject memory context failed: %s", traceback.format_exc())
 
     def _run_self_validation(self, user_message: str, assistant_content: str, tool_calls: list) -> Optional[str]:
@@ -272,7 +272,7 @@ class Agent:
             if text == "__PRISM_VALIDATION_PASS__":
                 return None
             return text
-        except Exception:
+        except (TypeError, ValueError, Exception):
             return None
 
     @staticmethod
@@ -295,7 +295,7 @@ class Agent:
         try:
             from prism.context_refs import expand_references
             user_message = expand_references(user_message)
-        except Exception:
+        except (ImportError, Exception):
             pass
 
         # 动态注入记忆上下文：身份类优先，再按当前query召回相关记忆
@@ -312,7 +312,7 @@ class Agent:
                 clarification = self._run_clarification_check(user_message)
                 if clarification:
                     return clarification
-        except Exception:
+        except (TypeError, AttributeError, Exception):
             logger.debug("pre-validation failed: %s", traceback.format_exc())
 
         # 添加用户消息
@@ -320,13 +320,13 @@ class Agent:
         self._trim_messages()
 
         # 在关键操作前自动保存快照（用于 /rollback）
-        try:
-            from prism.checkpoint import save_checkpoint
-            save_checkpoint(self, label="before_chat")
-        except Exception:
-            pass
-
-        # 构建 API 消息格式
+        # 每 5 轮对话保存一次，避免频繁 IO
+        if len(self.messages) % 5 == 0:
+            try:
+                from prism.checkpoint import save_checkpoint
+                save_checkpoint(self, label="before_chat")
+            except Exception:
+                pass
         api_messages = [
             {"role": m.role, "content": m.content}
             for m in self.messages
@@ -362,7 +362,7 @@ class Agent:
                 fixed = self._run_self_validation(user_message, assistant_content, tool_calls)
                 if fixed is not None:
                     assistant_content = fixed
-        except Exception:
+        except (TypeError, AttributeError, Exception):
             logger.debug("post-validation failed: %s", traceback.format_exc())
 
         # 添加助手回复
@@ -383,7 +383,7 @@ class Agent:
                 turn_value = f"用户: {user_message}\n助手: {assistant_content or '[无回复]'}"
                 persistent_memory.remember(turn_key, turn_value, category="chat_history")
                 self._extract_user_facts(user_message, assistant_content or "")
-            except Exception:
+            except (OSError, Exception):
                 logger.debug("auto memory save failed: %s", traceback.format_exc())
 
         # Background self-improvement review
@@ -402,7 +402,7 @@ class Agent:
                         review_memory=getattr(self, "enable_auto_memory", False),
                         review_skills=True,
                     )
-        except Exception:
+        except (TypeError, AttributeError, Exception):
             logger.debug("background review schedule failed: %s", traceback.format_exc())
 
         return assistant_content
@@ -493,7 +493,7 @@ class Agent:
                 for tool in tools:
                     if tool.get('name') == tool_name:
                         return mcp_client.call_tool(server_name, tool_name, kwargs)
-        except Exception:
+        except (TypeError, AttributeError, Exception):
             logger.debug("mcp tool route failed: %s", traceback.format_exc())
         return None
     
@@ -528,7 +528,7 @@ class Agent:
                 if not result.get('success') and result.get('error'):
                     content += f" error={str(result.get('error'))[:120]}"
             self.messages.append(Message(role="tool", content=content))
-        except Exception:
+        except (TypeError, AttributeError, Exception):
             logger.debug("tool message append failed: %s", traceback.format_exc())
     
     def list_tools(self) -> List[Dict[str, Any]]:
@@ -538,7 +538,7 @@ class Agent:
         try:
             if mcp_client is not None:
                 mcp_tools = mcp_client.list_tools()
-        except Exception:
+        except (TypeError, AttributeError, Exception):
             logger.debug("list mcp tools failed: %s", traceback.format_exc())
         seen = {t.get('name') for t in local_tools}
         merged = list(local_tools)
@@ -594,7 +594,7 @@ class Agent:
                     metadata=m.get("metadata") or {},
                 ))
             return True
-        except Exception:
+        except (TypeError, OSError, Exception):
             logger.debug("load session failed: %s", traceback.format_exc())
             return False
 
@@ -632,7 +632,7 @@ class Agent:
                         "content": f"Tags: {', '.join(tags)}",
                         "timestamp": payload.get("created_at"),
                     })
-            except Exception:
+            except (TypeError, OSError, Exception):
                 logger.debug("search session failed: %s", traceback.format_exc())
                 continue
         
@@ -654,7 +654,7 @@ class Agent:
                     "created_at": payload.get("created_at"),
                     "message_count": len(payload.get("messages", [])),
                 })
-            except Exception:
+            except (TypeError, OSError, Exception):
                 logger.debug("search session failed: %s", traceback.format_exc())
                 continue
         return sessions
@@ -765,7 +765,7 @@ class AgentWithSubagents:
                     if attempt < max_retries - 1:
                         continue
                 break
-            except Exception:
+            except (TypeError, AttributeError, Exception):
                 if attempt < max_retries - 1:
                     continue
                 last_result = "[delegate failed]"
@@ -788,6 +788,6 @@ def create_agent(system_prompt: Optional[str] = None, enable_auto_memory: bool =
         from prism.config import get_config
         from prism.providers.manager import provider_pool
         provider_pool.set_default_model(get_config().get('model.default', 'step-3.7-flash'))
-    except Exception:
+    except (ImportError, Exception):
         pass
     return agent

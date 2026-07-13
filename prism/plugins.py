@@ -57,9 +57,9 @@ class PluginManager:
                 try:
                     manifest = PluginManifest(**item)
                     self._plugins[manifest.name] = Plugin(manifest=manifest)
-                except Exception:
+                except (TypeError, KeyError, Exception):
                     continue
-        except Exception:
+        except OSError:
             pass
 
     def _save_registry(self) -> None:
@@ -113,7 +113,7 @@ class PluginManager:
             try:
                 data = json.loads(manifest_path.read_text(encoding="utf-8"))
                 manifest = PluginManifest(**data)
-            except Exception as exc:
+            except OSError as exc:
                 return {"success": False, "error": f"plugin.json 无效: {exc}"}
             dest = self.plugin_dir / manifest.name
             if dest.exists():

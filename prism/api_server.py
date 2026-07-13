@@ -35,6 +35,7 @@ class PRISMApiServer:
     轻量 OpenAI-compatible HTTP 服务：
     - POST /v1/chat/completions
     - GET  /v1/models
+    - GET  /health
     """
 
     def __init__(
@@ -62,6 +63,10 @@ class PRISMApiServer:
 
     def _register_routes(self) -> None:
         app = self._app
+
+        @app.get("/health")
+        async def health() -> JSONResponse:
+            return JSONResponse({"status": "ok", "version": "2.1.4"})
 
         @app.get("/v1/models")
         async def list_models(request: Request) -> JSONResponse:
@@ -98,14 +103,13 @@ class PRISMApiServer:
                             part.get("text", "") for part in user_content if isinstance(part, dict)
                         )
                 stream = bool(body.get("stream", False))
-                sid = body.get("session_id") or body.get("user") or "api"
-                agent = self._agent_factory(session_id=sid)
                 if stream:
-                    # 暂不实现 SSE，返回兼容错误
                     return JSONResponse(
                         {"error": {"message": "stream is not supported in this build", "type": "invalid_request_error"}},
                         status_code=400,
                     )
+                sid = body.get("session_id") or body.get("user") or "api"
+                agent = self._agent_factory(session_id=sid)
                 response_text = agent.chat(user_content or "")
                 data = {
                     "id": f"chatcmpl-{sid}",
