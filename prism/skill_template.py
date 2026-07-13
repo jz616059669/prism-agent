@@ -69,9 +69,8 @@ class SkillTemplateStore:
             return {"success": False, "error": "template not found"}
         self._active.add(name)
         try:
-            from prism.skills import _load_external_skills
-            for skill_name in template.skills:
-                _load_external_skills([skill_name])
+            from prism.skills import load_external_skills
+            load_external_skills(names=template.skills)
         except Exception as exc:
             return {"success": False, "error": str(exc)}
         return {"success": True, "template": template.to_dict()}

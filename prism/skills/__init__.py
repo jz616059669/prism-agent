@@ -354,12 +354,14 @@ class SkillRegistry:
         except Exception as e:
             return {'success': False, 'error': f'chapter_delivery failed: {e}'}
     
-    def _load_external_skills(self):
-        """从 skills 目录加载外部 skills"""
+    def _load_external_skills(self, names: Optional[List[str]] = None):
+        """从 skills 目录加载外部 skills；names 为 None 时加载全部，否则只加载指定 skill 文件"""
         if not self.skills_dir.exists():
             return
-
-        for skill_file in self.skills_dir.glob("*.py"):
+        files = list(self.skills_dir.glob("*.py"))
+        if names:
+            files = [f for f in files if f.stem in names]
+        for skill_file in files:
             try:
                 spec = importlib.util.spec_from_file_location(
                     skill_file.stem, skill_file
@@ -622,3 +624,7 @@ class SkillRegistry:
 
 # 全局 Skills 注册表
 skills = SkillRegistry()
+
+
+def load_external_skills(names: Optional[List[str]] = None) -> None:
+    skills._load_external_skills(names=names)
