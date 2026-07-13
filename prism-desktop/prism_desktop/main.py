@@ -91,11 +91,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self._log_error("agent init fallback", exc)
             if hasattr(self, "retry_init_btn") and self.retry_init_btn:
                 self.retry_init_btn.visible = True
-        self._mcp_logs = []
-        self._skill_list_cache = []
-        self._mcp_server_status = {}
-        self._current_session_name = None
-        self._session_all_items = []
 
         self.model_dropdown = ft.Dropdown(
             label="默认模型",
