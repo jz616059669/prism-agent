@@ -121,7 +121,7 @@ class SystemMixin:
             [
                 ft.Text("PRISM Agent", size=20, weight=ft.FontWeight.BOLD),
                 ft.Divider(height=12),
-                ft.Text("版本：2.1.3", size=14),
+                ft.Text("版本：2.1.4", size=14),
                 ft.Text("配置目录：", size=12, weight=ft.FontWeight.BOLD),
                 ft.Text(config_path, size=11, color=ft.Colors.ON_SURFACE_VARIANT),
                 ft.TextButton("打开配置目录", on_click=lambda ev: self._open_config_dir(ev)),
