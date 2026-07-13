@@ -959,6 +959,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         )
         self.input_count = ft.Text("0 字", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.95)
         self.input_field.on_change = lambda e: self._on_input_change()
+        self._input_timer = None
+        self._input_pending = False
         self.send_btn = ft.IconButton(icon=ft.Icons.SEND_ROUNDED, tooltip="发送", bgcolor=ft.Colors.PRIMARY, icon_color=ft.Colors.ON_PRIMARY, scale=1.0, disabled=True, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), elevation=3, shadow_color=ft.Colors.with_opacity(0.3, ft.Colors.PRIMARY), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.ON_PRIMARY)), animate_scale=ft.Animation(duration=150, curve=ft.AnimationCurve.EASE_IN_OUT))
         def _on_send_click(e):
             self.send_btn.scale = 0.92
@@ -973,14 +975,10 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.input_field.on_submit = lambda e: self._send()
         def _on_input_change():
             try:
-                if hasattr(self, "input_count") and self.input_count and getattr(self.input_count, "page", None):
-                    count = len(self.input_field.value or "")
-                    self.input_count.value = f"{count} 字"
-                    self.input_count.update()
-                if hasattr(self, "send_btn") and self.send_btn:
-                    self.send_btn.disabled = not (self.input_field.value or "").strip()
-                    if getattr(self.send_btn, "page", None):
-                        self.send_btn.update()
+                self._input_pending = True
+                if self._input_timer:
+                    self._input_timer.cancel()
+                self._input_timer = self.page.run_task(self._apply_input_update)
             except Exception:
                 logger.debug('desktop exception: %s', traceback.format_exc())
         self._on_input_change = _on_input_change

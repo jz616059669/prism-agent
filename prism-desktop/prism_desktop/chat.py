@@ -76,6 +76,19 @@ class ChatMixin:
             except Exception as ex:
                 logger.debug("append message fallback failed: %s", ex)
 
+    def _apply_input_update(self):
+        try:
+            if hasattr(self, "input_count") and self.input_count and getattr(self.input_count, "page", None):
+                count = len(self.input_field.value or "")
+                self.input_count.value = f"{count} 字"
+                self.input_count.update()
+            if hasattr(self, "send_btn") and self.send_btn:
+                self.send_btn.disabled = not (self.input_field.value or "").strip()
+                if getattr(self.send_btn, "page", None):
+                    self.send_btn.update()
+        except Exception:
+            logger.debug("apply input update failed: %s", traceback.format_exc())
+
     def _clear_chat(self):
         try:
             self.chat_list.controls.clear()
