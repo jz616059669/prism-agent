@@ -61,10 +61,6 @@ class ChatMixin:
             except Exception:
                 logger.debug("chat_list update failed: %s", traceback.format_exc())
             try:
-                self.page.update()
-            except Exception:
-                logger.debug("page update failed: %s", traceback.format_exc())
-            try:
                 if hasattr(self.chat_list, "scroll_to"):
                     self.chat_list.scroll_to(delta=99999, duration=150)
             except Exception:
@@ -154,10 +150,6 @@ class ChatMixin:
                     self.chat_list.update()
                 except Exception:
                     logger.debug("chat_list update failed: %s", traceback.format_exc())
-                try:
-                    self.page.update()
-                except Exception:
-                    logger.debug("page update failed: %s", traceback.format_exc())
             return stream_widget
 
         def _stream_chunk(c: str):

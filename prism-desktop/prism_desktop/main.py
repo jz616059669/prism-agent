@@ -51,7 +51,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.page.window_width = 1320
         self.page.window_height = 800
         self.page.theme = ft.Theme(color_scheme_seed="blue", use_material3=True)
-        
+        self.page.on_keyboard_event = self._on_keyboard_event
+
         self._settings = {}
         
         self._status_icon = ft.Container(
