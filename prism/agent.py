@@ -20,6 +20,12 @@ from prism.hooks import hook_manager
 from prism.memory import persistent_memory
 
 try:
+    from prism.task_feedback import record_failure, apply_strategies
+except Exception:  # noqa: BLE001
+    record_failure = None  # type: ignore[assignment,misc]
+    apply_strategies = None  # type: ignore[assignment,misc]
+
+try:
     from prism.mcp import mcp_client
 except Exception:  # noqa: BLE001
     mcp_client = None  # type: ignore[assignment]
@@ -373,6 +379,12 @@ class Agent:
 
         if not result.get('success'):
             logger.warning("chat failed: %s", result.get('error'))
+            try:
+                record_failure(task="chat", error=str(result.get('error', '')), context=user_message)
+                for advice in apply_strategies("chat"):
+                    logger.debug("self-improvement strategy: %s", advice)
+            except (ImportError, Exception):
+                pass
             return f"Error: {result.get('error', 'Unknown error')}"
 
         assistant_content = result.get('content', '') or ''
