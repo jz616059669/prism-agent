@@ -625,6 +625,21 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self.theme_dropdown.value = next_theme
         self._apply_theme(next_theme)
 
+    def _toggle_sidebar_section(self, header: ft.Container, body: ft.Container):
+        try:
+            collapsed = getattr(body, "_collapsed", False)
+            body._collapsed = not collapsed
+            body.visible = not collapsed
+            if hasattr(header, "_section_label"):
+                header._section_label.opacity = 1.0 if not collapsed else 0.7
+            try:
+                body.update()
+                header.update()
+            except Exception:
+                pass
+        except Exception:
+            pass
+
     def _minimize_to_tray(self):
         try:
             if hasattr(self.page, "window_hide"):
@@ -904,6 +919,21 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             border_radius=12,
             bgcolor=ft.Colors.with_opacity(0.6, ft.Colors.SURFACE_CONTAINER),
         )
+        self._chat_empty_state = ft.Container(
+            content=ft.Column(
+                [
+                    ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.5),
+                    ft.Container(height=10),
+                    ft.Text("输入消息开始对话", size=13, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.9),
+                ],
+                alignment=ft.MainAxisAlignment.CENTER,
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                tight=True,
+            ),
+            padding=ft.Padding(64, 64, 64, 64),
+            border_radius=16,
+            bgcolor=ft.Colors.with_opacity(0.5, ft.Colors.SURFACE_CONTAINER),
+        )
 
         sidebar_content = self._sidebar_container.content
         sidebar_content.controls.extend([
@@ -1120,14 +1150,20 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         clear_chat_btn = ft.TextButton("清屏", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED, animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         clear_chat_btn.on_click = lambda e: self._clear_chat()
         
-        self._chat_placeholder = ft.Column(
-            [
-                ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=52, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.6, animate_scale=ft.Animation(duration=1200, curve=ft.AnimationCurve.EASE_IN_OUT)),
-                ft.Container(height=14),
-                ft.Text("输入消息开始对话", size=14, color=ft.Colors.ON_SURFACE_VARIANT, text_align=ft.TextAlign.CENTER, opacity=0.95),
-            ],
-            alignment=ft.MainAxisAlignment.CENTER,
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+        self._chat_placeholder = ft.Container(
+            content=ft.Column(
+                [
+                    ft.Icon(ft.Icons.CHAT_BUBBLE_OUTLINE_ROUNDED, size=48, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.5),
+                    ft.Container(height=10),
+                    ft.Text("输入消息开始对话", size=13, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.9),
+                ],
+                alignment=ft.MainAxisAlignment.CENTER,
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                tight=True,
+            ),
+            padding=ft.Padding(64, 64, 64, 64),
+            border_radius=16,
+            bgcolor=ft.Colors.with_opacity(0.5, ft.Colors.SURFACE_CONTAINER),
         )
         self._init_error_banner = ft.Container(
             content=ft.Row(
@@ -1432,6 +1468,17 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._update_input_count()
         self._set_status("新对话")
         self._append_terminal("new session")
+
+    def _clear_chat(self):
+        self.chat_list.controls.clear()
+        if hasattr(self, "_chat_placeholder") and self._chat_placeholder:
+            self._chat_placeholder.visible = True
+            self.chat_list.controls.append(self._chat_placeholder)
+        self.page.update(self.chat_list)
+        self.input_field.value = ""
+        self.input_field.focus()
+        self._update_input_count()
+        self._set_status("已清屏")
 
     def _copy_to_clipboard(self, text: str):
         try:
@@ -1972,7 +2019,22 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             try:
                 self.status_text.value = text
                 self.status_text.color = color
-                self.status_text.update()
+                if hasattr(self, "_status_icon") and self._status_icon is not None:
+                    try:
+                        self._status_icon.bgcolor = color
+                        if getattr(self._status_icon, "page", None) is not None:
+                            self._status_icon.update()
+                    except Exception:
+                        pass
+                try:
+                    self.status_text.update()
+                except Exception:
+                    try:
+                        self.status_text.value = text
+                        self.status_text.color = color
+                        page.update([self.status_text])
+                    except Exception as exc:
+                        logger.debug("status fallback update failed: %s", exc)
             except Exception:
                 try:
                     self.status_text.value = text
