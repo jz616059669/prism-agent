@@ -1248,10 +1248,37 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             expand=True,
             spacing=8,
         )
+        self._right_message_tab = ft.Column(
+            [
+                ft.Row([ft.Text("消息", size=13, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, opacity=0.95), ft.Container(expand=True), ft.Row([ft.TextButton("刷新", on_click=lambda e: self._refresh_message_store())], spacing=4, tight=True)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=8),
+                ft.Container(self.message_store_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=34, padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE),
+            ],
+            expand=True,
+            spacing=8,
+        )
+        self.message_store_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO, padding=ft.Padding(6, 4, 6, 4))
+        self._right_retry_tab = ft.Column(
+            [
+                ft.Row([ft.Text("重试", size=13, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, opacity=0.95), ft.Container(expand=True)], alignment=ft.MainAxisAlignment.START, spacing=8),
+                ft.Container(self.retry_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=34, padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE),
+            ],
+            expand=True,
+            spacing=8,
+        )
+        self.retry_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO, padding=ft.Padding(6, 4, 6, 4))
+        self._right_webhook_tab = ft.Column(
+            [
+                ft.Row([ft.Text("Webhook", size=13, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, opacity=0.95), ft.Container(expand=True), ft.Row([ft.TextButton("启动服务", on_click=lambda e: self._start_webhook_server())], spacing=4, tight=True)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=8),
+                ft.Container(self.webhook_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=34, padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE),
+            ],
+            expand=True,
+            spacing=8,
+        )
+        self.webhook_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO, padding=ft.Padding(6, 4, 6, 4))
         # Right panel tabs
         self._right_tab_buttons_row = ft.Row([], spacing=2, tight=True)
-        self._right_tab_contents = ft.Column([terminal_tab, mcp_tab, self._right_skills_tab, self._right_workflow_tab], expand=True, spacing=0)
-        for idx, label in enumerate(["终端", "MCP", "Skills", "工作流"]):
+        self._right_tab_contents = ft.Column([terminal_tab, mcp_tab, self._right_skills_tab, self._right_workflow_tab, self._right_message_tab, self._right_retry_tab, self._right_webhook_tab], expand=True, spacing=0)
+        for idx, label in enumerate(["终端", "MCP", "Skills", "工作流", "消息", "重试", "Webhook"]):
             btn = ft.TextButton(
                 label,
                 style=ft.ButtonStyle(
@@ -1557,13 +1584,65 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     role_label = "你" if m.role == "user" else ("PRISM" if m.role == "assistant" else m.role)
                     self._append(role_label, m.content or "")
                 self.chat_list.update()
-                self._refresh_sessions()
-            else:
-                self._append_terminal(f"session load failed: {name}")
-                self._set_status("会话加载失败", ft.Colors.RED_400)
         except Exception as exc:
             self._log_error("session load", exc)
-            self._set_status("会话加载异常", ft.Colors.RED_400)
+            self._set_status("加载失败", ft.Colors.RED_400)
+
+    def _refresh_message_store(self):
+        def _run():
+            self.message_store_list.controls.clear()
+            try:
+                from prism.message_store import message_store
+                items = message_store.history(getattr(self, "_current_session_name", "") or "")
+            except Exception:
+                items = []
+            if not items:
+                self.message_store_list.controls.append(ft.Text("无消息", color=ft.Colors.ON_SURFACE_VARIANT))
+            for item in items[-200:]:
+                text = f"{item.get('role','')} {item.get('content','')[:80]}"
+                row = ft.Row([ft.Text(text, size=12, color=ft.Colors.ON_SURFACE_VARIANT)], spacing=8)
+                self.message_store_list.controls.append(row)
+            try:
+                self.message_store_list.update()
+            except Exception:
+                pass
+        try:
+            self.page.run_task(_run)
+        except Exception:
+            _run()
+
+    def _refresh_retry_queue(self):
+        def _run():
+            self.retry_list.controls.clear()
+            try:
+                from prism.retry_strategy import retry_strategy
+                tasks = retry_strategy.due()
+            except Exception:
+                tasks = []
+            if not tasks:
+                self.retry_list.controls.append(ft.Text("无待重试任务", color=ft.Colors.ON_SURFACE_VARIANT))
+            for task in tasks:
+                text = f"{task.id} attempts={task.attempts}/{task.max_attempts} error={task.last_error[:40]}"
+                row = ft.Row([ft.Text(text, size=12, color=ft.Colors.ON_SURFACE_VARIANT)], spacing=8)
+                self.retry_list.controls.append(row)
+            try:
+                self.retry_list.update()
+            except Exception:
+                pass
+        try:
+            self.page.run_task(_run)
+        except Exception:
+            _run()
+
+    def _start_webhook_server(self):
+        try:
+            from prism.webhook_trigger import webhook_trigger
+            thread = webhook_trigger.start_server(port=9900)
+            self._append_terminal("webhook server started on 127.0.0.1:9900")
+            self._set_status("Webhook 已启动", ft.Colors.GREEN_400)
+        except Exception as exc:
+            self._log_error("webhook start", exc)
+            self._set_status("Webhook 启动失败", ft.Colors.RED_400)
 
 
     def _append_terminal(self, text: str):

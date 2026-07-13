@@ -99,6 +99,11 @@ class Agent:
             role="system",
             content=self.system_prompt,
         ))
+        try:
+            from prism.retry_strategy import retry_strategy
+            retry_strategy.start()
+        except Exception:
+            pass
 
     def _trim_messages(self):
         """保留 system + 最新 max_messages 条；超出时对旧消息做摘要压缩。"""

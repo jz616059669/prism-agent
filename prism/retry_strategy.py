@@ -49,6 +49,48 @@ class RetryStrategy:
     def __init__(self) -> None:
         self._tasks: Dict[str, RetryTask] = {}
         self._load()
+        self._lock = __import__("threading").Lock()
+        self._executor_thread: Optional[Any] = None
+        self._running = False
+
+    def start(self) -> Optional[threading.Thread]:
+        if self._running:
+            return self._executor_thread
+        self._running = True
+        self._executor_thread = threading.Thread(target=self._run_forever, daemon=True)
+        self._executor_thread.start()
+        return self._executor_thread
+
+    def stop(self) -> None:
+        self._running = False
+
+    def _run_forever(self) -> None:
+        while self._running:
+            try:
+                due = self.due()
+                for task in due:
+                    self._execute(task)
+            except Exception:
+                logger.debug("retry executor loop error", exc_info=True)
+            time.sleep(1.0)
+
+    def _execute(self, task: RetryTask) -> None:
+        with self._lock:
+            if task.attempts >= task.max_attempts:
+                return
+            task.attempts += 1
+            self._save(task)
+        try:
+            if task.func in {"terminal", "web_search", "browser_navigate"}:
+                from prism.tools.registry import registry
+                result = registry.execute(task.func, *task.args, **task.kwargs)
+                success = result.get("success")
+            else:
+                raise ValueError("unsupported func for auto retry")
+            if not success:
+                self.record_failure(task.id, error=str(result.get("error")))
+        except Exception as exc:
+            self.record_failure(task.id, error=str(exc))
 
     def _load(self) -> None:
         for task_file in _RETRY_DIR.glob("*.json"):
