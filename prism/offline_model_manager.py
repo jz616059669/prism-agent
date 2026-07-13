@@ -79,6 +79,35 @@ class OfflineModelManager:
                 return m.to_dict()
         return None
 
+    def import_model(self, source_path: str, name: str, version: str = "imported") -> Dict[str, Any]:
+        try:
+            src = Path(source_path)
+            if not src.exists():
+                return {"success": False, "error": "source not found"}
+            dest = _MODEL_DIR / f"{name}_{version}{src.suffix}"
+            import shutil
+            shutil.copy2(src, dest)
+            size_mb = dest.stat().st_size / (1024 * 1024)
+            model = self.register(name=name, version=version, path=str(dest), size_mb=size_mb)
+            return {"success": True, "model": model.to_dict()}
+        except Exception as exc:
+            return {"success": False, "error": str(exc)}
+
+    def verify(self, name: str) -> Dict[str, Any]:
+        model = self._models.get(name)
+        if not model:
+            return {"success": False, "error": "model not found"}
+        path = Path(model.path)
+        if not path.exists():
+            return {"success": False, "error": "file missing", "path": model.path}
+        try:
+            size_mb = path.stat().st_size / (1024 * 1024)
+            model.size_mb = size_mb
+            self._save(model)
+            return {"success": True, "size_mb": round(size_mb, 1)}
+        except Exception as exc:
+            return {"success": False, "error": str(exc)}
+
     def _save(self, model: ModelInfo) -> None:
         try:
             (_MODEL_DIR / f"{model.name}.json").write_text(

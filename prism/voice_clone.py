@@ -59,6 +59,35 @@ class VoiceCloneStore:
     def list_samples(self) -> List[Dict[str, Any]]:
         return [s.to_dict() for s in self._samples.values()]
 
+    def synth(self, text: str, sample_id: Optional[str] = None) -> Dict[str, Any]:
+        try:
+            import edge_tts
+            voice = "zh-CN-XiaoxiaoNeural"
+            if sample_id:
+                sample = self._samples.get(sample_id)
+                if sample and sample.label:
+                    voice = sample.label
+            import asyncio
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            communicate = edge_tts.Communicate(text, voice)
+            out_path = Path.home() / ".prism" / "voice_output.mp3"
+            loop.run_until_complete(communicate.save(str(out_path)))
+            return {"success": True, "path": str(out_path)}
+        except Exception as exc:
+            return {"success": False, "error": str(exc)}
+
+    def recognize(self, audio_path: str) -> Dict[str, Any]:
+        try:
+            import speech_recognition as sr
+            r = sr.Recognizer()
+            with sr.AudioFile(audio_path) as source:
+                audio = r.record(source)
+            text = r.recognize_google(audio, language="zh-CN")
+            return {"success": True, "text": text}
+        except Exception as exc:
+            return {"success": False, "error": str(exc)}
+
     def _save(self, sample: VoiceSample) -> None:
         try:
             (_VOICE_DIR / f"{sample.id}.json").write_text(

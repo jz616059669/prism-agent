@@ -93,6 +93,20 @@ class ScheduleVisualizer:
             grid.setdefault(day, []).append(item)
         return grid
 
+    def sync_from_cron(self) -> int:
+        self._events = {k: v for k, v in self._events.items() if not k.startswith("cron_auto_")}
+        self._load_cron()
+        return len(self._events)
+
+    def next_run_estimate(self, cron_expr: str, base_ts: float = 0.0) -> float:
+        base_ts = base_ts or __import__("time").time()
+        try:
+            from crontab import CronTab
+            job = CronTab(line=f"0 {cron_expr} true")
+            return float(job.schedule(base_ts).get_next())
+        except Exception:
+            return 0.0
+
     def _save(self, event: ScheduleEvent) -> None:
         try:
             (_SCHED_DIR / f"{event.name}.json").write_text(
