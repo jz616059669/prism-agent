@@ -68,7 +68,26 @@ class Agent:
         self._memory_context = persistent_memory.get_context(max_items=5)
         if self._memory_context:
             self.system_prompt = self.system_prompt.rstrip() + "\n\n" + self._memory_context
-        
+
+        # RAG 本地知识库
+        self._rag = None
+        self._rag_enabled = False
+        self._rag_top_k = 3
+        try:
+            from prism.config import config as cfg
+            rag_cfg = cfg.get('rag', {}) or {}
+            if rag_cfg.get('enabled'):
+                from prism.rag import LocalRAG
+                self._rag = LocalRAG(
+                    root=rag_cfg.get('root'),
+                    chunk_size=int(rag_cfg.get('chunk_size', 600) or 600),
+                    overlap=int(rag_cfg.get('overlap', 120) or 120),
+                )
+                self._rag_enabled = True
+                self._rag_top_k = int(rag_cfg.get('top_k', 3) or 3)
+        except (ImportError, Exception):
+            pass
+
         # 初始化系统消息
         self.messages.append(Message(
             role="system",
@@ -300,6 +319,20 @@ class Agent:
 
         # 动态注入记忆上下文：身份类优先，再按当前query召回相关记忆
         self._inject_memory_context(user_message)
+
+        # RAG：本地知识库片段注入
+        try:
+            if getattr(self, "_rag_enabled", False) and getattr(self, "_rag", None) is not None:
+                hits = self._rag.query(user_message, top_k=int(getattr(self, "_rag_top_k", 3) or 3))
+                if hits:
+                    rag_lines = ["## 本地知识库检索结果"]
+                    for i, h in enumerate(hits, 1):
+                        rag_lines.append(f"[{i}] {h.get('path')}")
+                        rag_lines.append((h.get('text') or '').strip()[:600])
+                        rag_lines.append("")
+                    user_message = user_message + "\n\n" + "\n".join(rag_lines)
+        except (ImportError, Exception):
+            pass
 
         # Run before_chat hooks
         hook_result = hook_manager.run_hooks("before_chat", {"message": user_message, "agent": self})

@@ -245,6 +245,7 @@ except Exception:  # noqa: BLE001
     api_server = None  # type: ignore[misc,assignment]
 from prism.cli.plugin import plugin  # noqa: E402
 from prism.cli.theme import theme  # noqa: E402
+from prism.cli.rag import rag  # noqa: E402
 
 cli.add_command(gateway)
 cli.add_command(session)
@@ -259,6 +260,7 @@ if api_server is not None:
     cli.add_command(api_server)
 cli.add_command(plugin)
 cli.add_command(theme)
+cli.add_command(rag)
 
 
 def main():
