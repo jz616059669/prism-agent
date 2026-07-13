@@ -138,7 +138,7 @@ class SidebarMixin:
             width=120,
             style=ft.ButtonStyle(
                 shape=ft.RoundedRectangleBorder(radius=12),
-                padding=ft.Padding(22, 20, 22, 20),
+                padding=ft.Padding(18, 14, 18, 14),
                 bgcolor=ft.Colors.PRIMARY_CONTAINER,
                 color=ft.Colors.ON_PRIMARY_CONTAINER,
             ),
