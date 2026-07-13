@@ -41,20 +41,21 @@ def _get_or_create_key() -> bytes:
 class ConfigEncryption:
     def __init__(self) -> None:
         self._key = _get_or_create_key()
-        self._available = self._detect()
+        self._available = None  # 延迟检测
 
-    def _detect(self) -> bool:
-        try:
-            from cryptography.fernet import Fernet
-            from cryptography.hazmat.primitives import hashlib
-            from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-            from cryptography.hazmat.backends import default_backend
-            return True
-        except Exception:
-            return False
+    def _ensure(self) -> bool:
+        if self._available is None:
+            try:
+                from cryptography.fernet import Fernet  # noqa: F401
+                from cryptography.hazmat.primitives import hashlib  # noqa: F401
+                from cryptography.hazmat.primitives.kdf.hkdf import HKDF  # noqa: F401
+                self._available = True
+            except Exception:
+                self._available = False
+        return bool(self._available)
 
     def encrypt(self, plaintext: str) -> str:
-        if not self._available:
+        if not self._ensure():
             return plaintext
         try:
             from cryptography.hazmat.primitives.kdf.hkdf import HKDF
@@ -68,7 +69,7 @@ class ConfigEncryption:
             return plaintext
 
     def decrypt(self, ciphertext: str) -> str:
-        if not self._available:
+        if not self._ensure():
             return ciphertext
         try:
             from cryptography.hazmat.primitives.kdf.hkdf import HKDF
