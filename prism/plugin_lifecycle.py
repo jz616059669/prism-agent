@@ -65,9 +65,23 @@ class PluginLifecycleHooks:
                     return ctx
                 elif hook.action == "inject":
                     ctx.setdefault("injections", []).append(hook.name)
+                elif hook.action == "sandbox":
+                    ctx = self._sandbox_execute(target, ctx)
             except Exception:
                 continue
         return ctx
+
+    def _sandbox_execute(self, target: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        try:
+            from prism.sandbox import Sandbox
+            sandbox = Sandbox(timeout=10)
+            action = (context.get("action") or "noop").strip()
+            safe = action.replace("\n", " ")
+            result = sandbox.run(f"print('sandbox:{target}:{safe}')")
+            context.setdefault("sandbox_results", []).append({"target": target, "result": str(result)})
+        except Exception as exc:
+            context.setdefault("sandbox_errors", []).append(str(exc))
+        return context
 
     def list_hooks(self) -> List[Dict[str, Any]]:
         return [h.to_dict() for hooks in self._hooks.values() for h in hooks]

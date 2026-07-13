@@ -84,6 +84,25 @@ class MemoryDecay:
         items = sorted(self._items.values(), key=lambda x: x.weight, reverse=True)
         return [i.to_dict() for i in items[:limit]]
 
+    def prune(self, threshold: float = 0.05) -> List[str]:
+        removed = []
+        for item_id, item in list(self._items.items()):
+            if item.weight < threshold:
+                removed.append(item_id)
+                self._items.pop(item_id, None)
+                try:
+                    (_DECAY_DIR / f"{item_id}.json").unlink()
+                except Exception:
+                    pass
+        return removed
+
+    def inject_top(self, prompt: str, limit: int = 5) -> str:
+        top_items = self.top(limit=limit)
+        if not top_items:
+            return prompt
+        lines = ["## 重要记忆"] + [f"- [{item.get('weight', 0):.2f}] {item.get('content', '')[:120]}" for item in top_items]
+        return prompt + "\n" + "\n".join(lines)
+
     def _save(self, item: MemoryItem) -> None:
         try:
             (_DECAY_DIR / f"{item.id}.json").write_text(

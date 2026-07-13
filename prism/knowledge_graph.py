@@ -124,5 +124,31 @@ class KnowledgeGraph:
     def list_relations(self) -> List[Dict[str, Any]]:
         return [r.to_dict() for r in self._relations]
 
+    def shortest_path(self, source: str, target: str, max_depth: int = 4) -> List[Dict[str, Any]]:
+        if source == target:
+            return [{"source": source, "target": target, "relation": "self", "depth": 0}]
+        queue: List[tuple[str, List[Dict[str, Any]]]] = [(source, [])]
+        visited = {source}
+        while queue:
+            current, path = queue.pop(0)
+            if len(path) >= max_depth:
+                continue
+            for rel in self._relations:
+                next_node = None
+                if rel.source == current:
+                    next_node = rel.target
+                elif rel.target == current:
+                    next_node = rel.source
+                else:
+                    continue
+                edge = {"from": rel.source, "to": rel.target, "relation": rel.relation}
+                new_path = path + [edge]
+                if next_node == target:
+                    return new_path
+                if next_node not in visited:
+                    visited.add(next_node)
+                    queue.append((next_node, new_path))
+        return []
+
 
 knowledge_graph = KnowledgeGraph()

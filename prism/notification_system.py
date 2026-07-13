@@ -41,12 +41,21 @@ class Notification:
 class NotificationSystem:
     def __init__(self) -> None:
         self._history: List[Notification] = []
+        self._ui_callback: Optional[Any] = None
+
+    def set_ui_callback(self, callback: Any) -> None:
+        self._ui_callback = callback
 
     def notify(self, title: str, body: str, category: str = "info", sound: bool = False) -> Notification:
         notification = Notification(id=f"notify_{int(__import__('time').time())}", title=title, body=body, category=category, sound=sound)
         self._history.append(notification)
         self._send(notification)
         self._save(notification)
+        try:
+            if self._ui_callback is not None:
+                self._ui_callback(notification)
+        except Exception:
+            pass
         return notification
 
     def _send(self, notification: Notification) -> None:
@@ -58,12 +67,19 @@ class NotificationSystem:
                     return
                 except Exception:
                     pass
-            if notification.sound:
-                try:
-                    import winsound
-                    winsound.MessageBeep(winsound.MB_ICONASTERISK)
-                except Exception:
-                    pass
+                if notification.sound:
+                    try:
+                        import winsound
+                        winsound.MessageBeep(winsound.MB_ICONASTERISK)
+                    except Exception:
+                        pass
+                return
+            # 非 Windows 平台 fallback：打印到 stdout / 使用 plyer（如果可用）
+            try:
+                from plyer import notification as plyer_notify
+                plyer_notify.notify(title=notification.title, message=notification.body, timeout=5)
+            except Exception:
+                logger.info("notification: %s | %s", notification.title, notification.body)
         except Exception:
             pass
 

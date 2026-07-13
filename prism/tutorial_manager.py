@@ -49,6 +49,7 @@ class TutorialManager:
     def __init__(self) -> None:
         self._tutorials: Dict[str, Tutorial] = {}
         self._progress: Dict[str, int] = {}
+        self._completed: set = set()
         self._load_builtins()
         self._load()
 
@@ -68,7 +69,10 @@ class TutorialManager:
         progress_file = _TUTORIAL_DIR / "progress.json"
         if progress_file.exists():
             try:
-                self._progress = json.loads(progress_file.read_text(encoding="utf-8"))
+                data = json.loads(progress_file.read_text(encoding="utf-8"))
+                if isinstance(data, dict):
+                    self._progress = data.get("progress", {})
+                    self._completed = set(data.get("completed", []))
             except Exception:
                 pass
 
@@ -76,7 +80,9 @@ class TutorialManager:
         tutorial = self._tutorials.get(tutorial_id)
         if not tutorial:
             return None
-        self._progress[tutorial_id] = 0
+        if tutorial_id not in self._progress and tutorial_id in self._completed:
+            self._progress[tutorial_id] = 0
+        self._progress.setdefault(tutorial_id, 0)
         self._save_progress()
         return tutorial.to_dict()
 
@@ -89,6 +95,8 @@ class TutorialManager:
             self._progress[tutorial_id] = idx + 1
             self._save_progress()
             return tutorial.steps[idx + 1].to_dict()
+        self._completed.add(tutorial_id)
+        self._save_progress()
         return {"status": "completed"}
 
     def current_step(self, tutorial_id: str) -> Optional[Dict[str, Any]]:
@@ -100,10 +108,17 @@ class TutorialManager:
             return tutorial.steps[idx].to_dict()
         return {"status": "completed"}
 
+    def create_tutorial(self, tutorial: Tutorial) -> Tutorial:
+        self._tutorials[tutorial.id] = tutorial
+        return tutorial
+
+    def completed(self) -> List[str]:
+        return sorted(self._completed)
+
     def _save_progress(self) -> None:
         try:
             (_TUTORIAL_DIR / "progress.json").write_text(
-                json.dumps(self._progress, ensure_ascii=False, indent=2),
+                json.dumps({"progress": self._progress, "completed": sorted(self._completed)}, ensure_ascii=False, indent=2),
                 encoding="utf-8",
             )
         except Exception:
