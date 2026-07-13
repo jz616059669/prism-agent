@@ -956,7 +956,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             border_color=ft.Colors.OUTLINE_VARIANT,
             focused_border_color=ft.Colors.OUTLINE_VARIANT,
             focused_border_width=1,
-            suffix=ft.IconButton(icon=ft.Icons.CLEAR_ROUNDED, tooltip="清空终端", icon_color=ft.Colors.ON_SURFACE_VARIANT, on_click=lambda e: setattr(self.input_field, 'value', '') or self.page.update()),
+            suffix=ft.IconButton(icon=ft.Icons.CLEAR_ROUNDED, tooltip="清空输入", icon_color=ft.Colors.ON_SURFACE_VARIANT, on_click=lambda e: setattr(self.input_field, 'value', '') or self.page.update()),
         )
         self.input_count = ft.Text("0 字", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.95)
         self.input_field.on_change = lambda e: self._on_input_change()
@@ -971,7 +971,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self._send()
         self.send_btn.on_click = _on_send_click
         self.send_btn.on_hover = lambda e: (self.send_btn.update() if not self.send_btn.disabled else None)
-        self.stop_btn = ft.IconButton(icon=ft.Icons.STOP_ROUNDED, tooltip="停止生成", visible=False, bgcolor=ft.Colors.ERROR, icon_color=ft.Colors.ON_ERROR, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.ON_ERROR)), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
+        self.stop_btn = ft.IconButton(icon=ft.Icons.STOP_ROUNDED, tooltip="停止生成", visible=False, bgcolor=ft.Colors.ERROR, icon_color=ft.Colors.ON_ERROR, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.ON_ERROR)), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT), animate_opacity=ft.Animation(duration=120, curve=ft.AnimationCurve.EASE_IN_OUT))
         self.stop_btn.on_click = lambda e: self._stop_send()
         self.input_field.on_submit = lambda e: self._send()
         def _on_input_change():

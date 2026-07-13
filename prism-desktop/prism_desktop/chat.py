@@ -54,8 +54,11 @@ class ChatMixin:
                 ),
                 padding=ft.Padding(14, 10, 14, 10),
                 bgcolor=ft.Colors.SURFACE_CONTAINER if not is_user else ft.Colors.PRIMARY_CONTAINER,
+                opacity=0,
+                animate_opacity=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_OUT),
             )
             self.chat_list.controls.append(message_widget)
+            message_widget.opacity = 1
             try:
                 self.chat_list.update()
             except Exception:
@@ -144,8 +147,11 @@ class ChatMixin:
                     ),
                     padding=ft.Padding(14, 10, 14, 10),
                     bgcolor=ft.Colors.SURFACE_CONTAINER,
+                    opacity=0,
+                    animate_opacity=ft.Animation(duration=120, curve=ft.AnimationCurve.EASE_OUT),
                 )
                 self.chat_list.controls.append(stream_widget)
+                stream_widget.opacity = 1
                 try:
                     self.chat_list.update()
                 except Exception:
