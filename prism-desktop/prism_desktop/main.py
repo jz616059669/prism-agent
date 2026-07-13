@@ -936,168 +936,108 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         )
 
         sidebar_content = self._sidebar_container.content
+        self._sidebar_sections = []
+        def _section_card(title, icon, controls, accent=None):
+            header = ft.Row([ft.Icon(icon, size=14, color=ft.Colors.PRIMARY), ft.Text(title, size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE)], spacing=8, tight=True)
+            toggle = ft.IconButton(icon=ft.Icons.UNFOLD_LESS_ROUNDED, tooltip="收起", icon_size=16, icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE_VARIANT)))
+            body = ft.Column(controls, tight=True, spacing=6)
+            body._collapsed = False
+            section_container = ft.Container(content=body, padding=ft.Padding(0, 0, 0, 0))
+            def _on_toggle(e):
+                collapsed = not getattr(body, "_collapsed", False)
+                body._collapsed = collapsed
+                body.visible = not collapsed
+                toggle.icon = ft.Icons.UNFOLD_MORE_ROUNDED if collapsed else ft.Icons.UNFOLD_LESS_ROUNDED
+                toggle.tooltip = "展开" if collapsed else "收起"
+                try:
+                    body.update()
+                    toggle.update()
+                except Exception:
+                    pass
+            toggle.on_click = _on_toggle
+            header_row = ft.Row([header, ft.Container(expand=True), toggle], spacing=6, tight=True)
+            card = ft.Container(
+                content=ft.Column([header_row, section_container], tight=True, spacing=8),
+                bgcolor=ft.Colors.SURFACE_CONTAINER,
+                border_radius=34,
+                padding=18,
+                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.06, ft.Colors.ON_SURFACE))) if not accent else ft.Border(top=ft.border.BorderSide(1, accent)),
+            )
+            self._sidebar_sections.append((title, card, section_container, body, toggle, header_row))
+            return card
         sidebar_content.controls.extend([
-            ft.Container(
-                content=ft.Column([
-                    ft.Row([ft.Text("模型配置", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), ft.Icon(ft.Icons.TUNE_ROUNDED, size=14, color=ft.Colors.PRIMARY)], spacing=6, tight=True),
-                    ft.Container(height=24),
-                    # Preset selector
-                    ft.Row([
-                        self.model_dropdown,
-                        ft.IconButton(icon=ft.Icons.BOOKMARK_ROUNDED, tooltip="保存为预设", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)), on_click=lambda e: self._save_preset()),
-                    ], spacing=6, tight=True),
-                    ft.Container(height=24),
-                    self.provider_textfield,
-                    ft.Container(height=24),
-                    self.base_url_textfield,
-                    ft.Container(height=24),
-                    self.api_key_textfield,
-                    ft.Container(height=2),
-                    ft.Row([self.review_enabled_switch, self.review_interval_field], spacing=4, tight=True),
-                    ft.Row([
-                        save_btn,
-                        ft.TextButton("预设管理", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.SURFACE_CONTAINER,
-                     color=ft.Colors.ON_SURFACE), on_click=lambda e: self._open_preset_manager()),
-                    ], spacing=8, tight=True),
-                ], tight=True, spacing=6),
-                bgcolor=ft.Colors.SURFACE_CONTAINER,
-                
-                border_radius=34,
-                padding=18,
-                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.06, ft.Colors.ON_SURFACE))),
-            ),
+            _section_card("模型配置", ft.Icons.TUNE_ROUNDED, [
+                ft.Row([self.model_dropdown, ft.IconButton(icon=ft.Icons.BOOKMARK_ROUNDED, tooltip="保存为预设", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)), on_click=lambda e: self._save_preset())], spacing=6, tight=True),
+                ft.Container(height=24),
+                self.provider_textfield,
+                ft.Container(height=24),
+                self.base_url_textfield,
+                ft.Container(height=24),
+                self.api_key_textfield,
+                ft.Container(height=2),
+                ft.Row([self.review_enabled_switch, self.review_interval_field], spacing=4, tight=True),
+                ft.Row([save_btn, ft.TextButton("预设管理", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.SURFACE_CONTAINER, color=ft.Colors.ON_SURFACE), on_click=lambda e: self._open_preset_manager())], spacing=8, tight=True),
+            ]),
             ft.Container(height=14),
-            ft.Container(
-                content=ft.Column([
-                    ft.Row([ft.Icon(ft.Icons.LANGUAGE_ROUNDED, size=14, color=ft.Colors.PRIMARY), ft.Text(_("browser_control"), size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE)], spacing=8, tight=True),
-                    browser_hint,
-                    ft.Container(height=6),
-                    self.url_field,
-                    ft.Column([
-                        browser_open_btn,
-                        browser_snapshot_btn,
-                        browser_close_btn,
-                    ], spacing=6, tight=True),
-                ], tight=True, spacing=6),
-                bgcolor=ft.Colors.SURFACE_CONTAINER,
-                border_radius=34,
-                padding=18,
-                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.6, ft.Colors.OUTLINE_VARIANT))),
-            ),
+            _section_card("浏览器控制", ft.Icons.LANGUAGE_ROUNDED, [
+                browser_hint,
+                ft.Container(height=6),
+                self.url_field,
+                ft.Column([browser_open_btn, browser_snapshot_btn, browser_close_btn], spacing=6, tight=True),
+            ], accent=ft.border.BorderSide(1, ft.Colors.with_opacity(0.6, ft.Colors.OUTLINE_VARIANT))),
             ft.Container(height=14),
-            ft.Container(
-                content=ft.Column([
-                    ft.Row([ft.Icon(ft.Icons.EXTENSION_ROUNDED, size=14, color=ft.Colors.PRIMARY), ft.Text("MCP 控制", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE)], spacing=8, tight=True),
-                    ft.Container(height=14),
-                    self.mcp_refresh_btn,
-                    ft.Container(height=6),
-                    ft.Text("已配置服务器", size=12, color=ft.Colors.ON_SURFACE),
-                    self.mcp_server_list,
-                    ft.Container(height=10),
-                    ft.Text("运行状态", size=12, color=ft.Colors.ON_SURFACE),
-                    self.mcp_status_list,
-                ], tight=True, spacing=6),
-                bgcolor=ft.Colors.SURFACE_CONTAINER,
-                
-                border_radius=34,
-                padding=18,
-                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.06, ft.Colors.ON_SURFACE))),
-            ),
+            _section_card("MCP 控制", ft.Icons.EXTENSION_ROUNDED, [
+                ft.Container(height=14),
+                self.mcp_refresh_btn,
+                ft.Container(height=6),
+                ft.Text("已配置服务器", size=12, color=ft.Colors.ON_SURFACE),
+                self.mcp_server_list,
+                ft.Container(height=10),
+                ft.Text("运行状态", size=12, color=ft.Colors.ON_SURFACE),
+                self.mcp_status_list,
+            ]),
             ft.Container(height=14),
-            ft.Container(
-                content=ft.Column([
-                    ft.Row([ft.Icon(ft.Icons.ACCOUNT_TREE_ROUNDED, size=14, color=ft.Colors.PRIMARY), ft.Text("工作流", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE)], spacing=8, tight=True),
-                    ft.Container(height=14),
-                    self.workflow_refresh_btn,
-                    ft.Container(height=6),
-                    ft.Text("预定义工作流", size=12, color=ft.Colors.ON_SURFACE),
-                    self.workflow_list,
-                ], tight=True, spacing=6),
-                bgcolor=ft.Colors.SURFACE_CONTAINER,
-                
-                border_radius=34,
-                padding=18,
-                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.06, ft.Colors.ON_SURFACE))),
-            ),
+            _section_card("工作流", ft.Icons.ACCOUNT_TREE_ROUNDED, [
+                ft.Container(height=14),
+                self.workflow_refresh_btn,
+                ft.Container(height=6),
+                ft.Text("预定义工作流", size=12, color=ft.Colors.ON_SURFACE),
+                self.workflow_list,
+            ]),
             ft.Container(height=14),
-            ft.Container(
-                content=ft.Column([
-                    ft.Text("快捷提示词", size=13, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
-                    ft.Icon(ft.Icons.LIGHTBULB_ROUNDED, size=14, color=ft.Colors.PRIMARY),
-                    ft.Container(height=6),
-                    self._build_prompt_templates(),
-                    ft.Container(height=14),
-                    ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.5),
-                    ft.Container(height=14),
-                    ft.Text(_("session_tab"), size=13, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
-                    ft.Icon(ft.Icons.CHAT, size=14, color=ft.Colors.PRIMARY),
-                    ft.Container(height=14),
-                    ft.Row([self.session_name_field, self.session_save_btn], spacing=6),
-                    ft.Container(height=6),
-                    ft.Text("已保存会话", size=12, color=ft.Colors.ON_SURFACE),
-                    ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.5),
-                    self.session_list,
-                ], tight=True, spacing=6),
-                bgcolor=ft.Colors.SURFACE_CONTAINER,
-                
-                border_radius=34,
-                padding=18,
-                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.06, ft.Colors.ON_SURFACE))),
-            ),
+            _section_card("快捷提示词", ft.Icons.LIGHTBULB_ROUNDED, [
+                self._build_prompt_templates(),
+            ]),
             ft.Container(height=14),
-            ft.Container(
-                content=ft.Column([
-                    ft.Text("对话统计", size=13, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
-                    ft.Icon(ft.Icons.SHOW_CHART_ROUNDED, size=14, color=ft.Colors.PRIMARY),
-                    ft.Container(height=14),
-                    ft.Row([ft.Text("调用次数", size=11, color=ft.Colors.ON_SURFACE_VARIANT), self.usage_calls_text], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                    ft.Row([ft.Text("成功率", size=11, color=ft.Colors.ON_SURFACE_VARIANT), self.usage_success_text], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                    ft.Row([ft.Text("平均延迟", size=11, color=ft.Colors.ON_SURFACE_VARIANT), self.usage_latency_text], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                    ft.Row([ft.Text("Token 消耗", size=11, color=ft.Colors.ON_SURFACE_VARIANT), self.usage_tokens_text], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                    ft.Row([ft.Text("估算成本", size=11, color=ft.Colors.ON_SURFACE_VARIANT), self.usage_cost_text], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                    ft.Container(height=8),
-                    ft.TextButton("刷新统计", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.SURFACE_CONTAINER, color=ft.Colors.ON_SURFACE), on_click=lambda e: self._refresh_usage_dash()),
-                ], tight=True, spacing=6),
-                bgcolor=ft.Colors.SURFACE_CONTAINER,
-                border_radius=34,
-                padding=18,
-                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.06, ft.Colors.ON_SURFACE))),
-            ),
+            _section_card("会话管理", ft.Icons.CHAT, [
+                ft.Row([self.session_name_field, self.session_save_btn], spacing=6),
+                ft.Container(height=6),
+                ft.Text("已保存会话", size=12, color=ft.Colors.ON_SURFACE),
+                ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.5),
+                self.session_list,
+            ]),
             ft.Container(height=14),
-            ft.Container(
-                content=ft.Column([
-                    ft.Text(_("status_tab"), size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
-                    ft.Icon(ft.Icons.INFO, size=14, color=ft.Colors.PRIMARY),
-                    ft.Container(height=14),
-                    ft.Row([self.browser_status_icon, self.browser_status_text], spacing=10, alignment=ft.MainAxisAlignment.START),
-                    ft.Row([self.status_text, self.perf_text, ft.Container(expand=True), self._clock_text], spacing=10),
-                    ft.Container(height=8),
-                    ft.Row([
-                        ft.Icon(ft.Icons.AUTO_STORIES_ROUNDED, size=14, color=ft.Colors.PRIMARY),
-                        ft.Text("后台复盘", size=11, color=ft.Colors.ON_SURFACE),
-                        self.review_enabled_switch,
-                        ft.Text(f"每 {self.review_interval_field.value} 轮", size=10, color=ft.Colors.ON_SURFACE_VARIANT),
-                    ], spacing=8, tight=True),
-                ], tight=True, spacing=6),
-                bgcolor=ft.Colors.SURFACE_CONTAINER,
-                
-                border_radius=34,
-                padding=18,
-                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.06, ft.Colors.ON_SURFACE))),
-            ),
+            _section_card("对话统计", ft.Icons.SHOW_CHART_ROUNDED, [
+                ft.Row([ft.Text("调用次数", size=11, color=ft.Colors.ON_SURFACE_VARIANT), self.usage_calls_text], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                ft.Row([ft.Text("成功率", size=11, color=ft.Colors.ON_SURFACE_VARIANT), self.usage_success_text], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                ft.Row([ft.Text("平均延迟", size=11, color=ft.Colors.ON_SURFACE_VARIANT), self.usage_latency_text], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                ft.Row([ft.Text("Token 消耗", size=11, color=ft.Colors.ON_SURFACE_VARIANT), self.usage_tokens_text], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                ft.Row([ft.Text("估算成本", size=11, color=ft.Colors.ON_SURFACE_VARIANT), self.usage_cost_text], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                ft.Container(height=8),
+                ft.TextButton("刷新统计", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.SURFACE_CONTAINER, color=ft.Colors.ON_SURFACE), on_click=lambda e: self._refresh_usage_dash()),
+            ]),
             ft.Container(height=14),
-            ft.Container(
-                content=ft.Column([
-                    ft.Row([ft.Text("角色人格", size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), ft.Icon(ft.Icons.PERSON_ROUNDED, size=14, color=ft.Colors.PRIMARY)], spacing=8, tight=True),
-                    ft.Container(height=10),
-                    self.persona_dropdown,
-                    ft.Text("切换后独立记忆 + 系统提示词", size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.85),
-                ], tight=True, spacing=4),
-                bgcolor=ft.Colors.SURFACE_CONTAINER,
-                border_radius=34,
-                padding=18,
-                border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.06, ft.Colors.ON_SURFACE))),
-            ),
+            _section_card("状态", ft.Icons.INFO, [
+                ft.Row([self.browser_status_icon, self.browser_status_text], spacing=10, alignment=ft.MainAxisAlignment.START),
+                ft.Row([self.status_text, self.perf_text, ft.Container(expand=True), self._clock_text], spacing=10),
+                ft.Container(height=8),
+                ft.Row([ft.Icon(ft.Icons.AUTO_STORIES_ROUNDED, size=14, color=ft.Colors.PRIMARY), ft.Text("后台复盘", size=11, color=ft.Colors.ON_SURFACE), self.review_enabled_switch, ft.Text(f"每 {self.review_interval_field.value} 轮", size=10, color=ft.Colors.ON_SURFACE_VARIANT)], spacing=8, tight=True),
+            ]),
+            ft.Container(height=14),
+            _section_card("角色人格", ft.Icons.PERSON_ROUNDED, [
+                self.persona_dropdown,
+                ft.Text("切换后独立记忆 + 系统提示词", size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.85),
+            ]),
         ])
         return self._sidebar_container
 
