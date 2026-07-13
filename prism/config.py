@@ -289,6 +289,20 @@ class Config:
             config = config[k]
         config[keys[-1]] = resolved
         self._save()
+
+    def revert(self, key: str) -> None:
+        """回滚配置项到默认值"""
+        defaults = self._defaults()
+        keys = key.split('.')
+        default_value = defaults
+        for k in keys:
+            if isinstance(default_value, dict):
+                default_value = default_value.get(k)
+            else:
+                default_value = None
+                break
+        if default_value is not None:
+            self.set(key, default_value)
     
     def show(self, redact: bool = True) -> dict:
         """返回完整配置，可脱敏"""
