@@ -151,8 +151,8 @@ class SidebarMixin:
             border_radius=18,
             height=36,
             content_padding=ft.Padding(10, 8, 10, 8),
-            on_change=lambda e: self._filter_sessions(e.control.value or ""),
         )
+        self.session_search.on_change = lambda e: self._filter_sessions(self.session_search.value or "")
         self.session_list = ft.Column(spacing=6, tight=True, scroll=ft.ScrollMode.AUTO)
         self._session_empty_state = ft.Container(
             content=ft.Column(

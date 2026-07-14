@@ -857,7 +857,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.skill_refresh_btn = ft.Button(_("refresh_skills"), icon=ft.Icons.REFRESH_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
                      color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         self.skill_refresh_btn.on_click = lambda e: self._refresh_skills()
-        self.skill_search = ft.TextField(hint_text=_("skill_search_placeholder"), width=240, border_radius=12, dense=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), content_padding=ft.Padding(8, 6, 8, 6), bgcolor=ft.Colors.SURFACE_CONTAINER, on_change=lambda e: self._filter_skills(e.control.value or ""))
+        self.skill_search = ft.TextField(hint_text=_("skill_search_placeholder"), width=240, border_radius=12, dense=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), content_padding=ft.Padding(8, 6, 8, 6), bgcolor=ft.Colors.SURFACE_CONTAINER)
+        self.skill_search.on_change = lambda e: self._filter_skills(e.control.value or "")
         self.skill_install_field = ft.TextField(hint_text=_("install_skill_placeholder"), width=260, border_radius=12)
         self.skill_install_btn = ft.Button(_("install_skill"), icon=ft.Icons.DOWNLOAD_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
                      color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
@@ -903,8 +904,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             border_radius=16,
             height=32,
             content_padding=ft.Padding(8, 6, 8, 6),
-            on_change=lambda e: self._filter_sessions(e.control.value or ""),
         )
+        self.session_search.on_change = lambda e: self._filter_sessions(self.session_search.value or "")
         self._session_search_field = ft.TextField(hint_text="搜索会话...", width=260, border_radius=12, dense=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), content_padding=ft.Padding(10, 8, 10, 8), bgcolor=ft.Colors.SURFACE_CONTAINER)
         self._session_search_field.on_change = lambda e: self._filter_sessions(self._session_search_field.value or "")
         self.session_list = ft.Column(spacing=6, tight=True, scroll=ft.ScrollMode.AUTO)
@@ -1157,7 +1158,16 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                                 bgcolor=ft.Colors.PRIMARY,
                                 style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.18, ft.Colors.ON_PRIMARY)),
                                 animate_scale=ft.Animation(duration=150, curve=ft.AnimationCurve.EASE_IN_OUT),
-                                on_click=lambda e: getattr(self.chat_list, "scroll_to", lambda **kw: None)(delta=99999, duration=180),
+                                on_click=lambda e: (
+                                    threading.Thread(
+                                        target=lambda: (
+                                            self.chat_list.scroll_to(delta=99999, duration=180)
+                                            if hasattr(self.chat_list, "scroll_to")
+                                            else None
+                                        ),
+                                        daemon=True,
+                                    ).start()
+                                ),
                             ),
                             alignment=ft.Alignment(1, 1),
                             padding=ft.Padding(0, 0, 12, 12),
