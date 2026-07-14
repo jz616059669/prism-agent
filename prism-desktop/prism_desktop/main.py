@@ -1157,7 +1157,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                                 animate_scale=ft.Animation(duration=150, curve=ft.AnimationCurve.EASE_IN_OUT),
                                 on_click=lambda e: getattr(self.chat_list, "scroll_to", lambda **kw: None)(delta=99999, duration=180),
                             ),
-                            alignment=ft.alignment.bottom_right,
+                            alignment=ft.Alignment(1, 1),
                             padding=ft.Padding(0, 0, 12, 12),
                             visible=False,
                         ),
