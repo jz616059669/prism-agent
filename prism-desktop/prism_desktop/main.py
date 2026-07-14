@@ -52,6 +52,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.page.window_height = 800
         self.page.theme = ft.Theme(color_scheme_seed="blue", use_material3=True)
         self.page.on_keyboard_event = self._on_keyboard_event
+        self.page.bgcolor = ft.Colors.SURFACE
 
         self._settings = {}
         
@@ -111,7 +112,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._save_settings_delay = 0.5  # seconds
 
         try:
-            self._build_ui()
             self._bind_context_menu()
             self._bind_tray()
             self._maybe_show_setup_wizard()
