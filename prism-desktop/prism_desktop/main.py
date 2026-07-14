@@ -1440,7 +1440,10 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 logger.debug("chat_list update failed: %s", traceback.format_exc())
             try:
                 if hasattr(self.chat_list, "scroll_to"):
-                    self.chat_list.scroll_to(delta=99999, duration=150)
+                    threading.Thread(
+                        target=lambda: self.chat_list.scroll_to(delta=99999, duration=150),
+                        daemon=True,
+                    ).start()
             except Exception:
                 logger.debug("chat scroll failed: %s", traceback.format_exc())
         except Exception:

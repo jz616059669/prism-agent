@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import datetime
 import json
+import threading
 from typing import TYPE_CHECKING, List, Tuple
 
 import flet as ft
@@ -85,7 +86,10 @@ class ChatMixin:
                 logger.debug("chat_list update failed: %s", traceback.format_exc())
             try:
                 if hasattr(self.chat_list, "scroll_to"):
-                    self.chat_list.scroll_to(delta=99999, duration=150)
+                    threading.Thread(
+                        target=lambda: self.chat_list.scroll_to(delta=99999, duration=200),
+                        daemon=True,
+                    ).start()
             except Exception:
                 logger.debug("chat scroll failed: %s", traceback.format_exc())
         except Exception:
@@ -219,7 +223,7 @@ class ChatMixin:
                     logger.debug("hide stop button failed: %s", ex)
 
         try:
-            self.page.run_task(_run_chat)
+            threading.Thread(target=_run_chat, daemon=True).start()
         except Exception:
             _run_chat()
 
