@@ -5,6 +5,7 @@ PRISM Agent - 桌面客户端
 """
 
 import sys
+import asyncio
 from pathlib import Path
 
 # 让桌面端优先加载项目根 prism 包，避免被 venv site-packages 里的旧副本覆盖
@@ -78,22 +79,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.agent = None
         print("[BOOT] main.py loaded from:", __file__, flush=True)
         
-        try:
-            self._build_ui()
-            self._bind_context_menu()
-            self._bind_tray()
-            self._maybe_show_setup_wizard()
-            self._settings = self._load_settings()
-            if hasattr(self.page, "run_task"):
-                self._start_update_check()
-            self._validate_and_create_agent()
-        except Exception as exc:
-            self.agent = None
-            self._init_error = exc
-            self._log_error("agent init fallback", exc)
-            if hasattr(self, "retry_init_btn") and self.retry_init_btn:
-                self.retry_init_btn.visible = True
-
         self.model_dropdown = ft.Dropdown(
             label="默认模型",
             options=[ft.dropdown.Option("step-3.7-flash")],
@@ -110,6 +95,22 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
 
         self._save_settings_timer = None
         self._save_settings_delay = 0.5  # seconds
+
+        try:
+            self._build_ui()
+            self._bind_context_menu()
+            self._bind_tray()
+            self._maybe_show_setup_wizard()
+            self._settings = self._load_settings()
+            if hasattr(self.page, "run_task"):
+                self._start_update_check()
+            self._validate_and_create_agent()
+        except Exception as exc:
+            self.agent = None
+            self._init_error = exc
+            self._log_error("agent init fallback", exc)
+            if hasattr(self, "retry_init_btn") and self.retry_init_btn:
+                self.retry_init_btn.visible = True
 
         try:
             self._bind_context_menu()
@@ -253,9 +254,9 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         if os.environ.get("PRISM_SKIP_UPDATE_CHECK", "").strip() in ("1", "true", "yes", "y"):
             return
         if hasattr(self.page, "run_task"):
-            self.page.run_task(self._check_for_updates)
+                threading.Thread(target=self._check_for_updates, daemon=True).start()
 
-    async def _check_for_updates(self):
+    def _check_for_updates(self):
         try:
             import urllib.request, json
             req = urllib.request.Request(
@@ -487,9 +488,9 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                                 except Exception:
                                     logger.debug('desktop exception: %s', traceback.format_exc())
                             try:
-                                self.page.run_task(_ui_show)
-                            except Exception:
                                 _ui_show()
+                            except Exception:
+                                pass
                     except Exception:
                         logger.debug('desktop exception: %s', traceback.format_exc())
 
@@ -609,7 +610,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 except Exception:
                     logger.debug('desktop exception: %s', traceback.format_exc())
             try:
-                self.page.run_task(_run)
+                threading.Thread(target=_run, daemon=True).start()
             except Exception:
                 _run()
         except Exception:
@@ -681,6 +682,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 spacing=0,
             )
         )
+        self.page.update()
     
     def _open_preset_manager(self):
         presets = (self._settings.get("model_presets") or {})
@@ -886,8 +888,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             border_radius=16,
             bgcolor=ft.Colors.SURFACE_CONTAINER,
             value="default",
-            on_change=lambda e: self._apply_persona(e.control.value),
         )
+        self.persona_dropdown.on_change = lambda e: self._apply_persona(e.control.value)
 
         # 会话
         self.session_new_btn = ft.IconButton(icon=ft.Icons.ADD_ROUNDED, tooltip="新建对话", icon_color=ft.Colors.PRIMARY, bgcolor=ft.Colors.with_opacity(0.08, ft.Colors.PRIMARY), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.PRIMARY)))
@@ -1087,7 +1089,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 self._input_pending = True
                 if self._input_timer:
                     self._input_timer.cancel()
-                self._input_timer = self.page.run_task(self._apply_input_update)
+                self._input_timer = threading.Timer(0.05, self._apply_input_update)
             except Exception:
                 logger.debug('desktop exception: %s', traceback.format_exc())
         self._on_input_change = _on_input_change
@@ -1257,51 +1259,72 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             expand=True,
             spacing=8,
         )
+        self.message_store_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO, padding=ft.Padding(6, 4, 6, 4))
         self._right_message_tab = ft.Column(
             [
-                ft.Row([ft.Text("消息", size=13, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, opacity=0.95), ft.Container(expand=True), ft.Row([ft.TextButton("刷新", on_click=lambda e: self._refresh_message_store())], spacing=4, tight=True)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=8),
+                ft.Row([ft.Text("消息", size=13, weight=ft.FontWeight.W_600, color=ft.Colors.ON_SURFACE, opacity=0.95), ft.Container(expand=True), ft.Row([ft.TextButton("刷新", on_click=lambda e: self._refresh_message_store())], spacing=4, tight=True)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=8),
                 ft.Container(self.message_store_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=34, padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE),
             ],
             expand=True,
             spacing=8,
         )
-        self.message_store_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO, padding=ft.Padding(6, 4, 6, 4))
+        self.retry_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO, padding=ft.Padding(6, 4, 6, 4))
         self._right_retry_tab = ft.Column(
             [
-                ft.Row([ft.Text("重试", size=13, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, opacity=0.95), ft.Container(expand=True)], alignment=ft.MainAxisAlignment.START, spacing=8),
+                ft.Row([ft.Text("重试", size=13, weight=ft.FontWeight.W_600, color=ft.Colors.ON_SURFACE, opacity=0.95), ft.Container(expand=True)], alignment=ft.MainAxisAlignment.START, spacing=8),
                 ft.Container(self.retry_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=34, padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE),
             ],
             expand=True,
             spacing=8,
         )
-        self.retry_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO, padding=ft.Padding(6, 4, 6, 4))
         self._right_webhook_tab = ft.Column(
             [
-                ft.Row([ft.Text("Webhook", size=13, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, opacity=0.95), ft.Container(expand=True), ft.Row([ft.TextButton("启动服务", on_click=lambda e: self._start_webhook_server())], spacing=4, tight=True)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=8),
-                ft.Container(self.webhook_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=34, padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE),
+                ft.Row([ft.Text("Webhook", size=13, weight=ft.FontWeight.W_600, color=ft.Colors.ON_SURFACE, opacity=0.95), ft.Container(expand=True), ft.Row([ft.TextButton("启动服务", on_click=lambda e: self._start_webhook_server())], spacing=4, tight=True)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=8),
             ],
             expand=True,
             spacing=8,
         )
         self.webhook_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO, padding=ft.Padding(6, 4, 6, 4))
+        self._right_webhook_tab = ft.Column(
+            [
+                ft.Row([ft.Text("Webhook", size=13, weight=ft.FontWeight.W_600, color=ft.Colors.ON_SURFACE, opacity=0.95), ft.Container(expand=True), ft.Row([ft.TextButton("启动服务", on_click=lambda e: self._start_webhook_server())], spacing=4, tight=True)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=8),
+                ft.Container(self.webhook_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=34, padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE),
+            ],
+            expand=True,
+            spacing=8,
+        )
         self._right_schedule_tab = ft.Column(
             [
-                ft.Row([ft.Text("定时", size=13, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, opacity=0.95), ft.Container(expand=True), ft.Row([ft.TextButton("同步", on_click=lambda e: self._refresh_schedule())], spacing=4, tight=True)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=8),
-                ft.Container(self.schedule_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=34, padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE),
+                ft.Row([ft.Text("定时", size=13, weight=ft.FontWeight.W_600, color=ft.Colors.ON_SURFACE, opacity=0.95), ft.Container(expand=True), ft.Row([ft.TextButton("同步", on_click=lambda e: self._refresh_schedule())], spacing=4, tight=True)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=8),
             ],
             expand=True,
             spacing=8,
         )
         self.schedule_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO, padding=ft.Padding(6, 4, 6, 4))
+        self._right_schedule_tab = ft.Column(
+            [
+                ft.Row([ft.Text("定时", size=13, weight=ft.FontWeight.W_600, color=ft.Colors.ON_SURFACE, opacity=0.95), ft.Container(expand=True), ft.Row([ft.TextButton("同步", on_click=lambda e: self._refresh_schedule())], spacing=4, tight=True)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=8),
+                ft.Container(self.schedule_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=34, padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE),
+            ],
+            expand=True,
+            spacing=8,
+        )
         self._right_notification_tab = ft.Column(
             [
-                ft.Row([ft.Text("通知", size=13, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE, opacity=0.95), ft.Container(expand=True)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=8),
-                ft.Container(self.notification_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=34, padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE),
+                ft.Row([ft.Text("通知", size=13, weight=ft.FontWeight.W_600, color=ft.Colors.ON_SURFACE, opacity=0.95), ft.Container(expand=True)], alignment=ft.MainAxisAlignment.START, spacing=8),
             ],
             expand=True,
             spacing=8,
         )
         self.notification_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO, padding=ft.Padding(6, 4, 6, 4))
+        self._right_notification_tab = ft.Column(
+            [
+                ft.Row([ft.Text("通知", size=13, weight=ft.FontWeight.W_600, color=ft.Colors.ON_SURFACE, opacity=0.95), ft.Container(expand=True)], alignment=ft.MainAxisAlignment.START, spacing=8),
+                ft.Container(self.notification_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=34, padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE),
+            ],
+            expand=True,
+            spacing=8,
+        )
         # Right panel tabs
         self._right_tab_buttons_row = ft.Row([], spacing=2, tight=True)
         self._right_tab_contents = ft.Column([terminal_tab, mcp_tab, self._right_skills_tab, self._right_workflow_tab, self._right_message_tab, self._right_retry_tab, self._right_webhook_tab, self._right_schedule_tab, self._right_notification_tab], expand=True, spacing=0)
@@ -1493,7 +1516,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 self._append_terminal(f"session save failed: {e}")
                 self._set_status("会话保存失败", ft.Colors.RED_400)
         try:
-            self.page.run_task(_run)
+            threading.Thread(target=_run, daemon=True).start()
         except Exception:
             _run()
 
@@ -1567,7 +1590,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             except Exception:
                 pass
         try:
-            self.page.run_task(_run)
+            threading.Thread(target=_run, daemon=True).start()
         except Exception:
             _run()
 
@@ -1631,7 +1654,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     self.session_list.controls.append(session_wrap)
             self.session_list.update()
         try:
-            self.page.run_task(_run)
+            threading.Thread(target=_run, daemon=True).start()
         except Exception:
             _run()
 
@@ -1648,7 +1671,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 self._set_status("删除异常", ft.Colors.RED_400)
             self._refresh_sessions()
         try:
-            self.page.run_task(_run)
+            threading.Thread(target=_run, daemon=True).start()
         except Exception:
             _run()
 
@@ -1676,7 +1699,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 self._log_error("session export", exc)
                 self._set_status("导出失败", ft.Colors.RED_400)
         try:
-            self.page.run_task(_run)
+            threading.Thread(target=_run, daemon=True).start()
         except Exception:
             _run()
 
@@ -1760,7 +1783,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             except Exception:
                 pass
         try:
-            self.page.run_task(_run)
+            threading.Thread(target=_run, daemon=True).start()
         except Exception:
             _run()
 
@@ -1783,7 +1806,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             except Exception:
                 pass
         try:
-            self.page.run_task(_run)
+            threading.Thread(target=_run, daemon=True).start()
         except Exception:
             _run()
 
@@ -1818,7 +1841,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             except Exception:
                 pass
         try:
-            self.page.run_task(_run)
+            threading.Thread(target=_run, daemon=True).start()
         except Exception:
             _run()
 
@@ -2371,7 +2394,7 @@ def _apply_persona(self, name: str):
 def main():
     def _app(page: ft.Page):
         PrismDesktop(page)
-    ft.run(main=_app)
+    ft.run(main=_app, view=ft.AppView.WEB_BROWSER)
 
 
 if __name__ == "__main__":
