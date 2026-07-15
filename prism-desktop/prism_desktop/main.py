@@ -2407,7 +2407,7 @@ def _apply_persona(self, name: str):
 def main():
     def _app(page: ft.Page):
         PrismDesktop(page)
-    ft.run(main=_app, view=ft.AppView.WEB_BROWSER)
+    ft.run(main=_app, view=ft.AppView.WEB_BROWSER, port=50058)
 
 
 if __name__ == "__main__":
