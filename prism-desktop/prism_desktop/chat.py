@@ -85,11 +85,10 @@ class ChatMixin:
             except Exception:
                 logger.debug("chat_list update failed: %s", traceback.format_exc())
             try:
-                if hasattr(self.chat_list, "scroll_to"):
-                    threading.Thread(
-                        target=lambda: self.chat_list.scroll_to(delta=99999, duration=200),
-                        daemon=True,
-                    ).start()
+                if hasattr(self.chat_list, "scroll_to") and hasattr(self.chat_list, "page"):
+                    async def _do_scroll():
+                        await self.chat_list.scroll_to(delta=99999, duration=200)
+                    self.chat_list.page.run_task(_do_scroll)
             except Exception:
                 logger.debug("chat scroll failed: %s", traceback.format_exc())
         except Exception:
@@ -245,8 +244,10 @@ class ChatMixin:
                     logger.debug("search message read failed: %s", ex)
             if query in text:
                 try:
-                    if hasattr(self.chat_list, "scroll_to"):
-                        self.chat_list.scroll_to(delta=99999, duration=200)
+                    if hasattr(self.chat_list, "scroll_to") and hasattr(self.chat_list, "page"):
+                        async def _do_scroll():
+                            await self.chat_list.scroll_to(delta=99999, duration=200)
+                        self.chat_list.page.run_task(_do_scroll)
                 except Exception as ex:
                     logger.debug("search scroll failed: %s", ex)
                 return

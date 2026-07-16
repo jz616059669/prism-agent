@@ -1158,14 +1158,9 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                                 style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.18, ft.Colors.ON_PRIMARY)),
                                 animate_scale=ft.Animation(duration=150, curve=ft.AnimationCurve.EASE_IN_OUT),
                                 on_click=lambda e: (
-                                    threading.Thread(
-                                        target=lambda: (
-                                            self.chat_list.scroll_to(delta=99999, duration=180)
-                                            if hasattr(self.chat_list, "scroll_to")
-                                            else None
-                                        ),
-                                        daemon=True,
-                                    ).start()
+                                    self.chat_list.page.run_task(self.chat_list.scroll_to, delta=99999, duration=180)
+                                    if hasattr(self.chat_list, "scroll_to") and hasattr(self.chat_list, "page")
+                                    else None
                                 ),
                             ),
                             alignment=ft.Alignment(1, 1),
@@ -1438,11 +1433,10 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             except Exception:
                 logger.debug("chat_list update failed: %s", traceback.format_exc())
             try:
-                if hasattr(self.chat_list, "scroll_to"):
-                    threading.Thread(
-                        target=lambda: self.chat_list.scroll_to(delta=99999, duration=150),
-                        daemon=True,
-                    ).start()
+                if hasattr(self.chat_list, "scroll_to") and hasattr(self.chat_list, "page"):
+                    async def _do_scroll():
+                        await self.chat_list.scroll_to(delta=99999, duration=150)
+                    self.chat_list.page.run_task(_do_scroll)
             except Exception:
                 logger.debug("chat scroll failed: %s", traceback.format_exc())
         except Exception:
