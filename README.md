@@ -35,6 +35,7 @@ du -sh dist-windows\*
 > 2. 是否在项目根目录执行
 > 3. 网络是否可访问（下载 Flet 依赖需要）
 
+```powershell
 # 后台运行 Gateway（NSSM）
 nssm install PrismGateway "C:\path\to\prism.exe" "gateway start --platform <platform>"
 nssm start PrismGateway
@@ -70,43 +71,16 @@ prism gateway start --platform wechat --app-id <APP_ID> --app-secret <APP_SECRET
 **Q: 会话保存在哪里？**
 
 A: 会话保存在本地：
-```
 
-macOS 额外支持：
 ```bash
-# 打包桌面客户端
-bash scripts/build-macos.sh
+# Windows
+# 默认路径：%USERPROFILE%\.prism\sessions\
 
-# 安装 launchd 服务（后台运行 Gateway）
-cp scripts/com.prism.gateway.plist ~/Library/LaunchAgents/
-launchctl load ~/Library/LaunchAgents/com.prism.gateway.plist
-launchctl list | grep prism
+# macOS / Linux
+# 默认路径：~/.prism/sessions/
 ```
 
-**Linux（Ubuntu/Debian/Fedora/Arch）：**
-```bash
-git clone https://github.com/jz616059669/prism-agent.git
-cd prism-agent
-bash scripts/install.sh
-```
-
-Linux 额外支持：
-```bash
-# 打包桌面客户端
-bash scripts/build-linux.sh
-
-# 安装 systemd 服务（后台运行 Gateway）
-sudo cp scripts/prism-gateway.service /etc/systemd/system/
-sudo systemctl enable prism-gateway
-sudo systemctl start prism-gateway
-sudo systemctl status prism-gateway
-```
-
-安装完成后：
-```bash
-prism --help           # CLI
-prism-desktop          # 桌面客户端
-```
+桌面端侧边栏也提供会话保存/加载按钮。
 
 ## PyPI 安装
 
