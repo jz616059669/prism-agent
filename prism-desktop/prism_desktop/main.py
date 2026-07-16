@@ -1330,16 +1330,16 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             spacing=8,
         )
         # Right panel tabs
-        self._right_tab_buttons_row = ft.Row([], spacing=2, tight=True)
+        self._right_tab_buttons_row = ft.Row([], spacing=2, tight=True, scroll=ft.ScrollMode.AUTO)
         self._right_tab_contents = ft.Column([terminal_tab, mcp_tab, self._right_skills_tab, self._right_workflow_tab, self._right_message_tab, self._right_retry_tab, self._right_webhook_tab, self._right_schedule_tab, self._right_notification_tab], expand=True, spacing=0)
         for idx, label in enumerate(["终端", "MCP", "Skills", "工作流", "消息", "重试", "Webhook", "定时", "通知"]):
             btn = ft.TextButton(
                 label,
                 style=ft.ButtonStyle(
-                    shape=ft.RoundedRectangleBorder(radius=10),
+                    shape=ft.RoundedRectangleBorder(radius=8),
                     bgcolor=ft.Colors.PRIMARY_CONTAINER if idx == 0 else ft.Colors.SURFACE_CONTAINER,
                     color=ft.Colors.ON_PRIMARY_CONTAINER if idx == 0 else ft.Colors.ON_SURFACE,
-                    padding=ft.Padding(10, 6, 10, 6),
+                    padding=ft.Padding(8, 4, 8, 4),
                 ),
                 on_click=lambda e, i=idx: self._switch_right_tab(i),
             )
