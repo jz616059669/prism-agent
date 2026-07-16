@@ -804,23 +804,16 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._sidebar_container = ft.Container(animate=ft.Animation(duration=300, curve=ft.AnimationCurve.EASE_IN_OUT),
             content=ft.Column(
                 [
-                    ft.Text("PRISM", size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
-                    ft.Container(height=6),
-                    ft.Text("v2.1.5", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.85),
+                    ft.Text("PRISM Agent", size=18, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE),
                 ],
                 tight=True,
-                spacing=6,
+                spacing=4,
                 scroll=ft.ScrollMode.AUTO,
             ),
             width=300,
-            padding=18,
-            gradient=ft.LinearGradient(
-                colors=[ft.Colors.SURFACE, ft.Colors.SURFACE_CONTAINER],
-                begin=ft.Alignment(0, -1),
-                end=ft.Alignment(0, 1),
-            ),
+            padding=ft.Padding(14, 14, 14, 10),
             bgcolor=ft.Colors.SURFACE,
-            border_radius=34,
+            border_radius=20,
         )
 
         save_btn = ft.Button(_("save_settings"), icon=ft.Icons.SAVE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
