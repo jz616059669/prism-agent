@@ -111,6 +111,7 @@ class SettingsMixin:
                 "sidebar_width": self._settings.get("sidebar_width"),
                 "chat_width": self._settings.get("chat_width"),
                 "right_width": self._settings.get("right_width"),
+                "right_collapsed": str(self._settings.get("right_collapsed", "false")).lower() == "true",
             }
             desktop_state_path.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
         except Exception:

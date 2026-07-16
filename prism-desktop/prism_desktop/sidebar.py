@@ -324,6 +324,7 @@ class SidebarMixin:
         self._settings.pop("sidebar_collapsed", None)
         self._settings.pop("chat_width", None)
         self._settings.pop("right_width", None)
+        self._settings.pop("right_collapsed", None)
         self._save_settings()
         self._append_terminal("布局已恢复默认")
         if hasattr(self, "_set_status"):

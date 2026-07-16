@@ -548,6 +548,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.about_btn.on_click = lambda e: self._about(e)
         self.sidebar_toggle_btn = ft.IconButton(icon=ft.Icons.MENU_ROUNDED, tooltip="折叠侧边栏", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE_VARIANT)))
         self.sidebar_toggle_btn.on_click = lambda e: self._toggle_sidebar()
+        self.right_toggle_btn = ft.IconButton(icon=ft.Icons.VIEW_SIDEBAR_ROUNDED, tooltip="折叠右侧面板", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE_VARIANT)))
+        self.right_toggle_btn.on_click = lambda e: self._toggle_right_sidebar()
         # Quick action buttons in appbar
         quick_actions = ft.Row(
             [
@@ -575,6 +577,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             title=self.title_text,
             actions=[
                 self.sidebar_toggle_btn,
+                self.right_toggle_btn,
                 self.theme_icon_btn,
                 self.minimize_btn,
                 quick_actions,
@@ -593,6 +596,18 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._sidebar_container.animate = ft.Animation(duration=300, curve=ft.AnimationCurve.EASE_IN_OUT)
         self._sidebar_container.update()
         self._settings["sidebar_collapsed"] = str(not was_visible).lower()
+        self._save_settings()
+        self.page.update()
+
+    def _toggle_right_sidebar(self):
+        if not hasattr(self, "_right_container"):
+            return
+        was_visible = self._right_container.visible
+        self._right_container.visible = not was_visible
+        self._right_container.width = 0 if was_visible else 300
+        self._right_container.animate = ft.Animation(duration=300, curve=ft.AnimationCurve.EASE_IN_OUT)
+        self._right_container.update()
+        self._settings["right_collapsed"] = str(not was_visible).lower()
         self._save_settings()
         self.page.update()
 
@@ -665,10 +680,14 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 sidebar.width = int(self._settings.get("sidebar_width"))
         if isinstance(self._settings.get("chat_width"), int):
             self._chat_container.width = int(self._settings.get("chat_width"))
-        if isinstance(self._settings.get("right_width"), int):
-            self._right_container.width = int(self._settings.get("right_width"))
+        if str(self._settings.get("right_collapsed", "false")).lower() == "true":
+            self._right_container.visible = False
+            self._right_container.width = 0
         else:
-            self._right_container.width = int(self._settings.get("sidebar_width", 320))
+            if isinstance(self._settings.get("right_width"), int):
+                self._right_container.width = int(self._settings.get("right_width"))
+            else:
+                self._right_container.width = int(self._settings.get("sidebar_width", 320))
         self.page.add(
             ft.Row(
                 [
