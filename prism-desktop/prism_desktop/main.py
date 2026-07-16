@@ -2394,7 +2394,12 @@ def _apply_persona(self, name: str):
 def main():
     def _app(page: ft.Page):
         PrismDesktop(page)
-    ft.run(main=_app, view=ft.AppView.WEB_BROWSER, port=50058)
+    view_env = os.environ.get("FLET_VIEW", "browser").strip().lower()
+    view = ft.AppView.FLET_APP if view_env == "app" else ft.AppView.WEB_BROWSER
+    kwargs = dict(main=_app, view=view)
+    if view == ft.AppView.WEB_BROWSER:
+        kwargs["port"] = 50058
+    ft.run(**kwargs)
 
 
 if __name__ == "__main__":
