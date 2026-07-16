@@ -27,7 +27,7 @@ console = Console()
 
 
 @click.group(invoke_without_command=True)
-@click.version_option(version="2.1.4", prog_name="PRISM")
+@click.version_option(version="2.1.5", prog_name="PRISM")
 @click.pass_context
 def cli(ctx):
     """
@@ -42,7 +42,7 @@ def cli(ctx):
             model = prism_cfg.get('model.default', 'unknown')
             provider = prism_cfg.get('model.provider', 'unknown')
             console.print(Panel.fit(
-                f"[bold cyan]PRISM Agent[/bold cyan] [dim]v2.1.4[/dim]\n"
+                f"[bold cyan]PRISM Agent[/bold cyan] [dim]v2.1.5[/dim]\n"
                 f"整合 Hermes + Codex + OpenClaw 能力\n"
                 f"当前模型: [green]{model}[/green] / [green]{provider}[/green]\n"
                 "输入 [cyan]prism chat[/cyan] 进入交互对话，或 [cyan]prism --help[/cyan] 查看命令",
@@ -50,7 +50,7 @@ def cli(ctx):
             ))
         except Exception:
             console.print(Panel.fit(
-                "[bold cyan]PRISM Agent[/bold cyan] [dim]v2.1.4[/dim]\n"
+                "[bold cyan]PRISM Agent[/bold cyan] [dim]v2.1.5[/dim]\n"
                 "整合 Hermes + Codex + OpenClaw 能力\n"
                 "输入 [cyan]prism chat[/cyan] 进入交互对话，或 [cyan]prism --help[/cyan] 查看命令",
                 border_style="cyan"
@@ -78,7 +78,7 @@ def doctor():
 
     # Check provider
     try:
-        from prism.models.providers import provider_pool
+        from prism.providers.manager import provider_pool
         providers = provider_pool.list_providers()
         table.add_row("Provider", "[green]✓[/green]", ", ".join(providers))
     except Exception:

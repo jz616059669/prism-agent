@@ -253,8 +253,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
     def _start_update_check(self):
         if os.environ.get("PRISM_SKIP_UPDATE_CHECK", "").strip() in ("1", "true", "yes", "y"):
             return
-        if hasattr(self.page, "run_task"):
-                threading.Thread(target=self._check_for_updates, daemon=True).start()
+        threading.Thread(target=self._check_for_updates, daemon=True).start()
 
     def _check_for_updates(self):
         try:
