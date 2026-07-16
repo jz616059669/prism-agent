@@ -26,3 +26,7 @@ dev = [
     "flet-desktop>=0.85.3",
     "pyinstaller>=6.21.0",
 ]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["prism_desktop*"]
