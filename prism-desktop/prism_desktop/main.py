@@ -655,7 +655,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.page.appbar = self._build_appbar()
         self._chat_container = ft.Container(self._build_chat(), expand=True, padding=ft.Padding(0, 4, 0, 4))
         sidebar = self._build_sidebar()
-        self._right_container = ft.Container(self._build_right_panel(), width=320, border=ft.Border(left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)))
+        self._right_container = ft.Container(self._build_right_panel(), width=300, border=ft.Border(left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)))
         if str(self._settings.get("sidebar_collapsed", "false")).lower() == "true":
             sidebar.visible = False
             sidebar.width = 0
