@@ -810,10 +810,10 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 spacing=4,
                 scroll=ft.ScrollMode.AUTO,
             ),
-            width=300,
-            padding=ft.Padding(14, 14, 14, 10),
-            bgcolor=ft.Colors.SURFACE,
-            border_radius=20,
+            width=260,
+            padding=ft.Padding(12, 12, 12, 8),
+            bgcolor=ft.Colors.TRANSPARENT,
+            border_radius=16,
         )
 
         save_btn = ft.Button(_("save_settings"), icon=ft.Icons.SAVE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
@@ -954,10 +954,10 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             toggle.on_click = _on_toggle
             header_row = ft.Row([header, ft.Container(expand=True), toggle], spacing=6, tight=True)
             card = ft.Container(
-                content=ft.Column([header_row, section_container], tight=True, spacing=8),
+                content=ft.Column([header_row, section_container], tight=True, spacing=6),
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
-                border_radius=34,
-                padding=18,
+                border_radius=16,
+                padding=ft.Padding(12, 10, 12, 10),
                 border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.06, ft.Colors.ON_SURFACE))) if not accent else ft.Border(top=ft.border.BorderSide(1, accent)),
             )
             self._sidebar_sections.append((title, card, section_container, body, toggle, header_row))
