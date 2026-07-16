@@ -589,7 +589,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             return
         was_visible = self._sidebar_container.visible
         self._sidebar_container.visible = not was_visible
-        self._sidebar_container.width = 0 if was_visible else 300
+        self._sidebar_container.width = 0 if was_visible else 260
         self._sidebar_container.animate = ft.Animation(duration=300, curve=ft.AnimationCurve.EASE_IN_OUT)
         self._sidebar_container.update()
         self._settings["sidebar_collapsed"] = str(not was_visible).lower()
@@ -660,8 +660,9 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             sidebar.visible = False
             sidebar.width = 0
             sidebar.padding = 0
-        if isinstance(self._settings.get("sidebar_width"), int):
-            sidebar.width = int(self._settings.get("sidebar_width"))
+        else:
+            if isinstance(self._settings.get("sidebar_width"), int):
+                sidebar.width = int(self._settings.get("sidebar_width"))
         if isinstance(self._settings.get("chat_width"), int):
             self._chat_container.width = int(self._settings.get("chat_width"))
         if isinstance(self._settings.get("right_width"), int):
