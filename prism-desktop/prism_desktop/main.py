@@ -654,7 +654,15 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._clock_text = ft.Text(datetime.now().strftime("%H:%M:%S"), size=11, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_500, opacity=0.95)
         self.page.appbar = self._build_appbar()
         self._chat_container = ft.Container(self._build_chat(), expand=True, padding=ft.Padding(0, 4, 0, 4))
+        sidebar = self._build_sidebar()
         self._right_container = ft.Container(self._build_right_panel(), width=300, border=ft.Border(left=ft.border.BorderSide(1, ft.Colors.OUTLINE_VARIANT)))
+        if str(self._settings.get("sidebar_collapsed", "false")).lower() == "true":
+            sidebar.visible = False
+            sidebar.width = 0
+            sidebar.padding = 0
+        else:
+            if isinstance(self._settings.get("sidebar_width"), int):
+                sidebar.width = int(self._settings.get("sidebar_width"))
         if isinstance(self._settings.get("chat_width"), int):
             self._chat_container.width = int(self._settings.get("chat_width"))
         if isinstance(self._settings.get("right_width"), int):
@@ -664,6 +672,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.page.add(
             ft.Row(
                 [
+                    sidebar,
+                    ft.VerticalDivider(width=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.4),
                     self._chat_container,
                     ft.VerticalDivider(width=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.4),
                     self._right_container,
