@@ -40,7 +40,7 @@ class LocalRAG:
     """
 
     def __init__(self, root: Optional[str] = None, chunk_size: int = _DEFAULT_CHUNK_SIZE, overlap: int = _DEFAULT_OVERLAP):
-        self.root = Path(root).expanduser() if root else Path.home() / "保安铁锤"
+        self.root = Path(root).expanduser() if root else Path.home() / ".prism" / "rag"
         self.chunk_size = chunk_size
         self.overlap = overlap
         self._index_file = self.root / ".prism_rag_index.json"

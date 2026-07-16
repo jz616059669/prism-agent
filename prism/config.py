@@ -165,7 +165,7 @@ class Config:
             },
             'rag': {
                 'enabled': False,
-                'root': str(Path.home() / '保安铁锤'),
+                'root': str(Path.home() / '.prism' / 'rag'),
                 'chunk_size': 600,
                 'overlap': 120,
                 'top_k': 3,
