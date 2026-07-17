@@ -71,6 +71,7 @@ class Agent:
         self.review_interval = int(os.getenv("PRISM_REVIEW_INTERVAL", "5") or 5)
         self._review_turn_count = 0
         self.background_review_callback: Optional[Callable[[str], None]] = None
+        self.session_dir = Path.home() / ".prism" / "sessions"
         self._memory_context = persistent_memory.get_context(max_items=5)
         if self._memory_context:
             self.system_prompt = self.system_prompt.rstrip() + "\n\n" + self._memory_context
@@ -761,6 +762,26 @@ class Agent:
             path.unlink()
             return True
         return False
+
+    def rename_session(self, old_name: str, new_name: str) -> bool:
+        """重命名会话"""
+        if not old_name or not new_name or old_name == new_name:
+            return False
+        session_dir = getattr(self, "session_dir", None) or Path.home() / ".prism" / "sessions"
+        src = session_dir / f"{old_name}.json"
+        dst = session_dir / f"{new_name}.json"
+        if not src.exists():
+            return False
+        if dst.exists():
+            return False
+        try:
+            payload = json.loads(src.read_text(encoding="utf-8"))
+            dst.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+            src.unlink()
+            return True
+        except Exception:
+            logger.debug("rename session failed: %s", traceback.format_exc())
+            return False
 
 
 
