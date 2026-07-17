@@ -204,6 +204,123 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self._log_error("test notification", exc)
             self._set_status("通知发送失败", ft.Colors.RED_400)
 
+    def _refresh_memory(self):
+        try:
+            from prism.memory import persistent_memory
+            query = (self.memory_search_field.value or "").strip().lower()
+            category = self.memory_category_dropdown.value if getattr(self, "memory_category_dropdown", None) is not None else "all"
+            if category == "all":
+                category = None
+            limit = 50
+            items = persistent_memory.search(query, category=category, limit=limit) if query or category else list(persistent_memory._index.values())[:limit]
+            if not items and (query or category):
+                items = []
+            self._render_memory_items(items)
+            self._set_status(f"记忆已刷新：{len(items)} 条", ft.Colors.GREEN_400)
+        except Exception as exc:
+            self._log_error("refresh memory", exc)
+            self._set_status("记忆刷新失败", ft.Colors.RED_400)
+
+    def _render_memory_items(self, items):
+        if not hasattr(self, "memory_list") or self.memory_list is None:
+            return
+        self.memory_list.controls.clear()
+        if not items:
+            self.memory_list.controls.append(ft.Text("暂无记忆", size=12, color=ft.Colors.ON_SURFACE_VARIANT))
+        else:
+            for m in items:
+                key = getattr(m, "key", "") or ""
+                value = getattr(m, "value", "") or ""
+                category = getattr(m, "category", "general") or "general"
+                confidence = getattr(m, "confidence", 1.0)
+                access_count = getattr(m, "access_count", 0)
+                short_value = value if len(value) <= 120 else value[:117] + "..."
+                row = ft.Row([
+                    ft.Column([
+                        ft.Row([ft.Text(key, size=12, color=ft.Colors.ON_SURFACE), ft.Text(f"[{category}]", size=10, color=ft.Colors.ON_SURFACE_VARIANT)], spacing=6, tight=True),
+                        ft.Text(short_value, size=11, color=ft.Colors.ON_SURFACE_VARIANT, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
+                        ft.Text(f"confidence={confidence:.2f} access={access_count}", size=10, color=ft.Colors.ON_SURFACE_VARIANT),
+                    ], spacing=2, expand=True),
+                    ft.IconButton(icon=ft.Icons.EDIT_ROUNDED, tooltip="编辑", icon_size=14, icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE_VARIANT)), on_click=lambda e, k=key: self._edit_memory(k)),
+                    ft.IconButton(icon=ft.Icons.DELETE_OUTLINE_ROUNDED, tooltip="删除", icon_size=14, icon_color=ft.Colors.ERROR, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ERROR)), on_click=lambda e, k=key: self._delete_memory(k)),
+                ], spacing=8, tight=True)
+                self.memory_list.controls.append(row)
+        try:
+            self.memory_list.update()
+        except Exception:
+            pass
+
+    def _edit_memory(self, key: str):
+        try:
+            from prism.memory import persistent_memory
+            m = persistent_memory._index.get(key)
+            if not m:
+                return
+            self._memory_form_edit_key = key
+            self.memory_key_field.value = getattr(m, "key", "") or ""
+            self.memory_value_field.value = getattr(m, "value", "") or ""
+            self.memory_category_add_field.value = getattr(m, "category", "general") or "general"
+            for fld in [self.memory_key_field, self.memory_value_field, self.memory_category_add_field]:
+                try:
+                    fld.update()
+                except Exception:
+                    pass
+            self._set_status(f"编辑记忆：{key}", ft.Colors.GREEN_400)
+        except Exception as exc:
+            self._log_error("edit memory", exc)
+
+    def _save_memory_from_ui(self):
+        key = (self.memory_key_field.value or "").strip()
+        value = (self.memory_value_field.value or "").strip()
+        category = getattr(self, "memory_category_add_field", None).value if getattr(self, "memory_category_add_field", None) is not None else "general"
+        if not key or not value:
+            self._set_status("key 与 value 不能为空", ft.Colors.RED_400)
+            return
+        try:
+            from prism.memory import persistent_memory
+            persistent_memory.remember(key, value, category=category, confidence=1.0, source="ui")
+            self._set_status(f"记忆已保存：{key}", ft.Colors.GREEN_400)
+            self.memory_key_field.value = ""
+            self.memory_value_field.value = ""
+            self.memory_category_add_field.value = "general"
+            for fld in [self.memory_key_field, self.memory_value_field, self.memory_category_add_field]:
+                try:
+                    fld.update()
+                except Exception:
+                    pass
+            self._memory_form_edit_key = None
+            self._refresh_memory()
+        except Exception as exc:
+            self._log_error("save memory", exc)
+            self._set_status("记忆保存失败", ft.Colors.RED_400)
+
+    def _delete_memory(self, key: str):
+        if not key:
+            return
+        try:
+            from prism.memory import persistent_memory
+            ok = persistent_memory.forget(key)
+            if ok:
+                self._append_terminal(f"memory deleted: {key}")
+                self._set_status(f"记忆已删除：{key}", ft.Colors.GREEN_400)
+                self._refresh_memory()
+            else:
+                self._set_status("记忆不存在", ft.Colors.RED_400)
+        except Exception as exc:
+            self._log_error("delete memory", exc)
+            self._set_status("记忆删除失败", ft.Colors.RED_400)
+
+    def _clear_memory(self):
+        try:
+            from prism.memory import persistent_memory
+            persistent_memory.clear()
+            self._append_terminal("memory cleared")
+            self._set_status("记忆已清空", ft.Colors.GREEN_400)
+            self._refresh_memory()
+        except Exception as exc:
+            self._log_error("clear memory", exc)
+            self._set_status("记忆清空失败", ft.Colors.RED_400)
+
     def _log_error(self, context: str, exc: BaseException) -> None:
         try:
             self._append_terminal(f"[ERROR] {context}: {exc}")
@@ -1484,10 +1601,34 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             expand=True,
             spacing=8,
         )
+        self.memory_search_field = ft.TextField(label="搜索记忆", hint_text="按 key/value 检索", width=240, border_radius=12, dense=True)
+        self.memory_category_dropdown = ft.Dropdown(label="分类", width=140, border_radius=12, dense=True, options=[ft.dropdown.Option("all", "全部"), ft.dropdown.Option("user_profile", "用户画像"), ft.dropdown.Option("user_preference", "偏好"), ft.dropdown.Option("general", "通用"), ft.dropdown.Option("chat_history", "对话历史"), ft.dropdown.Option("skill", "技能")])
+        self.memory_key_field = ft.TextField(label="key", hint_text="记忆键名", width=220, border_radius=12, dense=True)
+        self.memory_value_field = ft.TextField(label="value", hint_text="记忆内容", width=300, border_radius=12, dense=True, multiline=True, min_lines=2, max_lines=4)
+        self.memory_category_add_field = ft.Dropdown(label="分类", width=160, border_radius=12, dense=True, value="general", options=[ft.dropdown.Option("user_profile", "用户画像"), ft.dropdown.Option("user_preference", "偏好"), ft.dropdown.Option("general", "通用"), ft.dropdown.Option("chat_history", "对话历史"), ft.dropdown.Option("skill", "技能")])
+        self.memory_save_btn = ft.TextButton("保存记忆", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), icon=ft.Icons.SAVE_ROUNDED, animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
+        self.memory_save_btn.on_click = lambda e: self._save_memory_from_ui()
+        self.memory_refresh_btn = ft.TextButton("刷新", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.SURFACE_CONTAINER, color=ft.Colors.ON_SURFACE), icon=ft.Icons.REFRESH_ROUNDED, animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
+        self.memory_refresh_btn.on_click = lambda e: self._refresh_memory()
+        self.memory_clear_btn = ft.TextButton("清空", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.SURFACE_CONTAINER, color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
+        self.memory_clear_btn.on_click = lambda e: self._clear_memory()
+        self.memory_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO, padding=ft.Padding(6, 4, 6, 4))
+        self._memory_form_edit_key = None
+        self._right_memory_tab = ft.Column(
+            [
+                ft.Row([ft.Text("记忆", size=13, weight=ft.FontWeight.W_600, color=ft.Colors.ON_SURFACE, opacity=0.95), ft.Container(expand=True), ft.Row([self.memory_refresh_btn, self.memory_clear_btn], spacing=4, tight=True)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=8),
+                ft.Row([self.memory_search_field, self.memory_category_dropdown], spacing=8, tight=True),
+                ft.Row([self.memory_key_field, self.memory_value_field], spacing=8, tight=True),
+                ft.Row([self.memory_category_add_field, self.memory_save_btn], spacing=8, tight=True),
+                ft.Container(self.memory_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=34, padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE),
+            ],
+            expand=True,
+            spacing=8,
+        )
         # Right panel tabs
         self._right_tab_buttons_row = ft.Row([], spacing=2, tight=True, scroll=ft.ScrollMode.AUTO)
-        self._right_tab_contents = ft.Column([terminal_tab, mcp_tab, self._right_skills_tab, self._right_workflow_tab, self._right_message_tab, self._right_retry_tab, self._right_webhook_tab, self._right_schedule_tab, self._right_notification_tab], expand=True, spacing=0)
-        for idx, label in enumerate(["终端", "MCP", "Skills", "工作流", "消息", "重试", "Webhook", "定时", "通知"]):
+        self._right_tab_contents = ft.Column([terminal_tab, mcp_tab, self._right_skills_tab, self._right_workflow_tab, self._right_message_tab, self._right_retry_tab, self._right_webhook_tab, self._right_schedule_tab, self._right_notification_tab, self._right_memory_tab], expand=True, spacing=0)
+        for idx, label in enumerate(["终端", "MCP", "Skills", "工作流", "消息", "重试", "Webhook", "定时", "通知", "记忆"]):
             btn = ft.TextButton(
                 label,
                 style=ft.ButtonStyle(
@@ -1525,6 +1666,11 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             if index == 2 and hasattr(self, "_refresh_skills"):
                 try:
                     self._refresh_skills()
+                except Exception:
+                    pass
+            if index == 9 and hasattr(self, "_refresh_memory"):
+                try:
+                    self._refresh_memory()
                 except Exception:
                     pass
             try:
