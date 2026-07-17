@@ -172,6 +172,26 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         except Exception:
             logger.debug('desktop exception: %s', traceback.format_exc())
 
+    def _append_notification(self, notification):
+        try:
+            if not hasattr(self, "notification_list") or self.notification_list is None:
+                return
+            title = getattr(notification, "title", "") or ""
+            body = getattr(notification, "body", "") or ""
+            row = ft.Row([
+                ft.Column([
+                    ft.Text(title, size=12, weight=ft.FontWeight.W_500, color=ft.Colors.ON_SURFACE),
+                    ft.Text(body, size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.9, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
+                ], spacing=2, expand=True),
+            ], spacing=8, tight=True)
+            self.notification_list.controls.append(row)
+            try:
+                self.notification_list.update()
+            except Exception:
+                pass
+        except Exception:
+            logger.debug("append notification failed: %s", traceback.format_exc())
+
     def _log_error(self, context: str, exc: BaseException) -> None:
         try:
             self._append_terminal(f"[ERROR] {context}: {exc}")
@@ -1603,7 +1623,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     except Exception:
                         logger.debug("session hover update failed: %s", traceback.format_exc())
                 session_wrap.on_hover = _on_session_hover
-                self.session_list.controls.append(session_wrap)
+                if isinstance(self.session_list, ft.Column) and isinstance(session_wrap, ft.Control):
+                    self.session_list.controls.append(session_wrap)
             try:
                 self.session_list.update()
             except Exception:
@@ -2311,103 +2332,99 @@ def _speak_last_reply(self):
         self._append_terminal(f"[voice] thread error: {exc}")
 
 
-def _refresh_workflows(self):
-    if not hasattr(self, "workflow_list") or self.workflow_list is None:
-        return
-    self._append_terminal("refresh workflows ...")
-    try:
-        from prism.workflow import list_workflows
-        items = list_workflows()
-        self._workflow_items = items
-        self._render_workflow_items(items)
-        self._append_terminal(f"workflows refreshed: {len(items)} 个")
-    except Exception as exc:
-        self._append_terminal(f"workflow error: {exc}")
-        self._set_status("工作流刷新失败", ft.Colors.RED_400)
-
-
-def _render_workflow_items(self, items):
-    if not hasattr(self, "workflow_list") or self.workflow_list is None:
-        return
-    self.workflow_list.controls.clear()
-    if not items:
-        self.workflow_list.controls.append(ft.Container(
-            content=ft.Column([
-                ft.Icon(ft.Icons.ACCOUNT_TREE_OFF_ROUNDED, size=28, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.5),
-                ft.Text("暂无工作流", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.95),
-            ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER, tight=True),
-            padding=ft.Padding(48, 48, 48, 48),
-            border_radius=12,
-            bgcolor=ft.Colors.with_opacity(0.6, ft.Colors.SURFACE_CONTAINER),
-        ))
-    else:
-        for item in items:
-            steps = item.get("steps", [])
-            step_count = len(steps) if isinstance(steps, list) else 0
-            row = ft.Row([
-                ft.Column([
-                    ft.Text(item.get("name", "unknown"), size=12, weight=ft.FontWeight.W_500, color=ft.Colors.ON_SURFACE),
-                    ft.Text(f"{step_count} 步骤 · {item.get('description', '')}", size=10, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.85, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
-                ], spacing=2, expand=True),
-                ft.TextButton("运行", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), on_click=lambda e, n=item.get("name"): self._run_workflow_from_ui(n)),
-            ], spacing=8, tight=True)
-            self.workflow_list.controls.append(row)
-    self.workflow_list.update()
-
-
-def _run_workflow_from_ui(self, name: str):
-    if not name:
-        return
-    self._append_terminal(f"run workflow: {name}")
-    self._set_status(f"执行工作流: {name}", ft.Colors.AMBER_400)
-    try:
-        from prism.workflow import run_workflow
-        result = run_workflow(name, parent_agent=getattr(self, "agent", None))
-        if result.get("success"):
-            output = result.get("result", "")
-            if hasattr(self, "agent") and self.agent is not None:
-                self._append("PRISM", output)
-            self._set_status("工作流完成", ft.Colors.GREEN_400)
-            self._append_terminal(f"workflow done: {name}")
-        else:
-            self._set_status(f"工作流失败: {result.get('error', 'unknown')}", ft.Colors.RED_400)
-    except Exception as exc:
-        self._set_status("工作流执行异常", ft.Colors.RED_400)
-        self._append_terminal(f"workflow run error: {exc}")
-
-
-def _refresh_usage_dash(self):
-    try:
-        from prism.usage import usage_tracker
-        s = usage_tracker.stats()
-        if hasattr(self, "usage_calls_text") and self.usage_calls_text:
-            self.usage_calls_text.value = str(s.get("total_calls", 0))
-            self.usage_success_text.value = f"{s.get('success_rate', 0.0)}%"
-            self.usage_latency_text.value = f"{s.get('avg_latency_ms', 0.0)}ms"
-            self.usage_tokens_text.value = str(int(s.get("total_prompt_tokens", 0)) + int(s.get("total_completion_tokens", 0)))
-            self.usage_cost_text.value = f"${s.get('total_cost_usd', 0.0)}"
-            self.usage_calls_text.update()
-            self.usage_success_text.update()
-            self.usage_latency_text.update()
-            self.usage_tokens_text.update()
-            self.usage_cost_text.update()
-    except Exception as exc:
-        self._append_terminal(f"usage dash error: {exc}")
-
-
-def _apply_persona(self, name: str):
-    try:
-        from prism.personas import persona_manager
-        persona = persona_manager.activate(name)
-        if not persona:
-            self._set_status(f"角色不存在: {name}", ft.Colors.RED_400)
+    def _refresh_workflows(self):
+        if not hasattr(self, "workflow_list") or self.workflow_list is None:
             return
-        self._set_status(f"已切换角色: {persona.name}", ft.Colors.GREEN_400)
-        if getattr(self, "agent", None) and persona.system_prompt:
-            self.agent.system_prompt = persona.system_prompt
-    except Exception as exc:
-        self._set_status("角色切换失败", ft.Colors.RED_400)
-        self._append_terminal(f"persona error: {exc}")
+        self._append_terminal("refresh workflows ...")
+        try:
+            from prism.workflow import list_workflows
+            items = list_workflows()
+            self._workflow_items = items
+            self._render_workflow_items(items)
+            self._append_terminal(f"workflows refreshed: {len(items)} 个")
+        except Exception as exc:
+            self._append_terminal(f"workflow error: {exc}")
+            self._set_status("工作流刷新失败", ft.Colors.RED_400)
+
+    def _render_workflow_items(self, items):
+        if not hasattr(self, "workflow_list") or self.workflow_list is None:
+            return
+        self.workflow_list.controls.clear()
+        if not items:
+            self.workflow_list.controls.append(ft.Container(
+                content=ft.Column([
+                    ft.Icon(ft.Icons.ACCOUNT_TREE_OFF_ROUNDED, size=28, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.5),
+                    ft.Text("暂无工作流", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.95),
+                ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER, tight=True),
+                padding=ft.Padding(48, 48, 48, 48),
+                border_radius=12,
+                bgcolor=ft.Colors.with_opacity(0.6, ft.Colors.SURFACE_CONTAINER),
+            ))
+        else:
+            for item in items:
+                steps = item.get("steps", [])
+                step_count = len(steps) if isinstance(steps, list) else 0
+                row = ft.Row([
+                    ft.Column([
+                        ft.Text(item.get("name", "unknown"), size=12, weight=ft.FontWeight.W_500, color=ft.Colors.ON_SURFACE),
+                        ft.Text(f"{step_count} 步骤 · {item.get('description', '')}", size=10, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.85, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
+                    ], spacing=2, expand=True),
+                    ft.TextButton("运行", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), on_click=lambda e, n=item.get("name"): self._run_workflow_from_ui(n)),
+                ], spacing=8, tight=True)
+                self.workflow_list.controls.append(row)
+        self.workflow_list.update()
+
+    def _run_workflow_from_ui(self, name: str):
+        if not name:
+            return
+        self._append_terminal(f"run workflow: {name}")
+        self._set_status(f"执行工作流: {name}", ft.Colors.AMBER_400)
+        try:
+            from prism.workflow import run_workflow
+            result = run_workflow(name, parent_agent=getattr(self, "agent", None))
+            if result.get("success"):
+                output = result.get("result", "")
+                if hasattr(self, "agent") and self.agent is not None:
+                    self._append("PRISM", output)
+                self._set_status("工作流完成", ft.Colors.GREEN_400)
+                self._append_terminal(f"workflow done: {name}")
+            else:
+                self._set_status(f"工作流失败: {result.get('error', 'unknown')}", ft.Colors.RED_400)
+        except Exception as exc:
+            self._set_status("工作流执行异常", ft.Colors.RED_400)
+            self._append_terminal(f"workflow run error: {exc}")
+
+    def _refresh_usage_dash(self):
+        try:
+            from prism.usage import usage_tracker
+            s = usage_tracker.stats()
+            if hasattr(self, "usage_calls_text") and self.usage_calls_text:
+                self.usage_calls_text.value = str(s.get("total_calls", 0))
+                self.usage_success_text.value = f"{s.get('success_rate', 0.0)}%"
+                self.usage_latency_text.value = f"{s.get('avg_latency_ms', 0.0)}ms"
+                self.usage_tokens_text.value = str(int(s.get("total_prompt_tokens", 0)) + int(s.get("total_completion_tokens", 0)))
+                self.usage_cost_text.value = f"${s.get('total_cost_usd', 0.0)}"
+                self.usage_calls_text.update()
+                self.usage_success_text.update()
+                self.usage_latency_text.update()
+                self.usage_tokens_text.update()
+                self.usage_cost_text.update()
+        except Exception as exc:
+            self._append_terminal(f"usage dash error: {exc}")
+
+    def _apply_persona(self, name: str):
+        try:
+            from prism.personas import persona_manager
+            persona = persona_manager.activate(name)
+            if not persona:
+                self._set_status(f"角色不存在: {name}", ft.Colors.RED_400)
+                return
+            self._set_status(f"已切换角色: {persona.name}", ft.Colors.GREEN_400)
+            if getattr(self, "agent", None) and persona.system_prompt:
+                self.agent.system_prompt = persona.system_prompt
+        except Exception as exc:
+            self._set_status("角色切换失败", ft.Colors.RED_400)
+            self._append_terminal(f"persona error: {exc}")
 
 
 def main():
