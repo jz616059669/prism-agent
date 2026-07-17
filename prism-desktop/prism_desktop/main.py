@@ -797,6 +797,14 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)),
                     on_click=lambda e: self._save_session(),
                 ),
+                ft.IconButton(
+                    icon=ft.Icons.REFRESH_ROUNDED,
+                    tooltip="强制重载页面",
+                    icon_color=ft.Colors.ON_SURFACE_VARIANT,
+                    bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT),
+                    style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)),
+                    on_click=lambda e: self._reload_page(),
+                ),
             ],
             spacing=2,
         )
