@@ -67,6 +67,7 @@ zh_CN = {
     "refresh_skills": "刷新 Skills",
     "skill_toggle": "切换启用/禁用",
     "skill_uninstall": "卸载",
+    "run_skill": "运行",
     "skill_enabled": "启用",
     "skill_disabled": "禁用",
     "skill_search_placeholder": "搜索 Skills...",

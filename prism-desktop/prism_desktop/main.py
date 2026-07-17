@@ -75,10 +75,11 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._perf_last_ts = None
         self._perf_mem_mb = 0.0
         self._terminal_lines = ["PRISM Desktop 已启动"]
+        self._mcp_logs: List[str] = []
         self._init_error: Optional[BaseException] = None
         self.agent = None
         print("[BOOT] main.py loaded from:", __file__, flush=True)
-        
+
         self.model_dropdown = ft.Dropdown(
             label="默认模型",
             options=[ft.dropdown.Option("step-3.7-flash")],
@@ -390,6 +391,85 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self._refresh_mcp()
         except Exception as exc:
             self._log_error("init mcp servers", exc)
+
+    def _reload_mcp(self):
+        try:
+            from prism.mcp import mcp_client
+            path = Path(self._mcp_config_path)
+            data = {}
+            if path.exists():
+                data = json.loads(path.read_text(encoding="utf-8"))
+            mcp_client.servers = {}
+            mcp_client.tools = {}
+            for name, cfg in data.items():
+                if not cfg.get("enabled", True):
+                    continue
+                mcp_client.add_server(name, cfg)
+            self._append_terminal(f"mcp reloaded: {len(mcp_client.servers)} servers")
+            self._append_mcp(f"已重载 MCP：{len(mcp_client.servers)} 个服务器")
+        except Exception as exc:
+            self._log_error("reload mcp", exc)
+            self._set_status("MCP 重载失败", ft.Colors.RED_400)
+
+    def _save_mcp_from_ui(self):
+        name = (self.mcp_name_field.value or "").strip()
+        transport = (self.mcp_transport_dd.value or "stdio").strip().lower()
+        if not name:
+            self._set_status("MCP 名称不能为空", ft.Colors.RED_400)
+            return
+        path = Path(self._mcp_config_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        data = {}
+        if path.exists():
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+            except Exception:
+                data = {}
+        cfg: Dict[str, Any] = {"transport": transport, "enabled": bool(self.mcp_enabled_switch.value)}
+        if transport == "stdio":
+            cfg["command"] = (self.mcp_command_field.value or "").strip()
+            try:
+                cfg["args"] = json.loads(self.mcp_args_field.value or "[]")
+            except Exception:
+                cfg["args"] = []
+        elif transport in ("http", "sse"):
+            cfg["url"] = (self.mcp_url_field.value or "").strip()
+        env_raw = (self.mcp_env_field.value or "").strip()
+        if env_raw:
+            try:
+                cfg["env"] = json.loads(env_raw)
+            except Exception:
+                cfg["env"] = {}
+        try:
+            cfg["timeout"] = int(self.mcp_timeout_field.value or 30)
+        except Exception:
+            cfg["timeout"] = 30
+        try:
+            cfg["retries"] = int(self.mcp_retries_field.value or 2)
+        except Exception:
+            cfg["retries"] = 2
+        data[name] = cfg
+        path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        self._append_terminal(f"mcp config saved: {name}")
+        self._set_status(f"MCP 配置已保存：{name}", ft.Colors.GREEN_400)
+        self._reload_mcp()
+        self._refresh_mcp()
+
+    def _load_mcp_into_form(self, name: str, cfg: Dict[str, Any]):
+        self.mcp_name_field.value = name
+        self.mcp_transport_dd.value = (cfg.get("transport") or "stdio").strip().lower()
+        self.mcp_command_field.value = cfg.get("command") or ""
+        self.mcp_args_field.value = json.dumps(cfg.get("args") or [], ensure_ascii=False)
+        self.mcp_url_field.value = cfg.get("url") or ""
+        self.mcp_env_field.value = json.dumps(cfg.get("env") or {}, ensure_ascii=False)
+        self.mcp_timeout_field.value = str(cfg.get("timeout") or 30)
+        self.mcp_retries_field.value = str(cfg.get("retries") or 2)
+        self.mcp_enabled_switch.value = bool(cfg.get("enabled", True))
+        for fld in [self.mcp_name_field, self.mcp_command_field, self.mcp_args_field, self.mcp_url_field, self.mcp_env_field, self.mcp_timeout_field, self.mcp_retries_field, self.mcp_enabled_switch]:
+            try:
+                fld.update()
+            except Exception:
+                pass
 
     def _refresh_mcp(self) -> None:
         if not hasattr(self, "mcp_server_list") or self.mcp_server_list is None:
@@ -884,6 +964,20 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.mcp_server_list = ft.Column(spacing=4, tight=True)
         self.mcp_status_list = ft.Column(spacing=3, tight=True)
         self._mcp_tool_counts: Dict[str, int] = {}
+        self.mcp_transport_dd = ft.Dropdown(label="transport", width=160, dense=True, border_radius=12, options=[ft.dropdown.Option("stdio"), ft.dropdown.Option("http"), ft.dropdown.Option("sse")], value="stdio")
+        self.mcp_name_field = ft.TextField(label="name", hint_text="唯一名称，如 filesystem", width=360, border_radius=12, dense=True)
+        self.mcp_command_field = ft.TextField(label="command", hint_text="stdio 模式命令，如 npx", width=360, border_radius=12, dense=True)
+        self.mcp_args_field = ft.TextField(label="args", hint_text='JSON 数组，如 ["-y","@modelcontextprotocol/server-filesystem","/path"]', width=360, border_radius=12, dense=True)
+        self.mcp_url_field = ft.TextField(label="url", hint_text="http/sse 模式地址", width=360, border_radius=12, dense=True)
+        self.mcp_env_field = ft.TextField(label="env", hint_text='JSON 对象，如 {"GITHUB_PERSONAL_ACCESS_TOKEN":"..."}', width=360, border_radius=12, dense=True)
+        self.mcp_timeout_field = ft.TextField(label="timeout", value="30", hint_text="正整数秒数", width=160, border_radius=12, dense=True)
+        self.mcp_retries_field = ft.TextField(label="retries", value="2", hint_text="非负整数", width=160, border_radius=12, dense=True)
+        self.mcp_enabled_switch = ft.Switch(label="enabled", value=True)
+        self.mcp_save_btn = ft.TextButton("保存配置", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), icon=ft.Icons.SAVE_ROUNDED, animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
+        self.mcp_save_btn.on_click = lambda e: self._save_mcp_from_ui()
+        self.mcp_reload_btn = ft.TextButton("重载", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.SURFACE_CONTAINER, color=ft.Colors.ON_SURFACE), icon=ft.Icons.REFRESH_ROUNDED, animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
+        self.mcp_reload_btn.on_click = lambda e: (self._reload_mcp(), self._refresh_mcp())
+        self._mcp_config_path = str(Path.home() / ".prism" / "mcp.json")
 
         # Skills
         self.skill_refresh_btn = ft.Button(_("refresh_skills"), icon=ft.Icons.REFRESH_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
@@ -1266,7 +1360,24 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         mcp_tab = ft.Column(
             [
                 ft.Text("MCP", size=13, weight=ft.FontWeight.W_600, color=ft.Colors.ON_SURFACE, opacity=0.95),
-                ft.Row([clear_mcp_btn], alignment=ft.MainAxisAlignment.END),
+                ft.Row([clear_mcp_btn, ft.TextButton("重载配置", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.SURFACE_CONTAINER, color=ft.Colors.ON_SURFACE), icon=ft.Icons.REFRESH_ROUNDED, animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))], alignment=ft.MainAxisAlignment.END, spacing=8),
+                ft.Container(
+                    ft.Column([
+                        ft.Row([ft.Text("服务器名称", size=11, color=ft.Colors.ON_SURFACE_VARIANT, expand=True), self.mcp_transport_dd], spacing=6, tight=True),
+                        self.mcp_name_field,
+                        self.mcp_command_field,
+                        self.mcp_args_field,
+                        self.mcp_url_field,
+                        self.mcp_env_field,
+                        ft.Row([self.mcp_timeout_field, self.mcp_retries_field, self.mcp_enabled_switch], spacing=8, tight=True),
+                        ft.Row([self.mcp_save_btn, self.mcp_reload_btn], spacing=8, tight=True),
+                    ], spacing=6, tight=True),
+                    border=ft.Border.all(1, ft.Colors.with_opacity(0.7, ft.Colors.OUTLINE_VARIANT)),
+                    border_radius=16,
+                    padding=ft.Padding(12, 10, 12, 10),
+                    bgcolor=ft.Colors.SURFACE_CONTAINER,
+                ),
+                ft.Container(height=8),
                 ft.Container(self.mcp_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=34, padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE),
             ],
             expand=True,
@@ -1982,8 +2093,9 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                         ft.Text(skill.get('description', ''), size=10, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.85, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
                     ], spacing=2, expand=True),
                     ft.Text(status, size=10, color=status_color, weight=ft.FontWeight.W_500),
+                    ft.IconButton(icon=ft.Icons.PLAY_ARROW_ROUNDED, tooltip=_("run_skill"), icon_size=14, icon_color=ft.Colors.PRIMARY, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.PRIMARY)), on_click=lambda e, n=skill.get('name'): self._execute_skill(n)),
                     ft.IconButton(icon=ft.Icons.POWER_SETTINGS_NEW_ROUNDED, tooltip=_("skill_toggle"), icon_size=14, icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE_VARIANT)), on_click=lambda e, n=skill.get('name'): self._toggle_skill(n)),
-                    ft.IconButton(icon=ft.Icons.DELETE_OUTLINE_ROUNDED, tooltip=_("skill_uninstall"), icon_size=14, icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE_VARIANT)), on_click=lambda e, n=skill.get('name'): self._uninstall_skill(n)),
+                    ft.IconButton(icon=ft.Icons.DELETE_OUTLINE_ROUNDED, tooltip=_("skill_uninstall"), icon_size=14, icon_color=ft.Colors.ERROR, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ERROR)), on_click=lambda e, n=skill.get('name'): self._uninstall_skill(n)),
                 ], spacing=6, tight=True)
                 self.skill_list.controls.append(row)
         self.skill_list.update()
@@ -2083,6 +2195,29 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         except Exception as e:
             self._append_terminal(f"uninstall error: {e}")
             self._set_status("Skill 卸载异常", ft.Colors.RED_400)
+
+    def _execute_skill(self, name: str):
+        if not name:
+            return
+        item = next((s for s in getattr(self, '_skill_all_items', []) if s.get('name') == name), None)
+        params = (item or {}).get('params') or {}
+        self._append_terminal(f"run skill: {name} params={params}")
+        self._set_status(f"运行 Skill: {name}", ft.Colors.AMBER_400)
+        try:
+            from prism.skills import skills
+            result = skills.execute(name, **params)
+            if isinstance(result, dict) and result.get('success'):
+                content = result.get('result') or result.get('output') or result.get('content') or str(result)
+                self._append("PRISM", content)
+                self._set_status(f"Skill 完成: {name}", ft.Colors.GREEN_400)
+            else:
+                error = result.get('error') if isinstance(result, dict) else str(result)
+                self._append("PRISM", f"Skill 失败: {error}")
+                self._set_status(f"Skill 失败: {name}", ft.Colors.RED_400)
+            self._append_terminal(f"skill done: {name}")
+        except Exception as e:
+            self._set_status("Skill 执行异常", ft.Colors.RED_400)
+            self._append_terminal(f"skill error: {e}")
 
     def _install_skill_from_ui(self):
         name = self.skill_install_field.value.strip() if hasattr(self, 'skill_install_field') else ""

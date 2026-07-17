@@ -446,6 +446,8 @@ class SkillRegistry:
                 'enabled': s.enabled,
                 'triggers': s.triggers,
                 'status': getattr(s, 'status', 'stable'),
+                'handler': s.handler.__name__ if s.handler else None,
+                'params': getattr(s, 'params', None),
             }
             for s in self.skills.values()
         ]
