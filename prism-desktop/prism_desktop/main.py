@@ -7,6 +7,7 @@ PRISM Agent - 桌面客户端
 import sys
 import asyncio
 from pathlib import Path
+from typing import Any, Dict, Optional
 
 # 让桌面端优先加载项目根 prism 包，避免被 venv site-packages 里的旧副本覆盖
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -192,6 +193,16 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 pass
         except Exception:
             logger.debug("append notification failed: %s", traceback.format_exc())
+
+    def _test_notification(self):
+        try:
+            from prism.notification_system import notification_system
+            notification_system.set_ui_callback(self._append_notification)
+            notification_system.notify("测试通知", "这是一条测试通知", category="info", sound=False)
+            self._set_status("通知已发送", ft.Colors.GREEN_400)
+        except Exception as exc:
+            self._log_error("test notification", exc)
+            self._set_status("通知发送失败", ft.Colors.RED_400)
 
     def _log_error(self, context: str, exc: BaseException) -> None:
         try:
@@ -1467,15 +1478,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         )
         self._right_notification_tab = ft.Column(
             [
-                ft.Row([ft.Text("通知", size=13, weight=ft.FontWeight.W_600, color=ft.Colors.ON_SURFACE, opacity=0.95), ft.Container(expand=True)], alignment=ft.MainAxisAlignment.START, spacing=8),
-            ],
-            expand=True,
-            spacing=8,
-        )
-        self.notification_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO, padding=ft.Padding(6, 4, 6, 4))
-        self._right_notification_tab = ft.Column(
-            [
-                ft.Row([ft.Text("通知", size=13, weight=ft.FontWeight.W_600, color=ft.Colors.ON_SURFACE, opacity=0.95), ft.Container(expand=True)], alignment=ft.MainAxisAlignment.START, spacing=8),
+                ft.Row([ft.Text("通知", size=13, weight=ft.FontWeight.W_600, color=ft.Colors.ON_SURFACE, opacity=0.95), ft.Container(expand=True), ft.Row([ft.TextButton("测试通知", on_click=lambda e: self._test_notification())], spacing=4, tight=True)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=8),
                 ft.Container(self.notification_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=34, padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE),
             ],
             expand=True,
