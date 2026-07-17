@@ -978,6 +978,16 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.mcp_reload_btn = ft.TextButton("重载", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.SURFACE_CONTAINER, color=ft.Colors.ON_SURFACE), icon=ft.Icons.REFRESH_ROUNDED, animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         self.mcp_reload_btn.on_click = lambda e: (self._reload_mcp(), self._refresh_mcp())
         self._mcp_config_path = str(Path.home() / ".prism" / "mcp.json")
+        self.webhook_path_field = ft.TextField(label="path", hint_text="如 /my-webhook", width=260, border_radius=12, dense=True)
+        self.webhook_secret_field = ft.TextField(label="secret", hint_text="可选密钥", width=260, border_radius=12, dense=True, password=True, can_reveal_password=True)
+        self.webhook_command_field = ft.TextField(label="command", hint_text="触发后执行的命令", width=360, border_radius=12, dense=True)
+        self.webhook_enabled_switch = ft.Switch(label="enabled", value=True)
+        self.webhook_save_btn = ft.TextButton("保存", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), icon=ft.Icons.SAVE_ROUNDED, animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
+        self.webhook_save_btn.on_click = lambda e: self._save_webhook_from_ui()
+        self.webhook_cancel_btn = ft.TextButton("取消", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.SURFACE_CONTAINER, color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
+        self.webhook_cancel_btn.on_click = lambda e: self._hide_webhook_form()
+        self._webhook_form_edit_id = None
+        self.webhook_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO, padding=ft.Padding(6, 4, 6, 4))
 
         # Skills
         self.skill_refresh_btn = ft.Button(_("refresh_skills"), icon=ft.Icons.REFRESH_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
@@ -1427,27 +1437,25 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         )
         self._right_webhook_tab = ft.Column(
             [
-                ft.Row([ft.Text("Webhook", size=13, weight=ft.FontWeight.W_600, color=ft.Colors.ON_SURFACE, opacity=0.95), ft.Container(expand=True), ft.Row([ft.TextButton("启动服务", on_click=lambda e: self._start_webhook_server())], spacing=4, tight=True)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=8),
-            ],
-            expand=True,
-            spacing=8,
-        )
-        self.webhook_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO, padding=ft.Padding(6, 4, 6, 4))
-        self._right_webhook_tab = ft.Column(
-            [
-                ft.Row([ft.Text("Webhook", size=13, weight=ft.FontWeight.W_600, color=ft.Colors.ON_SURFACE, opacity=0.95), ft.Container(expand=True), ft.Row([ft.TextButton("启动服务", on_click=lambda e: self._start_webhook_server())], spacing=4, tight=True)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=8),
+                ft.Row([ft.Text("Webhook", size=13, weight=ft.FontWeight.W_600, color=ft.Colors.ON_SURFACE, opacity=0.95), ft.Container(expand=True), ft.Row([ft.TextButton("启动服务", on_click=lambda e: self._start_webhook_server()), ft.TextButton("新增", on_click=lambda e: self._show_webhook_form())], spacing=4, tight=True)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=8),
+                ft.Container(
+                    ft.Column([
+                        ft.Row([self.webhook_path_field, self.webhook_secret_field], spacing=8, tight=True),
+                        self.webhook_command_field,
+                        ft.Row([self.webhook_enabled_switch, self.webhook_save_btn, self.webhook_cancel_btn], spacing=8, tight=True),
+                    ], spacing=6, tight=True),
+                    border=ft.Border.all(1, ft.Colors.with_opacity(0.7, ft.Colors.OUTLINE_VARIANT)),
+                    border_radius=16,
+                    padding=ft.Padding(12, 10, 12, 10),
+                    bgcolor=ft.Colors.SURFACE_CONTAINER,
+                    visible=False,
+                ),
                 ft.Container(self.webhook_list, expand=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), border_radius=34, padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE),
             ],
             expand=True,
             spacing=8,
         )
-        self._right_schedule_tab = ft.Column(
-            [
-                ft.Row([ft.Text("定时", size=13, weight=ft.FontWeight.W_600, color=ft.Colors.ON_SURFACE, opacity=0.95), ft.Container(expand=True), ft.Row([ft.TextButton("同步", on_click=lambda e: self._refresh_schedule())], spacing=4, tight=True)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=8),
-            ],
-            expand=True,
-            spacing=8,
-        )
+        self._webhook_form_container = self._right_webhook_tab.controls[1]
         self.schedule_list = ft.ListView(expand=True, spacing=4, auto_scroll=True, scroll=ft.ScrollMode.AUTO, padding=ft.Padding(6, 4, 6, 4))
         self._right_schedule_tab = ft.Column(
             [
@@ -1970,6 +1978,111 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         except Exception as exc:
             self._log_error("webhook start", exc)
             self._set_status("Webhook 启动失败", ft.Colors.RED_400)
+
+    def _show_webhook_form(self, edit_id: Optional[str] = None):
+        self._webhook_form_edit_id = edit_id
+        form = getattr(self, "_webhook_form_container", None)
+        if not form:
+            return
+        if edit_id:
+            try:
+                from prism.webhook_trigger import webhook_trigger
+                data = next((w for w in webhook_trigger.list_webhooks() if w.get("id") == edit_id), None)
+                if data:
+                    self.webhook_path_field.value = data.get("path") or ""
+                    self.webhook_secret_field.value = data.get("secret") or ""
+                    self.webhook_command_field.value = data.get("command") or ""
+                    self.webhook_enabled_switch.value = bool(data.get("enabled", True))
+            except Exception:
+                pass
+        else:
+            self.webhook_path_field.value = ""
+            self.webhook_secret_field.value = ""
+            self.webhook_command_field.value = ""
+            self.webhook_enabled_switch.value = True
+        for fld in [self.webhook_path_field, self.webhook_secret_field, self.webhook_command_field, self.webhook_enabled_switch]:
+            try:
+                fld.update()
+            except Exception:
+                pass
+        form.visible = True
+        try:
+            form.update()
+        except Exception:
+            pass
+
+    def _hide_webhook_form(self):
+        form = getattr(self, "_webhook_form_container", None)
+        if form:
+            form.visible = False
+            try:
+                form.update()
+            except Exception:
+                pass
+        self._webhook_form_edit_id = None
+
+    def _save_webhook_from_ui(self):
+        path = (self.webhook_path_field.value or "").strip()
+        secret = (self.webhook_secret_field.value or "").strip()
+        command = (self.webhook_command_field.value or "").strip()
+        enabled = bool(self.webhook_enabled_switch.value)
+        if not path or not command:
+            self._set_status("path 与 command 不能为空", ft.Colors.RED_400)
+            return
+        try:
+            from prism.webhook_trigger import webhook_trigger
+            webhook_id = self._webhook_form_edit_id or f"wh_{int(__import__('time').time()*1000)}"
+            webhook = webhook_trigger.register(webhook_trigger._Webhook(id=webhook_id, path=path, secret=secret, command=command, enabled=enabled))
+            self._append_terminal(f"webhook saved: {webhook.id}")
+            self._set_status(f"Webhook 已保存：{webhook.id}", ft.Colors.GREEN_400)
+            self._hide_webhook_form()
+            self._refresh_webhooks()
+        except Exception as exc:
+            self._log_error("save webhook", exc)
+            self._set_status("Webhook 保存失败", ft.Colors.RED_400)
+
+    def _refresh_webhooks(self):
+        if not hasattr(self, "webhook_list") or self.webhook_list is None:
+            return
+        try:
+            from prism.webhook_trigger import webhook_trigger
+            items = webhook_trigger.list_webhooks()
+        except Exception:
+            items = []
+        self.webhook_list.controls.clear()
+        if not items:
+            self.webhook_list.controls.append(ft.Text("暂无 Webhook", size=12, color=ft.Colors.ON_SURFACE_VARIANT))
+        else:
+            for data in items:
+                row = ft.Row([
+                    ft.Column([
+                        ft.Text(data.get("path") or "/", size=12, color=ft.Colors.ON_SURFACE),
+                        ft.Text(data.get("command") or "", size=10, color=ft.Colors.ON_SURFACE_VARIANT, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
+                    ], spacing=2, expand=True),
+                    ft.Text("启用" if data.get("enabled") else "禁用", size=10, color=ft.Colors.GREEN_400 if data.get("enabled") else ft.Colors.ON_SURFACE_VARIANT),
+                    ft.IconButton(icon=ft.Icons.EDIT_ROUNDED, tooltip="编辑", icon_size=14, icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE_VARIANT)), on_click=lambda e, d=data: self._show_webhook_form(d.get("id"))),
+                    ft.IconButton(icon=ft.Icons.DELETE_OUTLINE_ROUNDED, tooltip="删除", icon_size=14, icon_color=ft.Colors.ERROR, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ERROR)), on_click=lambda e, d=data: self._delete_webhook(d.get("id"))),
+                ], spacing=8, tight=True)
+                self.webhook_list.controls.append(row)
+        try:
+            self.webhook_list.update()
+        except Exception:
+            pass
+
+    def _delete_webhook(self, webhook_id: str):
+        if not webhook_id:
+            return
+        try:
+            from pathlib import Path
+            wh_path = Path.home() / ".prism" / "webhooks" / f"{webhook_id}.json"
+            if wh_path.exists():
+                wh_path.unlink()
+            self._append_terminal(f"webhook deleted: {webhook_id}")
+            self._set_status(f"Webhook 已删除：{webhook_id}", ft.Colors.GREEN_400)
+            self._refresh_webhooks()
+        except Exception as exc:
+            self._log_error("delete webhook", exc)
+            self._set_status("Webhook 删除失败", ft.Colors.RED_400)
 
     def _refresh_schedule(self):
         def _run():
