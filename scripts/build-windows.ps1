@@ -72,7 +72,7 @@ foreach ($item in $built) {
 
 # 生成发布清单
 Write-Host '[4/4] 生成发布清单...'
-$version = '2.1.2'
+$version = '2.1.6'
 $manifest = @"
 # PRISM Desktop Windows 本地发布包
 
