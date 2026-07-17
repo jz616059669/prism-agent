@@ -27,7 +27,7 @@ console = Console()
 
 
 @click.group(invoke_without_command=True)
-@click.version_option(version="2.1.5", prog_name="PRISM")
+@click.version_option(version="2.1.6", prog_name="PRISM")
 @click.pass_context
 def cli(ctx):
     """
@@ -42,7 +42,7 @@ def cli(ctx):
             model = prism_cfg.get('model.default', 'unknown')
             provider = prism_cfg.get('model.provider', 'unknown')
             console.print(Panel.fit(
-                f"[bold cyan]PRISM Agent[/bold cyan] [dim]v2.1.5[/dim]\n"
+                f"[bold cyan]PRISM Agent[/bold cyan] [dim]v2.1.6[/dim]\n"
                 f"整合 Hermes + Codex + OpenClaw 能力\n"
                 f"当前模型: [green]{model}[/green] / [green]{provider}[/green]\n"
                 "输入 [cyan]prism chat[/cyan] 进入交互对话，或 [cyan]prism --help[/cyan] 查看命令",
@@ -50,7 +50,7 @@ def cli(ctx):
             ))
         except Exception:
             console.print(Panel.fit(
-                "[bold cyan]PRISM Agent[/bold cyan] [dim]v2.1.5[/dim]\n"
+                "[bold cyan]PRISM Agent[/bold cyan] [dim]v2.1.6[/dim]\n"
                 "整合 Hermes + Codex + OpenClaw 能力\n"
                 "输入 [cyan]prism chat[/cyan] 进入交互对话，或 [cyan]prism --help[/cyan] 查看命令",
                 border_style="cyan"
@@ -141,7 +141,7 @@ def chat():
         console.print(f"[red]配置错误：{e}[/red]")
         return
     console.print(Panel.fit(
-        "[bold cyan]PRISM Agent[/bold cyan] [dim]v2.1.5[/dim]\n"
+        "[bold cyan]PRISM Agent[/bold cyan] [dim]v2.1.6[/dim]\n"
         "整合 Hermes + Codex + OpenClaw 能力\n"
         "输入 /help 查看命令，/exit 退出",
         border_style="cyan"
@@ -225,7 +225,7 @@ def model():
 @cli.command()
 def version():
     """显示版本信息"""
-    console.print("PRISM Agent v2.1.5")
+    console.print("PRISM Agent v2.1.6")
     console.print("整合 Hermes + Codex + OpenClaw 能力")
 
 
