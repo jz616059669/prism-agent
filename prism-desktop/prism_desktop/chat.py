@@ -24,7 +24,7 @@ class ChatMixin:
             return [ft.Text(" ", selectable=True, color=text_color)]
         return [ft.Text(text, selectable=True, color=text_color)]
 
-    def _append(self, role: str, text: str, retry: bool = False, retry_text: str = "", placeholder: bool = False):
+    def _append(self, role: str, text: str, retry: bool = False, retry_text: str = "", placeholder: bool = False, images=None):
         if hasattr(self, "_chat_placeholder") and self._chat_placeholder and self._chat_placeholder in self.chat_list.controls:
             self.chat_list.controls.remove(self._chat_placeholder)
         if hasattr(self, "_chat_placeholder") and self._chat_placeholder:
@@ -122,7 +122,8 @@ class ChatMixin:
 
     def _send(self, retry_text: str = ""):
         text = retry_text or (self.input_field.value or "").strip()
-        if not text:
+        images = list(getattr(self, "_pending_images", []) or [])
+        if not text and not images:
             return
         if not getattr(self, "agent", None):
             self._append("PRISM", "Error: agent 未初始化，请检查配置并保存后重试。")
@@ -133,7 +134,19 @@ class ChatMixin:
         self._generating = True
         self.stop_btn.visible = True
         self.stop_btn.update()
-        self._append("你", text)
+        if images:
+            try:
+                if hasattr(self, "_clear_pending_images"):
+                    self._clear_pending_images()
+            except Exception:
+                pass
+            display_text = text if text else "图片"
+            self._append("你", display_text, images=images)
+            multimodal_content = self._build_multimodal_content(text, images)
+        else:
+            self._append("你", text)
+            multimodal_content = text
+
 
         stream_widget = None
         stream_text = ""
@@ -192,7 +205,7 @@ class ChatMixin:
             try:
                 self._log_to_file("info", "stream_start", text=text, model=getattr(self.agent, "model", "unknown"))
                 result = self.agent.chat(
-                    text,
+                    multimodal_content,
                     on_chunk=lambda c: _stream_chunk(c) if getattr(self, "_generating", False) else None,
                 )
                 self._log_to_file("info", "chat_result", result_type=type(result).__name__, result_preview=str(result)[:200])

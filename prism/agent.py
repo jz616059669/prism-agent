@@ -35,7 +35,7 @@ except Exception:  # noqa: BLE001
 class Message:
     """消息结构"""
     role: str  # system | user | assistant | tool
-    content: str
+    content: str | List[Dict[str, Any]]
     timestamp: datetime = field(default_factory=datetime.now)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
@@ -380,8 +380,23 @@ class Agent:
                 save_checkpoint(self, label="before_chat")
             except Exception:
                 pass
+        def _serialize_content(content):
+            if isinstance(content, str):
+                return content
+            if isinstance(content, list):
+                serialized = []
+                for item in content:
+                    if isinstance(item, dict):
+                        serialized.append(item)
+                    elif isinstance(item, str):
+                        serialized.append({"type": "text", "text": item})
+                    else:
+                        serialized.append({"type": "text", "text": str(item)})
+                return serialized
+            return str(content)
+
         api_messages = [
-            {"role": m.role, "content": m.content}
+            {"role": m.role, "content": _serialize_content(m.content)}
             for m in self.messages
         ]
 
