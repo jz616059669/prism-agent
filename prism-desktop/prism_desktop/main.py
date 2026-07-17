@@ -1416,7 +1416,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.chat_search_field = ft.TextField(hint_text="搜索消息...", width=260, border_radius=18, dense=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), content_padding=ft.Padding(10, 8, 10, 8), bgcolor=ft.Colors.SURFACE_CONTAINER)
         return ft.Column(
             [
-                ft.Row([ft.Text(_("chat_tab"), size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), ft.Container(expand=True), ft.Row([self._clock_text], alignment=ft.MainAxisAlignment.END)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=14),
+                ft.Row([ft.Text(_("chat_tab"), size=22, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE), ft.Container(expand=True), ft.Row([self._clock_text, ft.IconButton(icon=ft.Icons.DOWNLOAD_OUTLINED, tooltip="导出当前对话", icon_color=ft.Colors.ON_SURFACE_VARIANT, on_click=lambda e: self._export_current_chat())], alignment=ft.MainAxisAlignment.END)], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, spacing=14),
                 self.chat_search_field,
                 ft.Row([
                     ft.IconButton(icon=ft.Icons.SEARCH_ROUNDED, tooltip="搜索", icon_color=ft.Colors.PRIMARY, on_click=lambda e: self._search_messages(self.chat_search_field.value or "")),

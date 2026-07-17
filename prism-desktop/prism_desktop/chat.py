@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import datetime
+import os
+from pathlib import Path
 import json
 import threading
 from typing import TYPE_CHECKING, List, Tuple
@@ -242,10 +244,12 @@ class ChatMixin:
     def _stop_send(self):
         self._generating = False
 
-    def _search_messages(self, query: str):
+    def _search_messages(self, query: str, direction: int = 1):
         if not query:
+            self._clear_search_highlights()
             return
         items = getattr(self.chat_list, "controls", [])
+        matches = []
         for idx, item in enumerate(items):
             text = ""
             if hasattr(item, "content") and hasattr(item.content, "content"):
@@ -253,23 +257,85 @@ class ChatMixin:
                     for ctrl in item.content.content.controls:
                         if hasattr(ctrl, "value"):
                             text += str(ctrl.value)
-                except Exception as ex:
-                    logger.debug("search message read failed: %s", ex)
+                except Exception:
+                    pass
             if query in text:
-                try:
-                    if hasattr(self.chat_list, "scroll_to") and hasattr(self.chat_list, "page"):
-                        async def _do_scroll():
-                            await self.chat_list.scroll_to(delta=99999, duration=200)
-                        self.chat_list.page.run_task(_do_scroll)
-                except Exception as ex:
-                    logger.debug("search scroll failed: %s", ex)
-                return
+                matches.append(idx)
+        if not matches:
+            self._clear_search_highlights()
+            return
+        if not hasattr(self, "_search_index"):
+            self._search_index = -1
+        if direction > 0:
+            self._search_index = (self._search_index + 1) % len(matches)
+        else:
+            self._search_index = (self._search_index - 1) % len(matches)
+        target = matches[self._search_index]
+        self._clear_search_highlights()
+        try:
+            target_item = items[target]
+            if hasattr(target_item, "bgcolor"):
+                target_item.bgcolor = ft.Colors.with_opacity(0.25, ft.Colors.PRIMARY)
+                target_item.update()
+            if hasattr(self.chat_list, "scroll_to") and hasattr(self.chat_list, "page"):
+                async def _do_scroll():
+                    await self.chat_list.scroll_to(offset=target_item.top or 0, duration=200)
+                self.chat_list.page.run_task(_do_scroll)
+        except Exception as ex:
+            logger.debug("search scroll failed: %s", ex)
+        self._search_query = query
+        self._search_matches = matches
 
     def _jump_to_next_match(self, query: str):
-        self._search_messages(query)
+        self._search_messages(query or getattr(self, "_search_query", ""), direction=1)
 
     def _prev_match(self, query: str):
-        self._search_messages(query)
+        self._search_messages(query or getattr(self, "_search_query", ""), direction=-1)
+
+    def _clear_search_highlights(self):
+        try:
+            for item in getattr(self.chat_list, "controls", []):
+                if hasattr(item, "bgcolor"):
+                    item.bgcolor = None
+                    item.update()
+        except Exception:
+            pass
+        self._search_index = -1
+        self._search_matches = []
+        self._search_query = ""
+
+    def _export_current_chat(self):
+        try:
+            items = getattr(self.chat_list, "controls", [])
+            lines = ["# PRISM Chat Export", ""]
+            for item in items:
+                text = ""
+                role = ""
+                if hasattr(item, "content") and hasattr(item.content, "content"):
+                    try:
+                        controls = item.content.content.controls
+                        if controls:
+                            role = getattr(controls[0], "value", "") or ""
+                            for ctrl in controls:
+                                if hasattr(ctrl, "value"):
+                                    text += str(ctrl.value)
+                    except Exception:
+                        pass
+                if not text.strip():
+                    continue
+                label = role.strip() or "message"
+                lines.append(f"## {label}")
+                lines.append(text.strip())
+                lines.append("")
+            path = os.path.join(str(Path.home()), ".prism", f"chat_export_{int(__import__('time').time())}.md")
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("\n".join(lines))
+            self._set_status(f"已导出: {path}", ft.Colors.GREEN_400)
+            self._append_terminal(f"chat exported: {path}")
+        except Exception as exc:
+            self._log_error("export chat failed", exc)
+            self._set_status("导出失败", ft.Colors.RED_400)
 
     def _build_prompt_templates(self) -> ft.Column:
         templates = [
