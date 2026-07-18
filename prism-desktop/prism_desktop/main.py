@@ -2916,7 +2916,7 @@ def main():
     view = ft.AppView.FLET_APP if view_env == "app" else ft.AppView.WEB_BROWSER
     kwargs = dict(main=_app, view=view)
     if view == ft.AppView.WEB_BROWSER:
-        kwargs["port"] = 50058
+        kwargs["port"] = int(os.environ.get("PRISM_PORT", "5000"))
     ft.run(**kwargs)
 
 

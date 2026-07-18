@@ -842,7 +842,7 @@ wheels = [
 
 [[package]]
 name = "prism-desktop"
-version = "2.1.5"
+version = "2.1.6"
 source = { virtual = "." }
 dependencies = [
     { name = "flet" },

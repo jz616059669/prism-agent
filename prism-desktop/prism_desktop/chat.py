@@ -24,7 +24,10 @@ class ChatMixin:
     def _markdown_to_ft(self, text: str, text_color=ft.Colors.ON_SURFACE) -> List[ft.Control]:
         if not text or not text.strip():
             return [ft.Text(" ", selectable=True, color=text_color)]
-        return [ft.Text(text, selectable=True, color=text_color)]
+        try:
+            return [ft.Markdown(text, selectable=True, extension_set=ft.MarkdownExtensionSet.GITHUB_WEB, on_tap_link=lambda e: None)]
+        except Exception:
+            return [ft.Text(text, selectable=True, color=text_color)]
 
     def _append(self, role: str, text: str, retry: bool = False, retry_text: str = "", placeholder: bool = False, images=None):
         if hasattr(self, "_chat_placeholder") and self._chat_placeholder and self._chat_placeholder in self.chat_list.controls:
