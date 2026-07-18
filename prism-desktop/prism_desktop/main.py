@@ -99,26 +99,21 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._save_settings_delay = 0.5  # seconds
 
         try:
-            self._build_ui()
-            self._bind_context_menu()
-            self._bind_tray()
-            self._maybe_show_setup_wizard()
             self._settings = self._load_settings()
-            if hasattr(self.page, "run_task"):
-                self._start_update_check()
-            self._validate_and_create_agent()
+        except Exception:
+            self._settings = {}
+
+        try:
+            self._build_ui()
         except Exception as exc:
-            self.agent = None
-            self._init_error = exc
-            self._log_error("agent init fallback", exc)
-            if hasattr(self, "retry_init_btn") and self.retry_init_btn:
-                self.retry_init_btn.visible = True
+            import traceback
+            tb = traceback.format_exc()
+            print(f"[BUILD UI ERROR] {exc}\n{tb}", flush=True)
 
         try:
             self._bind_context_menu()
             self._bind_tray()
             self._maybe_show_setup_wizard()
-            self._settings = self._load_settings()
             if hasattr(self.page, "run_task"):
                 self._start_update_check()
         except Exception as exc:
@@ -131,6 +126,16 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             print(f"[INIT ERROR] {exc}\n{tb}", flush=True)
             self._append_terminal(f"init error: {exc}")
             self._append_terminal(tb)
+
+        try:
+            self._validate_and_create_agent()
+        except Exception as exc:
+            self.agent = None
+            self._init_error = exc
+            self._log_error("agent init fallback", exc)
+            self._append_terminal(f"agent init error: {exc}")
+            if hasattr(self, "retry_init_btn") and self.retry_init_btn:
+                self.retry_init_btn.visible = True
         # Update clock every second
         if hasattr(self.page, 'add_periodic_callback'):
             def _tick(_):
@@ -938,6 +943,12 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             )
         )
         self.page.update()
+        # 启动后自动滚动聊天区到底部
+        if hasattr(self.chat_list, "scroll_to") and hasattr(self.chat_list, "page"):
+            try:
+                self.chat_list.page.run_task(self.chat_list.scroll_to, delta=99999, duration=150)
+            except Exception:
+                pass
     
     def _open_preset_manager(self):
         presets = (self._settings.get("model_presets") or {})
@@ -1066,10 +1077,10 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 spacing=4,
                 scroll=ft.ScrollMode.AUTO,
             ),
-            width=260,
-            padding=ft.Padding(12, 12, 12, 8),
+            width=220,
+            padding=ft.Padding(10, 8, 10, 6),
             bgcolor=ft.Colors.TRANSPARENT,
-            border_radius=16,
+            border_radius=12,
         )
 
         save_btn = ft.Button(_("save_settings"), icon=ft.Icons.SAVE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
@@ -1207,7 +1218,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 tight=True,
             ),
-            padding=ft.Padding(64, 64, 64, 64),
+            padding=ft.Padding(10, 8, 10, 8),
             border_radius=16,
             bgcolor=ft.Colors.with_opacity(0.5, ft.Colors.SURFACE_CONTAINER),
         )
@@ -1215,9 +1226,9 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         sidebar_content = self._sidebar_container.content
         self._sidebar_sections = []
         def _section_card(title, icon, controls, accent=None):
-            header = ft.Row([ft.Icon(icon, size=14, color=ft.Colors.PRIMARY), ft.Text(title, size=12, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE)], spacing=8, tight=True)
+            header = ft.Row([ft.Icon(icon, size=16, color=ft.Colors.PRIMARY), ft.Text(title, size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE)], spacing=6, tight=True)
             toggle = ft.IconButton(icon=ft.Icons.UNFOLD_LESS_ROUNDED, tooltip="收起", icon_size=16, icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.1, ft.Colors.ON_SURFACE_VARIANT)))
-            body = ft.Column(controls, tight=True, spacing=6)
+            body = ft.Column(controls, tight=True, spacing=4)
             body._collapsed = False
             section_container = ft.Container(content=body, padding=ft.Padding(0, 0, 0, 0))
             def _on_toggle(e):
@@ -1234,85 +1245,59 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             toggle.on_click = _on_toggle
             header_row = ft.Row([header, ft.Container(expand=True), toggle], spacing=6, tight=True)
             card = ft.Container(
-                content=ft.Column([header_row, section_container], tight=True, spacing=6),
+                content=ft.Column([header_row, section_container], tight=True, spacing=4),
                 bgcolor=ft.Colors.SURFACE_CONTAINER,
-                border_radius=16,
-                padding=ft.Padding(12, 10, 12, 10),
+                border_radius=12,
+                padding=ft.Padding(10, 8, 10, 8),
                 border=ft.Border(top=ft.border.BorderSide(1, ft.Colors.with_opacity(0.06, ft.Colors.ON_SURFACE))) if not accent else ft.Border(top=ft.border.BorderSide(1, accent)),
             )
-            self._sidebar_sections.append((title, card, section_container, body, toggle, header_row))
+            self._sidebar_sections.append((title, card, section_container, section_container, toggle, header_row))
             return card
         sidebar_content.controls.extend([
             _section_card("模型配置", ft.Icons.TUNE_ROUNDED, [
                 ft.Row([self.model_dropdown, ft.IconButton(icon=ft.Icons.BOOKMARK_ROUNDED, tooltip="保存为预设", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE)), on_click=lambda e: self._save_preset())], spacing=6, tight=True),
-                ft.Container(height=24),
                 self.provider_textfield,
-                ft.Container(height=24),
                 self.base_url_textfield,
-                ft.Container(height=24),
                 self.api_key_textfield,
-                ft.Container(height=2),
                 ft.Row([self.review_enabled_switch, self.review_interval_field], spacing=4, tight=True),
                 ft.Row([save_btn, ft.TextButton("预设管理", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.SURFACE_CONTAINER, color=ft.Colors.ON_SURFACE), on_click=lambda e: self._open_preset_manager())], spacing=8, tight=True),
             ]),
-            ft.Container(height=14),
-            _section_card("浏览器控制", ft.Icons.LANGUAGE_ROUNDED, [
-                browser_hint,
-                ft.Container(height=6),
-                self.url_field,
-                ft.Column([browser_open_btn, browser_snapshot_btn, browser_close_btn], spacing=6, tight=True),
-            ], accent=ft.border.BorderSide(1, ft.Colors.with_opacity(0.6, ft.Colors.OUTLINE_VARIANT))),
-            ft.Container(height=14),
             _section_card("MCP 控制", ft.Icons.EXTENSION_ROUNDED, [
-                ft.Container(height=14),
                 self.mcp_refresh_btn,
-                ft.Container(height=6),
                 ft.Text("已配置服务器", size=12, color=ft.Colors.ON_SURFACE),
                 self.mcp_server_list,
-                ft.Container(height=10),
                 ft.Text("运行状态", size=12, color=ft.Colors.ON_SURFACE),
                 self.mcp_status_list,
             ]),
-            ft.Container(height=14),
             _section_card("工作流", ft.Icons.ACCOUNT_TREE_ROUNDED, [
-                ft.Container(height=14),
                 self.workflow_refresh_btn,
-                ft.Container(height=6),
                 ft.Text("预定义工作流", size=12, color=ft.Colors.ON_SURFACE),
                 self.workflow_list,
             ]),
-            ft.Container(height=14),
             _section_card("快捷提示词", ft.Icons.LIGHTBULB_ROUNDED, [
                 self._build_prompt_templates(),
             ]),
-            ft.Container(height=14),
             _section_card("会话管理", ft.Icons.CHAT, [
                 self._session_search_field,
-                ft.Row([self.session_name_field, self.session_save_btn], spacing=6),
-                ft.Container(height=6),
+                ft.Row([self.session_name_field, self.session_save_btn], spacing=4),
                 ft.Text("已保存会话", size=12, color=ft.Colors.ON_SURFACE),
                 ft.Divider(height=1, color=ft.Colors.OUTLINE_VARIANT, opacity=0.5),
                 self.session_list,
             ]),
-            ft.Container(height=14),
             _section_card("对话统计", ft.Icons.SHOW_CHART_ROUNDED, [
                 ft.Row([ft.Text("调用次数", size=11, color=ft.Colors.ON_SURFACE_VARIANT), self.usage_calls_text], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                 ft.Row([ft.Text("成功率", size=11, color=ft.Colors.ON_SURFACE_VARIANT), self.usage_success_text], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                 ft.Row([ft.Text("平均延迟", size=11, color=ft.Colors.ON_SURFACE_VARIANT), self.usage_latency_text], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                 ft.Row([ft.Text("Token 消耗", size=11, color=ft.Colors.ON_SURFACE_VARIANT), self.usage_tokens_text], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                 ft.Row([ft.Text("估算成本", size=11, color=ft.Colors.ON_SURFACE_VARIANT), self.usage_cost_text], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                ft.Container(height=8),
                 ft.TextButton("刷新统计", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.SURFACE_CONTAINER, color=ft.Colors.ON_SURFACE), on_click=lambda e: self._refresh_usage_dash()),
             ]),
-            ft.Container(height=14),
             _section_card("状态", ft.Icons.INFO, [
-                ft.Row([self.browser_status_icon, self.browser_status_text], spacing=10, alignment=ft.MainAxisAlignment.START),
-                ft.Row([self.status_text, self.perf_text, ft.Container(expand=True), self._clock_text], spacing=10),
+                ft.Row([self.browser_status_icon, self.browser_status_text], spacing=8, alignment=ft.MainAxisAlignment.START),
+                ft.Row([self.status_text, self.perf_text, ft.Container(expand=True), self._clock_text], spacing=8),
                 ft.Row([ft.IconButton(icon=ft.Icons.PALETTE_ROUNDED, tooltip="切换主题", icon_size=16, icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE_VARIANT)), on_click=lambda e: self._cycle_theme())], alignment=ft.MainAxisAlignment.END),
-                ft.Container(height=8),
-                ft.Row([ft.Icon(ft.Icons.AUTO_STORIES_ROUNDED, size=14, color=ft.Colors.PRIMARY), ft.Text("后台复盘", size=11, color=ft.Colors.ON_SURFACE), self.review_enabled_switch, ft.Text(f"每 {self.review_interval_field.value} 轮", size=10, color=ft.Colors.ON_SURFACE_VARIANT)], spacing=8, tight=True),
+                ft.Row([ft.Icon(ft.Icons.AUTO_STORIES_ROUNDED, size=14, color=ft.Colors.PRIMARY), ft.Text("后台复盘", size=11, color=ft.Colors.ON_SURFACE), self.review_enabled_switch, ft.Text(f"每 {self.review_interval_field.value} 轮", size=10, color=ft.Colors.ON_SURFACE_VARIANT)], spacing=6, tight=True),
             ]),
-            ft.Container(height=14),
             _section_card("角色人格", ft.Icons.PERSON_ROUNDED, [
                 self.persona_dropdown,
                 ft.Text("切换后独立记忆 + 系统提示词", size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.85),
@@ -1358,10 +1343,10 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._image_picker_btn = ft.IconButton(icon=ft.Icons.IMAGE_ROUNDED, tooltip="发送图片", bgcolor=ft.Colors.SURFACE_CONTAINER, icon_color=ft.Colors.ON_SURFACE, style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE_VARIANT)), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         self._image_picker_btn.on_click = lambda e: self._pick_image()
         self._attach_btn = ft.IconButton(icon=ft.Icons.ATTACHMENT_ROUNDED, tooltip="粘贴附件", bgcolor=ft.Colors.SURFACE_CONTAINER, icon_color=ft.Colors.ON_SURFACE, style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE_VARIANT)), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
-        self._attach_btn.on_click = lambda e: self._paste_attachment()
-        self._image_picker = ft.FilePicker(on_result=self._on_image_picked)
-        self.page.overlay.append(self._image_picker)
+        self._attach_btn.on_click = lambda e: self._pick_attachment()
         self._pending_images = []
+        self._pending_attachments = []
+        self._attachment_preview_row = ft.Row(spacing=8, wrap=True, visible=False)
         self._image_preview_row = ft.Row(spacing=8, wrap=True, visible=False)
         self._image_preview_container = ft.Container(self._image_preview_row, padding=ft.Padding(8, 4, 8, 4))
         def _on_input_change():
@@ -1452,7 +1437,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 ),
                 ft.Divider(height=2, color=ft.Colors.OUTLINE_VARIANT, opacity=0.3),
                 ft.Container(
-                    content=ft.Column([self._image_preview_container, ft.Row([self.input_field, self.send_btn, self.stop_btn, self._image_picker_btn, self._attach_btn, self.voice_record_btn, self.voice_speak_btn], spacing=10, expand=True)], spacing=6),
+                    content=ft.Column([self._image_preview_container, ft.Container(self._attachment_preview_row, visible=False, padding=ft.Padding(0, 0, 0, 0)), ft.Row([self.input_field, self.send_btn, self.stop_btn, self._image_picker_btn, self._attach_btn, self.voice_record_btn, self.voice_speak_btn], spacing=10, expand=True)], spacing=6),
                     bgcolor=ft.Colors.SURFACE_CONTAINER,
                     
                     border_radius=34,
@@ -1669,7 +1654,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     ctrl.opacity = 1.0
                     ctrl.disabled = False
                 else:
-                    ctrl.visible = True
+                    ctrl.visible = False
                     ctrl.opacity = 0.0
                     ctrl.disabled = True
             for i, btn in enumerate(self._right_tab_buttons_row.controls):
@@ -1830,18 +1815,53 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
 
     def _pick_image(self):
         try:
-            getattr(self, "_image_picker").pick_files(
-                dialog_title="选择图片",
-                file_type=ft.FilePickerFileType.IMAGE,
-                allow_multiple=False,
+            files = self._native_pick_files(
+                title="选择图片",
+                filetypes=[("Images", "*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.webp"), ("All", "*.*")],
+                multiple=False,
             )
+            if files:
+                self._pending_images.append(files[0])
+                self._refresh_image_previews()
+                self._set_status("已添加图片", ft.Colors.GREEN_400)
         except Exception as exc:
             self._log_error("pick image failed", exc)
             self._set_status("选择图片失败", ft.Colors.RED_400)
 
-    def _on_image_picked(self, e):
+    def _pick_attachment(self):
         try:
-            files = getattr(e, "files", []) or []
+            files = self._native_pick_files(
+                title="选择附件",
+                filetypes=[("All", "*.*")],
+                multiple=True,
+            )
+            if files:
+                for path in files:
+                    self._pending_attachments.append(path)
+                self._refresh_attachment_previews()
+                self._set_status(f"已添加 {len(files)} 个附件", ft.Colors.GREEN_400)
+        except Exception as exc:
+            self._log_error("pick attachment failed", exc)
+            self._set_status("选择附件失败", ft.Colors.RED_400)
+
+    def _native_pick_files(self, title="选择文件", filetypes=None, multiple=False):
+        import tkinter as tk
+        from tkinter import filedialog
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes("-topmost", True)
+        if multiple:
+            paths = filedialog.askopenfilenames(title=title, filetypes=filetypes or [("All", "*.*")])
+            result = list(paths) if paths else []
+        else:
+            path = filedialog.askopenfilename(title=title, filetypes=filetypes or [("All", "*.*")])
+            result = [path] if path else []
+        root.destroy()
+        return result
+
+    def _on_image_picked(self, result):
+        try:
+            files = getattr(result, "files", []) or []
             if files:
                 path = files[0].path
                 if path:
@@ -1849,8 +1869,54 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     self._refresh_image_previews()
                     self._set_status("已添加图片", ft.Colors.GREEN_400)
         except Exception as exc:
-            self._log_error("image picked failed", exc)
-            self._set_status("读取图片失败", ft.Colors.RED_400)
+            self._log_error("on image picked failed", exc)
+            self._set_status("处理图片失败", ft.Colors.RED_400)
+
+    def _on_attachment_picked(self, result):
+        try:
+            files = getattr(result, "files", []) or []
+            if files:
+                for f in files:
+                    path = getattr(f, "path", None) or ""
+                    if path:
+                        self._pending_attachments.append(path)
+                self._refresh_attachment_previews()
+                self._set_status(f"已添加 {len(files)} 个附件", ft.Colors.GREEN_400)
+        except Exception as exc:
+            self._log_error("on attachment picked failed", exc)
+            self._set_status("处理附件失败", ft.Colors.RED_400)
+
+    def _refresh_attachment_previews(self):
+        try:
+            if hasattr(self, "_attachment_preview_row"):
+                self._attachment_preview_row.controls.clear()
+                if not self._pending_attachments:
+                    self._attachment_preview_row.visible = False
+                else:
+                    self._attachment_preview_row.visible = True
+                    for path in self._pending_attachments:
+                        import os
+                        name = os.path.basename(path)
+                        item = ft.Container(
+                            content=ft.Row([
+                                ft.Icon(ft.Icons.INSERT_DRIVE_FILE_OUTLINED, size=16, color=ft.Colors.ON_SURFACE_VARIANT),
+                                ft.Text(name, size=12, color=ft.Colors.ON_SURFACE, expand=True, no_wrap=True),
+                                ft.IconButton(icon=ft.Icons.CLOSE_ROUNDED, icon_size=14, tooltip="移除",
+                                    on_click=lambda e, x=path: self._remove_pending_attachment(x)),
+                            ], spacing=6, tight=True),
+                            bgcolor=ft.Colors.SURFACE_CONTAINER,
+                            border_radius=10,
+                            padding=ft.Padding(10, 8, 10, 8),
+                        )
+                        self._attachment_preview_row.controls.append(item)
+                if getattr(self._attachment_preview_row, "page", None):
+                    self._attachment_preview_row.update()
+        except Exception:
+            pass
+
+    def _remove_pending_attachment(self, path: str):
+        self._pending_attachments = [p for p in self._pending_attachments if p != path]
+        self._refresh_attachment_previews()
 
     def _refresh_image_previews(self):
         try:
@@ -2754,65 +2820,62 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self._append_terminal(f"终端执行失败：{e}")
         self._set_status("就绪")
 
+    def _start_voice_input(self):
+        if not hasattr(self, "voice_record_btn") or self.voice_record_btn is None:
+            return
+        self._set_status("正在录音...", ft.Colors.AMBER_400)
+        self._append_terminal("[voice] start recording")
 
-def _start_voice_input(self):
-    if not hasattr(self, "voice_record_btn") or self.voice_record_btn is None:
-        return
-    self._set_status("正在录音...", ft.Colors.AMBER_400)
-    self._append_terminal("[voice] start recording")
+        def _bg():
+            try:
+                from prism.voice import VoiceInteraction
+                vi = VoiceInteraction()
+                text = vi.listen()
+                if not text:
+                    self._set_status("未识别到语音", ft.Colors.RED_400)
+                    return
+                if hasattr(self, "input_field") and self.input_field is not None:
+                    self.input_field.value = text
+                    if hasattr(self.input_field, "update"):
+                        self.input_field.update()
+                self._set_status("语音转写完成", ft.Colors.GREEN_400)
+                self._append_terminal(f"[voice] recognized: {text[:120]}")
+            except Exception as exc:
+                self._set_status("语音输入失败", ft.Colors.RED_400)
+                self._append_terminal(f"[voice] error: {exc}")
 
-    def _bg():
         try:
-            from prism.voice import VoiceInteraction
-            vi = VoiceInteraction()
-            text = vi.listen()
-            if not text:
-                self._set_status("未识别到语音", ft.Colors.RED_400)
-                return
-            if hasattr(self, "input_field") and self.input_field is not None:
-                self.input_field.value = text
-                if hasattr(self.input_field, "update"):
-                    self.input_field.update()
-            self._set_status("语音转写完成", ft.Colors.GREEN_400)
-            self._append_terminal(f"[voice] recognized: {text[:120]}")
+            threading.Thread(target=_bg, daemon=True).start()
         except Exception as exc:
-            self._set_status("语音输入失败", ft.Colors.RED_400)
-            self._append_terminal(f"[voice] error: {exc}")
+            self._set_status("语音线程启动失败", ft.Colors.RED_400)
+            self._append_terminal(f"[voice] thread error: {exc}")
 
-    try:
-        threading.Thread(target=_bg, daemon=True).start()
-    except Exception as exc:
-        self._set_status("语音线程启动失败", ft.Colors.RED_400)
-        self._append_terminal(f"[voice] thread error: {exc}")
+    def _speak_last_reply(self):
+        if not hasattr(self, "voice_speak_btn") or self.voice_speak_btn is None:
+            return
+        last = getattr(self, "_last_assistant_reply", "") or ""
+        if not last.strip():
+            self._set_status("没有可播报的内容", ft.Colors.RED_400)
+            return
+        self._set_status("正在播报...", ft.Colors.AMBER_400)
+        self._append_terminal("[voice] tts start")
 
+        def _bg():
+            try:
+                from prism.voice import VoiceInteraction
+                vi = VoiceInteraction()
+                vi.speak(last)
+                self._set_status("播报完成", ft.Colors.GREEN_400)
+                self._append_terminal("[voice] tts done")
+            except Exception as exc:
+                self._set_status("语音播报失败", ft.Colors.RED_400)
+                self._append_terminal(f"[voice] tts error: {exc}")
 
-def _speak_last_reply(self):
-    if not hasattr(self, "voice_speak_btn") or self.voice_speak_btn is None:
-        return
-    last = getattr(self, "_last_assistant_reply", "") or ""
-    if not last.strip():
-        self._set_status("没有可播报的内容", ft.Colors.RED_400)
-        return
-    self._set_status("正在播报...", ft.Colors.AMBER_400)
-    self._append_terminal("[voice] tts start")
-
-    def _bg():
         try:
-            from prism.voice import VoiceInteraction
-            vi = VoiceInteraction()
-            vi.speak(last)
-            self._set_status("播报完成", ft.Colors.GREEN_400)
-            self._append_terminal("[voice] tts done")
+            threading.Thread(target=_bg, daemon=True).start()
         except Exception as exc:
-            self._set_status("语音播报失败", ft.Colors.RED_400)
-            self._append_terminal(f"[voice] tts error: {exc}")
-
-    try:
-        threading.Thread(target=_bg, daemon=True).start()
-    except Exception as exc:
-        self._set_status("语音线程启动失败", ft.Colors.RED_400)
-        self._append_terminal(f"[voice] thread error: {exc}")
-
+            self._set_status("语音线程启动失败", ft.Colors.RED_400)
+            self._append_terminal(f"[voice] thread error: {exc}")
 
     def _refresh_workflows(self):
         if not hasattr(self, "workflow_list") or self.workflow_list is None:
