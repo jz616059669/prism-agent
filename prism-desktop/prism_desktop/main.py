@@ -419,7 +419,10 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             with urllib.request.urlopen(req, timeout=8) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
             latest = data.get("tag_name", "").lstrip("v")
-            current = prism_config.get("app.version", "0.0.0")
+            try:
+                current = __import__("prism", fromlist=["__version__"]).__version__
+            except Exception:
+                current = "0.0.0"
             if latest and latest != current:
                 self._set_status(f"发现新版本 {latest}", ft.Colors.AMBER_400)
                 self._append_terminal(f"update available: {latest} (current {current})")
@@ -1319,9 +1322,9 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             expand=True,
             multiline=True,
             min_lines=1,
-            max_lines=6,
+            max_lines=4,
             shift_enter=True,
-            border_radius=34,
+            border_radius=20,
             border_color=ft.Colors.OUTLINE_VARIANT,
             focused_border_color=ft.Colors.OUTLINE_VARIANT,
             focused_border_width=1,
