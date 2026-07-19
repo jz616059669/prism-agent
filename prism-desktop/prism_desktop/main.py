@@ -41,10 +41,10 @@ from prism_desktop.terminal import TerminalMixin
 from prism_desktop.settings import SettingsMixin
 from prism_desktop.system import SystemMixin
 from prism_desktop.mcp import MCPMixin
-from prism_desktop.browser import BrowserMixin
+from prism_desktop.browser import DesktopBrowserMixin
 
 
-class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, SystemMixin, MCPMixin, BrowserMixin):
+class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, SystemMixin, MCPMixin, DesktopBrowserMixin):
     def __init__(self, page: ft.Page):
         self.page = page
         self.page.title = "PRISM Agent"
@@ -1096,12 +1096,12 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         )
         self.url_field = ft.TextField(hint_text="输入网址...", width=260, border_radius=12)
         browser_open_btn = ft.Button("打开网页", icon=ft.Icons.LANGUAGE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
-                     color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT), disabled=not self._browser_deps_ok)
+                     color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         browser_open_btn.on_click = lambda e: self._browser_open()
         browser_snapshot_btn = ft.Button("读取页面快照", icon=ft.Icons.ARTICLE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
-                     color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT), disabled=not self._browser_deps_ok)
+                     color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         browser_snapshot_btn.on_click = lambda e: self._browser_snapshot()
-        browser_close_btn = ft.Button(_("close_browser"), icon=ft.Icons.CLOSE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT), disabled=not self._browser_deps_ok)
+        browser_close_btn = ft.Button(_("close_browser"), icon=ft.Icons.CLOSE_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         browser_close_btn.on_click = lambda e: self._browser_close()
 
         # MCP
@@ -1261,6 +1261,13 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 self.api_key_textfield,
                 ft.Row([self.review_enabled_switch, self.review_interval_field], spacing=4, tight=True),
                 ft.Row([save_btn, ft.TextButton("预设管理", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.SURFACE_CONTAINER, color=ft.Colors.ON_SURFACE), on_click=lambda e: self._open_preset_manager())], spacing=8, tight=True),
+            ]),
+            _section_card("浏览器控制", ft.Icons.LANGUAGE_ROUNDED, [
+                browser_hint,
+                self.url_field,
+                browser_open_btn,
+                browser_snapshot_btn,
+                browser_close_btn,
             ]),
             _section_card("MCP 控制", ft.Icons.EXTENSION_ROUNDED, [
                 self.mcp_refresh_btn,
