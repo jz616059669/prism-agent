@@ -535,6 +535,14 @@ class Agent:
         if not self.tools_enabled:
             return {'success': False, 'error': 'Tools disabled'}
         
+        try:
+            from prism.security import security_manager
+            block = security_manager.check(tool_name, kwargs)
+            if block:
+                return {'success': False, 'error': block}
+        except Exception:
+            pass
+        
         logger.info("execute tool=%s args=%s", tool_name, kwargs)
         
         # MCP 外部工具路由
