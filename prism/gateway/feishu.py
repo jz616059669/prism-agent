@@ -16,6 +16,8 @@ from lark_oapi.api.im.v1 import (
     CreateImageRequestBody,
     CreateMessageRequest,
     CreateMessageRequestBody,
+    PatchMessageRequest,
+    PatchMessageRequestBody,
     ReplyMessageRequest,
     ReplyMessageRequestBody,
 )
@@ -146,13 +148,62 @@ class FeishuAdapter(PlatformAdapter):
                 .build()
             response = client.im.v1.message.create(request)
             if response.success():
+                message_id = response.data.message_id if response.data and response.data.message_id else ""
                 print(f"[Feishu] 消息已发送 -> {chat_id}")
-                return True
+                return message_id != ""
             else:
                 print(f"[Feishu] 发送失败: code={response.code}, msg={response.msg}")
                 return False
         except Exception as e:
             print(f"[Feishu] 发送消息异常: {e}")
+            return False
+
+    def send_thinking(self, chat_id: str, text: str = "正在修炼中……") -> Optional[str]:
+        """发送一条“思考中”占位消息，返回 message_id 以便后续更新"""
+        try:
+            client = LarkClient.builder() \
+                .app_id(self.config.app_id) \
+                .app_secret(self.config.app_secret) \
+                .build()
+            body = CreateMessageRequestBody.builder() \
+                .receive_id(chat_id) \
+                .msg_type("text") \
+                .content(json.dumps({"text": text}, ensure_ascii=False)) \
+                .build()
+            request = CreateMessageRequest.builder() \
+                .receive_id_type("chat_id") \
+                .request_body(body) \
+                .build()
+            response = client.im.v1.message.create(request)
+            if response.success() and response.data and response.data.message_id:
+                return response.data.message_id
+            return None
+        except Exception as e:
+            print(f"[Feishu] 发送思考状态失败: {e}")
+            return None
+
+    def update_message(self, message_id: str, text: str) -> bool:
+        """替换已发送消息的内容，用于把“思考中”改成最终回复"""
+        try:
+            client = LarkClient.builder() \
+                .app_id(self.config.app_id) \
+                .app_secret(self.config.app_secret) \
+                .build()
+            body = PatchMessageRequestBody.builder() \
+                .content(json.dumps({"text": text}, ensure_ascii=False)) \
+                .build()
+            request = PatchMessageRequest.builder() \
+                .message_id(message_id) \
+                .request_body(body) \
+                .build()
+            response = client.im.v1.message.patch(request)
+            if response.success():
+                return True
+            else:
+                print(f"[Feishu] 更新消息失败: code={response.code}, msg={response.msg}")
+                return False
+        except Exception as e:
+            print(f"[Feishu] 更新消息异常: {e}")
             return False
 
     def start(self, handler: Callable[[Message], None]) -> bool:

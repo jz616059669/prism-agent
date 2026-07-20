@@ -131,12 +131,16 @@ def start(
                     click.echo(f"[feishu] {text}")
                     if chat_id not in sessions:
                         sessions[chat_id] = create_agent()
+                    thinking_msg_id = adapter.send_thinking(chat_id)
                     try:
                         reply = sessions[chat_id].chat(text)
                     except Exception as e:
                         reply = f"抱歉，处理你的消息时出错了：{e}"
                     if reply:
-                        adapter.send(chat_id, reply)
+                        if thinking_msg_id:
+                            adapter.update_message(thinking_msg_id, reply)
+                        else:
+                            adapter.send(chat_id, reply)
                 except Exception as e:
                     click.echo(f"[feishu] handler error: {e}")
 
