@@ -79,6 +79,18 @@ class Agent:
         if self._memory_context:
             self.system_prompt = self.system_prompt.rstrip() + "\n\n" + self._memory_context
 
+        # 自动启用记忆语义检索（若配置存在）
+        try:
+            from prism.config import config as cfg
+            emb_cfg = cfg.get('embeddings') or {}
+            base_url = emb_cfg.get('base_url') or ''
+            api_key = emb_cfg.get('api_key') or ''
+            model = emb_cfg.get('model') or ''
+            if base_url and api_key and model:
+                persistent_memory.configure_embeddings(base_url=base_url, api_key=api_key, model=model)
+        except (ImportError, Exception):
+            pass
+
         # RAG 本地知识库
         self._rag = None
         self._rag_enabled = False
@@ -149,6 +161,65 @@ class Agent:
             return text
         except (TypeError, AttributeError):
             return None
+
+    def _maybe_plan_and_execute(self, user_message: str) -> Optional[str]:
+        """
+        复杂任务自动规划执行：
+        1. 判断是否复杂
+        2. 用 Planner 拆分子任务
+        3. 逐个执行并汇总结果
+        """
+        try:
+            if getattr(self, "_planning_in_progress", False):
+                return None
+            self._planning_in_progress = True
+            text = (user_message or "").strip()
+            if len(text) < 20:
+                return None
+            hints = ["步骤", "先", "然后", "最后", "整个", "完整", "系列", "批量", "规划", "计划", "analyse", "analyze", "plan", "project", "设计", "开发"]
+            if not any(h in text.lower() for h in hints):
+                return None
+
+            from prism.planner import Planner
+            planner = Planner(max_steps=4, max_retries=1)
+            plan = planner.decompose(text)
+            if len(plan.subtasks) <= 1:
+                return None
+
+            logger.info("auto plan: goal=%s steps=%d", text[:50], len(plan.subtasks))
+            results = []
+            for task in plan.subtasks:
+                if plan.status != "active":
+                    break
+                task.status = "running"
+                task.started_at = time.time()
+                try:
+                    reply = self._execute_subtask(task.description)
+                    task.status = "done"
+                    task.result = {"success": True, "text": reply}
+                    results.append(reply)
+                except Exception as exc:
+                    failed = planner.mark_failed(plan, task, str(exc))
+                    if failed is None:
+                        results.append(f"子任务失败: {task.description}")
+                        break
+                    plan = failed
+            summary = planner.summarize(plan)
+            return summary
+        except (TypeError, AttributeError, Exception):
+            logger.debug("auto plan execution failed: %s", traceback.format_exc())
+            return None
+        finally:
+            self._planning_in_progress = False
+
+    def _execute_subtask(self, text: str) -> str:
+        """执行子任务：跳过 planning 阶段，直接走正常 chat"""
+        saved = self._planning_in_progress
+        self._planning_in_progress = True
+        try:
+            return self.chat(text)
+        finally:
+            self._planning_in_progress = saved
 
     def decompose_plan(self, user_message: str) -> Optional[str]:
         """
@@ -334,6 +405,14 @@ class Agent:
 
         # 动态注入记忆上下文：身份类优先，再按当前query召回相关记忆
         self._inject_memory_context(user_message)
+
+        # 复杂任务自动规划执行
+        try:
+            plan_result = self._maybe_plan_and_execute(user_message)
+            if plan_result is not None:
+                return plan_result
+        except (TypeError, AttributeError, Exception):
+            logger.debug("plan execution failed: %s", traceback.format_exc())
 
         # RAG：本地知识库片段注入
         try:

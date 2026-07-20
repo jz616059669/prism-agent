@@ -77,6 +77,8 @@ class MCPClient:
         self._config_mtime: float = 0.0
         self._watcher_thread: Optional[threading.Thread] = None
         self._watcher_stop = threading.Event()
+        self._circuit_breaker: Dict[str, Dict[str, int]] = {}
+        self._circuit_threshold: int = 3
 
     def add_server(self, server: MCPServer):
         """添加 MCP 服务器"""
@@ -278,6 +280,15 @@ class MCPClient:
         if not server:
             return {'success': False, 'error': f'Server not found: {server_name}'}
 
+        # 熔断：连续失败达到阈值后短暂跳过
+        state = self._circuit_breaker.get(server_name)
+        if state and state.get('failures', 0) >= self._circuit_threshold:
+            opened_at = state.get('opened_at', 0)
+            if time.time() - opened_at < 10:
+                return {'success': False, 'error': f'MCP {server_name} circuit open'}
+            else:
+                self._circuit_breaker.pop(server_name, None)
+
         cached = self.get_cached(server_name, tool_name, arguments)
         if cached is not None:
             return cached
@@ -299,10 +310,18 @@ class MCPClient:
                     result = {'success': False, 'error': f'Unsupported transport: {server.transport}'}
                 if result.get('success'):
                     self.set_cached(server_name, tool_name, arguments, result)
-                return result
+                    failures = self._circuit_breaker.get(server_name, {}).get('failures', 0)
+                    if failures:
+                        self._circuit_breaker[server_name] = {'failures': 0, 'opened_at': 0}
+                    return result
+                last_error = result.get('error')
             except Exception as e:
-                last_error = e
+                last_error = str(e)
                 logger.debug("mcp call attempt %s/%s failed: %s", attempt, retries, e, exc_info=True)
+        failures = self._circuit_breaker.get(server_name, {}).get('failures', 0) + 1
+        if failures >= self._circuit_threshold:
+            self._circuit_breaker[server_name] = {'failures': failures, 'opened_at': time.time()}
+            logger.warning("mcp circuit breaker open: %s", server_name)
         return {'success': False, 'error': f'MCP call failed after {retries} attempts: {last_error}'}
 
     def _call_stdio_tool(self, server: MCPServer, tool_name: str, arguments: Dict[str, Any], timeout: float = 30.0) -> Dict[str, Any]:

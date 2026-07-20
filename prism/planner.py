@@ -117,12 +117,14 @@ class Planner:
         try:
             from prism.agent import create_agent
             agent = create_agent()
+            agent._planning_in_progress = True
             format_hint = '[{"id":"s1","description":"..."}, ...]'
             prompt = (
                 "请把下面的目标拆成最多 3 个可执行的子任务，只输出 JSON 数组，不要输出其他内容。"
                 "\n目标：{goal}\n\n格式：{fmt}"
             ).format(goal=goal, fmt=format_hint)
             raw = agent.chat(prompt)
+            agent._planning_in_progress = False
             data = json.loads(raw.strip())
             tasks = []
             for idx, item in enumerate(data, 1):

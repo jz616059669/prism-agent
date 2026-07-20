@@ -481,6 +481,21 @@ class ToolRegistry:
         """获取工具"""
         return self._tools.get(name)
     
+    def _validate(self, name: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        tool = self._tools.get(name)
+        if not tool:
+            return kwargs
+        schema = getattr(tool, 'input_schema', None) or {}
+        required = schema.get('required') or []
+        props = schema.get('properties') or {}
+        missing = [p for p in required if p not in kwargs or kwargs.get(p) in (None, '')]
+        if missing:
+            return {'success': False, 'error': f'{name} missing params: {missing}', 'missing': missing}
+        unknown = [k for k in kwargs.keys() if k not in props and k not in {'task_id', 'session_id'}]
+        if unknown:
+            return {'success': False, 'error': f'{name} unknown params: {unknown}', 'unknown': unknown}
+        return kwargs
+    
     def list_tools(self) -> List[Dict[str, Any]]:
         """列出所有工具"""
         return [
@@ -497,7 +512,13 @@ class ToolRegistry:
         tool = self._tools.get(name)
         if not tool:
             return {'success': False, 'error': f'Tool not found: {name}'}
-        return tool.execute(**kwargs)
+        validated = self._validate(name, kwargs)
+        if isinstance(validated, dict) and not validated.get('success', True):
+            return validated
+        try:
+            return tool.execute(**validated)
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
 
 
 # 全局工具注册表
