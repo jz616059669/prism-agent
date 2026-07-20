@@ -53,6 +53,10 @@ except ImportError:
 requests = _requests
 
 
+MEDIA_TMP_DIR = Path(tempfile.gettempdir()) / "prism_feishu_media"
+MEDIA_TMP_DIR.mkdir(parents=True, exist_ok=True)
+
+
 class FeishuEvent:
     def __init__(self, event_type: str, message: Dict[str, Any]):
         self.event_type = event_type
@@ -235,6 +239,52 @@ class FeishuAdapter(PlatformAdapter):
             print(f"[Feishu] 更新消息异常: {e}")
             return False
 
+    def download_media(self, message_id: str, media_url: str) -> Optional[Path]:
+        """下载图片/语音/文件到本地临时目录，返回路径"""
+        try:
+            kind, key = media_url.split(":", 1)
+            url = f"{self.config.base_url}/im/v1/messages/{message_id}/resources/{key}"
+            params = {"type": kind}
+            headers = {"Authorization": f"Bearer {self._get_access_token()}"}
+            resp = requests.get(url, params=params, headers=headers, timeout=30)
+            if resp.status_code == 200:
+                suffix = ".bin"
+                if kind == "image":
+                    suffix = Path(url).suffix or ".png"
+                elif kind == "audio":
+                    suffix = ".mp3"
+                elif kind == "file":
+                    suffix = ".bin"
+                out = MEDIA_TMP_DIR / f"{key}{suffix}"
+                out.write_bytes(resp.content)
+                return out
+            print(f"[Feishu] 下载媒体失败: {resp.status_code} {resp.text[:120]}")
+            return None
+        except Exception as e:
+            print(f"[Feishu] 下载媒体异常: {e}")
+            return None
+
+    def _get_access_token(self) -> str:
+        """获取 tenant_access_token，带简单内存缓存"""
+        if self.access_token and time.time() < self.token_expires_at:
+            return self.access_token
+        url = f"{self.config.base_url}/auth/v3/tenant_access_token/internal"
+        payload = {
+            "app_id": self.config.app_id,
+            "app_secret": self.config.app_secret,
+        }
+        try:
+            resp = requests.post(url, json=payload, timeout=10)
+            data = resp.json()
+            token = data.get("tenant_access_token", "")
+            expire = int(data.get("expire", 7200))
+            self.access_token = token
+            self.token_expires_at = time.time() + expire - 60
+            return token
+        except Exception as e:
+            print(f"[Feishu] 获取 token 失败: {e}")
+            return ""
+
     def start(self, handler: Callable[[Message], None]) -> bool:
         self.handler = handler
         self.running = True
@@ -373,6 +423,14 @@ class FeishuAdapter(PlatformAdapter):
                 media_url=media_url,
                 file_id=file_id,
             )
+
+            if message_type != "text" and media_url:
+                try:
+                    media_path = self.download_media(message.message_id, media_url)
+                    if media_path:
+                        message_obj.raw["local_path"] = str(media_path)
+                except Exception as exc:
+                    print(f"[Feishu] 下载媒体失败: {exc}")
 
             if self.handler:
                 self.handler(message_obj)
