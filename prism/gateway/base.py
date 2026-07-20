@@ -18,6 +18,9 @@ class Message:
     text: str
     raw: Optional[Dict[str, Any]] = None
     timestamp: datetime = field(default_factory=datetime.now)
+    message_type: str = "text"  # text | image | file | voice
+    media_url: Optional[str] = None
+    file_id: Optional[str] = None
 
 
 class PlatformAdapter(ABC):

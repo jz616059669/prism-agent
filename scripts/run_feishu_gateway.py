@@ -61,17 +61,27 @@ def main() -> int:
         def handler(msg):
             text = getattr(msg, "text", "") or ""
             chat_id = getattr(msg, "chat_id", "") or ""
-            if not text:
+            message_type = getattr(msg, "message_type", "text") or "text"
+            if not chat_id:
                 return
-            _log(f"received: {text}")
+            display = text or f"[{message_type}]"
+            _log(f"received: {display}")
             if chat_id not in sessions:
                 sessions[chat_id] = create_agent()
-            thinking_msg_id = adapter.send_thinking(chat_id)
-            try:
-                reply = sessions[chat_id].chat(text)
-            except Exception as exc:
-                reply = f"抱歉，处理你的消息时出错了：{exc}"
-            if reply:
+            if message_type == "text":
+                thinking_msg_id = adapter.send_thinking(chat_id)
+                try:
+                    reply = sessions[chat_id].chat(text)
+                except Exception as exc:
+                    reply = f"抱歉，处理你的消息时出错了：{exc}"
+                if reply:
+                    if thinking_msg_id:
+                        adapter.update_message(thinking_msg_id, reply)
+                    else:
+                        adapter.send(chat_id, reply)
+            else:
+                thinking_msg_id = adapter.send_thinking(chat_id, f"正在修炼中…… 收到{message_type}消息")
+                reply = f"我收到了你的{message_type}消息，当前版本主要支持文字对话，这类消息暂不能深度处理。"
                 if thinking_msg_id:
                     adapter.update_message(thinking_msg_id, reply)
                 else:

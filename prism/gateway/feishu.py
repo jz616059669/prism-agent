@@ -84,6 +84,8 @@ class FeishuAdapter(PlatformAdapter):
         self._ws_client: Optional[FeishuWSClient] = None
         self.access_token: Optional[str] = None
         self.token_expires_at: int = 0
+        self._last_send_ts: float = 0.0
+        self._send_lock = threading.Lock()
 
     def start_polling(self, handler: Callable[[Message], None]):
         """Compatibility alias for start()."""
@@ -131,7 +133,17 @@ class FeishuAdapter(PlatformAdapter):
         except Exception as e:
             return {"success": False, "error": str(e)}
 
+    def _rate_limit(self) -> None:
+        """简单限流：两次发送之间最少间隔 250ms"""
+        with self._send_lock:
+            now = time.time()
+            wait = 0.25 - (now - self._last_send_ts)
+            if wait > 0:
+                time.sleep(wait)
+            self._last_send_ts = time.time()
+
     def send(self, chat_id: str, text: str) -> bool:
+        self._rate_limit()
         try:
             client = LarkClient.builder() \
                 .app_id(self.config.app_id) \
@@ -159,7 +171,7 @@ class FeishuAdapter(PlatformAdapter):
             return False
 
     def send_thinking(self, chat_id: str, text: str = "正在修炼中……") -> Optional[str]:
-        """发送一条“思考中”占位消息，返回 message_id 以便后续更新"""
+        self._rate_limit()
         try:
             client = LarkClient.builder() \
                 .app_id(self.config.app_id) \
@@ -183,7 +195,7 @@ class FeishuAdapter(PlatformAdapter):
             return None
 
     def update_message(self, message_id: str, text: str) -> bool:
-        """替换已发送消息的内容，用于把“思考中”改成最终回复"""
+        self._rate_limit()
         try:
             client = LarkClient.builder() \
                 .app_id(self.config.app_id) \
@@ -240,29 +252,44 @@ class FeishuAdapter(PlatformAdapter):
         print("[Feishu] 已停止")
 
     def _run_ws(self) -> None:
-        try:
-            self._loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(self._loop)
+        backoff = 1
+        while self.running:
             try:
-                import nest_asyncio
-                nest_asyncio.apply(self._loop)
-            except Exception:
-                pass
+                self._loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(self._loop)
+                try:
+                    import nest_asyncio
+                    nest_asyncio.apply(self._loop)
+                except Exception:
+                    pass
 
-            ws_client = FeishuWSClient(
-                self.config.app_id,
-                self.config.app_secret,
-                event_handler=EventDispatcherHandler.builder("", "")
-                .register_p2_im_message_receive_v1(
-                    self._on_message_received,
+                ws_client = FeishuWSClient(
+                    self.config.app_id,
+                    self.config.app_secret,
+                    event_handler=EventDispatcherHandler.builder("", "")
+                    .register_p2_im_message_receive_v1(
+                        self._on_message_received,
+                    )
+                    .build(),
                 )
-                .build(),
-            )
-            self._ws_client = ws_client
-            self._loop.run_until_complete(ws_client.start())
-        except Exception as e:
-            print(f"[Feishu] WebSocket 启动失败: {e}")
-            self.running = False
+                self._ws_client = ws_client
+                print("[Feishu] WebSocket 已连接")
+                self._loop.run_until_complete(ws_client.start())
+            except Exception as e:
+                print(f"[Feishu] WebSocket 异常: {e}")
+            finally:
+                self._ws_client = None
+                if self._loop and not self._loop.is_closed():
+                    try:
+                        self._loop.call_soon_threadsafe(self._loop.stop)
+                    except Exception:
+                        pass
+                self._loop = None
+            if not self.running:
+                break
+            print(f"[Feishu] WebSocket 将在 {backoff}s 后重连 ...")
+            time.sleep(min(backoff, 30))
+            backoff *= 2
 
     def _on_message_received(self, event: P2ImMessageReceiveV1) -> None:
         try:
@@ -270,28 +297,64 @@ class FeishuAdapter(PlatformAdapter):
             sender = getattr(event, 'event', event).sender
             chat_id = message.chat_id
             user_id = sender.sender_id.open_id if sender and sender.sender_id else ""
+            message_type = getattr(message, "message_type", "") or "text"
             text = ""
-            if message.message_type == "text":
-                content = json.loads(message.content or "{}")
-                text = content.get("text", "")
+            media_url = None
+            file_id = None
 
-            feishu_event = FeishuEvent(
-                event_type="im.message.receive_v1",
-                message={
+            if message_type == "text":
+                try:
+                    content = json.loads(message.content or "{}")
+                    text = content.get("text", "")
+                except Exception:
+                    text = ""
+            elif message_type == "image":
+                try:
+                    content = json.loads(message.content or "{}")
+                    image_key = content.get("image_key", "")
+                    if image_key:
+                        media_url = f"image:{image_key}"
+                        text = "[图片]"
+                except Exception:
+                    text = "[图片]"
+            elif message_type == "file":
+                try:
+                    content = json.loads(message.content or "{}")
+                    file_key = content.get("file_key", "")
+                    if file_key:
+                        file_id = file_key
+                        media_url = f"file:{file_key}"
+                        text = "[文件]"
+                except Exception:
+                    text = "[文件]"
+            elif message_type == "audio":
+                try:
+                    content = json.loads(message.content or "{}")
+                    file_key = content.get("file_key", "")
+                    if file_key:
+                        media_url = f"audio:{file_key}"
+                        text = "[语音]"
+                except Exception:
+                    text = "[语音]"
+            else:
+                text = f"[{message_type}]"
+
+            message_obj = Message(
+                platform="feishu",
+                chat_id=chat_id,
+                user_id=user_id,
+                text=text,
+                raw={
                     "chat_id": chat_id,
                     "user_id": user_id,
                     "text": text,
                     "message_id": message.message_id,
-                    "message_type": message.message_type,
+                    "message_type": message_type,
+                    "content": message.content,
                 },
-            )
-
-            message_obj = Message(
-                platform="feishu",
-                chat_id=feishu_event.message.get("chat_id", ""),
-                user_id=feishu_event.message.get("user_id", ""),
-                text=feishu_event.message.get("text", ""),
-                raw=feishu_event.message,
+                message_type=message_type,
+                media_url=media_url,
+                file_id=file_id,
             )
 
             if self.handler:
