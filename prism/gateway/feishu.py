@@ -133,61 +133,79 @@ class FeishuAdapter(PlatformAdapter):
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    def _rate_limit(self) -> None:
-        """简单限流：两次发送之间最少间隔 250ms"""
-        with self._send_lock:
-            now = time.time()
-            wait = 0.25 - (now - self._last_send_ts)
-            if wait > 0:
-                time.sleep(wait)
-            self._last_send_ts = time.time()
+    def _do_send(self, request):
+        client = LarkClient.builder() \
+            .app_id(self.config.app_id) \
+            .app_secret(self.config.app_secret) \
+            .build()
+        if hasattr(request, "build"):
+            request = request.build()
+        return client.im.v1.message.create(request)
+
+    def _do_patch(self, request):
+        client = LarkClient.builder() \
+            .app_id(self.config.app_id) \
+            .app_secret(self.config.app_secret) \
+            .build()
+        if hasattr(request, "build"):
+            request = request.build()
+        return client.im.v1.message.patch(request)
+
+    def _retry_call(self, do, request_builder, max_retries: int = 2):
+        last = None
+        for _ in range(max_retries):
+            self._rate_limit(last)
+            try:
+                req = request_builder()
+                last = do(req)
+                if last and last.success():
+                    return last
+            except Exception:
+                pass
+        return last
 
     def send(self, chat_id: str, text: str) -> bool:
-        self._rate_limit()
         try:
-            client = LarkClient.builder() \
-                .app_id(self.config.app_id) \
-                .app_secret(self.config.app_secret) \
-                .build()
-            body = CreateMessageRequestBody.builder() \
-                .receive_id(chat_id) \
-                .msg_type("text") \
-                .content(json.dumps({"text": text}, ensure_ascii=False)) \
-                .build()
-            request = CreateMessageRequest.builder() \
-                .receive_id_type("chat_id") \
-                .request_body(body) \
-                .build()
-            response = client.im.v1.message.create(request)
-            if response.success():
+            response = self._retry_call(
+                self._do_send,
+                lambda: CreateMessageRequest.builder()
+                .receive_id_type("chat_id")
+                .request_body(
+                    CreateMessageRequestBody.builder()
+                    .receive_id(chat_id)
+                    .msg_type("text")
+                    .content(json.dumps({"text": text}, ensure_ascii=False))
+                    .build()
+                ),
+            )
+            if response and response.success():
                 message_id = response.data.message_id if response.data and response.data.message_id else ""
                 print(f"[Feishu] 消息已发送 -> {chat_id}")
                 return message_id != ""
             else:
-                print(f"[Feishu] 发送失败: code={response.code}, msg={response.msg}")
+                code = getattr(response, "code", None)
+                msg = getattr(response, "msg", "")
+                print(f"[Feishu] 发送失败: code={code}, msg={msg}")
                 return False
         except Exception as e:
             print(f"[Feishu] 发送消息异常: {e}")
             return False
 
     def send_thinking(self, chat_id: str, text: str = "正在修炼中……") -> Optional[str]:
-        self._rate_limit()
         try:
-            client = LarkClient.builder() \
-                .app_id(self.config.app_id) \
-                .app_secret(self.config.app_secret) \
-                .build()
-            body = CreateMessageRequestBody.builder() \
-                .receive_id(chat_id) \
-                .msg_type("text") \
-                .content(json.dumps({"text": text}, ensure_ascii=False)) \
-                .build()
-            request = CreateMessageRequest.builder() \
-                .receive_id_type("chat_id") \
-                .request_body(body) \
-                .build()
-            response = client.im.v1.message.create(request)
-            if response.success() and response.data and response.data.message_id:
+            response = self._retry_call(
+                self._do_send,
+                lambda: CreateMessageRequest.builder()
+                .receive_id_type("chat_id")
+                .request_body(
+                    CreateMessageRequestBody.builder()
+                    .receive_id(chat_id)
+                    .msg_type("text")
+                    .content(json.dumps({"text": text}, ensure_ascii=False))
+                    .build()
+                ),
+            )
+            if response and response.success() and response.data and response.data.message_id:
                 return response.data.message_id
             return None
         except Exception as e:
@@ -195,24 +213,23 @@ class FeishuAdapter(PlatformAdapter):
             return None
 
     def update_message(self, message_id: str, text: str) -> bool:
-        self._rate_limit()
         try:
-            client = LarkClient.builder() \
-                .app_id(self.config.app_id) \
-                .app_secret(self.config.app_secret) \
-                .build()
-            body = PatchMessageRequestBody.builder() \
-                .content(json.dumps({"text": text}, ensure_ascii=False)) \
-                .build()
-            request = PatchMessageRequest.builder() \
-                .message_id(message_id) \
-                .request_body(body) \
-                .build()
-            response = client.im.v1.message.patch(request)
-            if response.success():
+            response = self._retry_call(
+                self._do_patch,
+                lambda: PatchMessageRequest.builder()
+                .message_id(message_id)
+                .request_body(
+                    PatchMessageRequestBody.builder()
+                    .content(json.dumps({"text": text}, ensure_ascii=False))
+                    .build()
+                ),
+            )
+            if response and response.success():
                 return True
             else:
-                print(f"[Feishu] 更新消息失败: code={response.code}, msg={response.msg}")
+                code = getattr(response, "code", None)
+                msg = getattr(response, "msg", "")
+                print(f"[Feishu] 更新消息失败: code={code}, msg={msg}")
                 return False
         except Exception as e:
             print(f"[Feishu] 更新消息异常: {e}")
