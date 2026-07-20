@@ -1721,7 +1721,12 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         try:
             role_text = ft.Text(role, size=11, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_500)
             time_text = ft.Text(timestamp, size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.8)
-            content = self._markdown_to_ft(text)
+            display_text = text
+            if not is_user and isinstance(display_text, str):
+                stripped = display_text.strip()
+                if stripped.startswith("<tool_call>") or "[tool call]" in stripped or "[function call]" in stripped or "```" in stripped:
+                    display_text = "正在修炼中……"
+            content = self._markdown_to_ft(display_text)
             row = ft.Row(
                 [role_text, ft.Container(expand=True), time_text],
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,

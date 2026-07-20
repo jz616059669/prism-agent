@@ -12,6 +12,8 @@ from prism.providers.manager import provider_pool, ProviderPool
 
 def test_provider_pool_empty_without_key():
     """未配置 API Key 时应明确报错"""
+    if prism_config.get("model.api_key"):
+        pytest.skip("当前环境已配置 API Key，不适用无 key 断言")
     pool = ProviderPool()
     result = pool.chat([{"role": "user", "content": "hi"}])
     assert result["success"] is False

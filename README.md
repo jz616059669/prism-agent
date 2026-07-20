@@ -344,6 +344,31 @@ prism browser open https://example.com
 prism doctor
 ```
 
+## 飞书对接
+
+### 一键配置
+
+```bash
+prism setup feishu --app-id cli_xxxx --app-secret xxxx
+```
+
+该命令会自动：
+1. 把配置写入 `~/.prism/config.yaml`
+2. 启动飞书 WebSocket Gateway
+
+### 手动启动
+
+```bash
+prism gateway start --platform feishu
+```
+
+### 前置条件
+- 飞书开放平台已创建应用
+- 已开启“机器人”能力
+- 事件订阅选择“使用长连接接收事件”
+- 已添加事件 `im.message.receive_v1`
+- 应用已发布/上线
+
 ## 开发
 
 ```bash

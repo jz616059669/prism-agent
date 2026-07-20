@@ -215,8 +215,8 @@ class FeishuAdapter(PlatformAdapter):
 
     def _on_message_received(self, event: P2ImMessageReceiveV1) -> None:
         try:
-            message = event.event.message
-            sender = event.event.sender
+            message = getattr(event, 'event', event).message
+            sender = getattr(event, 'event', event).sender
             chat_id = message.chat_id
             user_id = sender.sender_id.open_id if sender and sender.sender_id else ""
             text = ""

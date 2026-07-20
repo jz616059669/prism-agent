@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import logging
 import traceback
+import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -93,30 +94,34 @@ class MemoryEmbeddingIndex:
         self._client: Optional[_EmbeddingClient] = None
         self._model: str = ""
         self._vectors: Dict[str, List[float]] = {}
+        self._lock = threading.RLock()
         self._load()
 
     def configure(self, base_url: str, api_key: str, model: str) -> None:
-        self._client = _EmbeddingClient(base_url=base_url, api_key=api_key, model=model)
-        self._model = model
+        with self._lock:
+            self._client = _EmbeddingClient(base_url=base_url, api_key=api_key, model=model)
+            self._model = model
 
     def _load(self) -> None:
         if not self._index_path.exists():
             return
         try:
             data = json.loads(self._index_path.read_text(encoding="utf-8"))
-            self._vectors = {k: v for k, v in data.get("vectors", {}).items() if isinstance(v, list)}
+            with self._lock:
+                self._vectors = {k: v for k, v in data.get("vectors", {}).items() if isinstance(v, list)}
         except Exception as exc:
-            logger.debug("load memory index failed: %s", traceback.format_exc())
+            logger.debug("load memory index failed: %s", exc)
             self._vectors = {}
 
     def _save(self) -> None:
-        try:
-            self._index_path.write_text(
-                json.dumps({"vectors": self._vectors, "model": self._model}, ensure_ascii=False, indent=2),
-                encoding="utf-8",
-            )
-        except Exception as exc:
-            logger.debug("memory index save failed: %s", traceback.format_exc())
+        with self._lock:
+            try:
+                self._index_path.write_text(
+                    json.dumps({"vectors": self._vectors, "model": self._model}, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+            except Exception as exc:
+                logger.debug("memory index save failed: %s", exc)
 
     @staticmethod
     def _cosine(a: List[float], b: List[float]) -> float:
@@ -185,6 +190,7 @@ class PersistentMemory:
         }
         self._decay_counter = 0
         self._decay_interval = 10
+        self._lock = threading.RLock()
         self._load()
 
     def _load(self) -> None:
@@ -193,24 +199,26 @@ class PersistentMemory:
             return
         try:
             data = json.loads(index_file.read_text(encoding="utf-8"))
-            for item in data.get("memories", []):
-                memory = Memory(
-                    key=item["key"],
-                    value=item["value"],
-                    category=item.get("category", "general"),
-                    confidence=item.get("confidence", 1.0),
-                    source=item.get("source", "user"),
-                    created_at=item.get("created_at", ""),
-                    updated_at=item.get("updated_at", ""),
-                    embedding=item.get("embedding"),
-                    embedding_model=item.get("embedding_model", ""),
-                    access_count=int(item.get("access_count", 0)),
-                    last_accessed_at=item.get("last_accessed_at", ""),
-                    digest=item.get("digest", ""),
-                )
-                self._index[memory.key] = memory
-                if memory.embedding:
-                    self._embedding_index._vectors[memory.key] = memory.embedding
+            with self._lock:
+                self._index.clear()
+                for item in data.get("memories", []):
+                    memory = Memory(
+                        key=item["key"],
+                        value=item["value"],
+                        category=item.get("category", "general"),
+                        confidence=item.get("confidence", 1.0),
+                        source=item.get("source", "user"),
+                        created_at=item.get("created_at", ""),
+                        updated_at=item.get("updated_at", ""),
+                        embedding=item.get("embedding"),
+                        embedding_model=item.get("embedding_model", ""),
+                        access_count=int(item.get("access_count", 0)),
+                        last_accessed_at=item.get("last_accessed_at", ""),
+                        digest=item.get("digest", ""),
+                    )
+                    self._index[memory.key] = memory
+                    if memory.embedding:
+                        self._embedding_index._vectors[memory.key] = memory.embedding
         except Exception as exc:
             logger.warning("failed to load memory: %s", exc)
 
@@ -285,63 +293,66 @@ class PersistentMemory:
         source: str = "user",
     ) -> None:
         now = _now_iso()
-        # 防重复：相同 category 下若已有 digest 相似条目，则只更新 access_count
-        if key not in self._index:
-            candidate_digest = _short(f"{category}:{value}", limit=64)
-            for m in self._index.values():
-                if m.category == category and getattr(m, "digest", "") and m.digest == candidate_digest:
-                    m.access_count = int(m.access_count) + 1
-                    m.last_accessed_at = now
-                    self._embedding_index.upsert(m.key, f"{m.key}: {m.value}")
-                    self._save()
-                    logger.debug("memory duplicate skipped: %s", key)
-                    return
+        with self._lock:
+            # 防重复：相同 category 下若已有 digest 相似条目，则只更新 access_count
+            if key not in self._index:
+                candidate_digest = _short(f"{category}:{value}", limit=64)
+                for m in self._index.values():
+                    if m.category == category and getattr(m, "digest", "") and m.digest == candidate_digest:
+                        m.access_count = int(m.access_count) + 1
+                        m.last_accessed_at = now
+                        self._embedding_index.upsert(m.key, f"{m.key}: {m.value}")
+                        self._save()
+                        logger.debug("memory duplicate skipped: %s", key)
+                        return
 
-        if key in self._index:
-            memory = self._index[key]
-            memory.value = value
-            memory.confidence = max(memory.confidence, confidence)
-            memory.updated_at = now
-        else:
-            memory = Memory(
-                key=key,
-                value=value,
-                category=category,
-                confidence=confidence,
-                source=source,
-                created_at=now,
-                updated_at=now,
-                access_count=0,
-                last_accessed_at="",
-                digest=_short(f"{category}:{value}", limit=64),
-            )
-        memory.access_count = int(memory.access_count) + 1
-        memory.last_accessed_at = now
-        self._index[key] = memory
-        self._embedding_index.upsert(key, f"{key}: {value}")
-        self._save()
-        logger.debug("memory stored: %s", key)
-        # 自动提炼：条目数过多时做压缩
-        self._auto_consolidate()
+            if key in self._index:
+                memory = self._index[key]
+                memory.value = value
+                memory.confidence = max(memory.confidence, confidence)
+                memory.updated_at = now
+            else:
+                memory = Memory(
+                    key=key,
+                    value=value,
+                    category=category,
+                    confidence=confidence,
+                    source=source,
+                    created_at=now,
+                    updated_at=now,
+                    access_count=0,
+                    last_accessed_at="",
+                    digest=_short(f"{category}:{value}", limit=64),
+                )
+            memory.access_count = int(memory.access_count) + 1
+            memory.last_accessed_at = now
+            self._index[key] = memory
+            self._embedding_index.upsert(key, f"{key}: {value}")
+            self._save()
+            logger.debug("memory stored: %s", key)
+            # 自动提炼：条目数过多时做压缩
+            self._auto_consolidate()
 
     def recall(self, key: str) -> Optional[str]:
-        memory = self._index.get(key)
-        if memory:
-            memory.access_count = int(memory.access_count) + 1
-            memory.last_accessed_at = _now_iso()
-            # 被多次 recall 的记忆，confidence 缓慢回升，上限 1.0
-            if memory.confidence < 1.0:
-                memory.confidence = min(1.0, memory.confidence + 0.05)
-                memory.updated_at = _now_iso()
-            return memory.value
+        with self._lock:
+            memory = self._index.get(key)
+            if memory:
+                memory.access_count = int(memory.access_count) + 1
+                memory.last_accessed_at = _now_iso()
+                # 被多次 recall 的记忆，confidence 缓慢回升，上限 1.0
+                if memory.confidence < 1.0:
+                    memory.confidence = min(1.0, memory.confidence + 0.05)
+                    memory.updated_at = _now_iso()
+                return memory.value
         return None
 
     def forget(self, key: str) -> bool:
-        if key in self._index:
-            del self._index[key]
-            self._embedding_index.remove(key)
-            self._save()
-            return True
+        with self._lock:
+            if key in self._index:
+                del self._index[key]
+                self._embedding_index.remove(key)
+                self._save()
+                return True
         return False
 
     def _apply_decay(self) -> None:
@@ -372,10 +383,11 @@ class PersistentMemory:
 
     def _maybe_decay(self) -> None:
         """每 N 次 search 做一次衰减，减少运行时开销。"""
-        self._decay_counter += 1
-        if self._decay_counter >= self._decay_interval:
-            self._decay_counter = 0
-            self._apply_decay()
+        with self._lock:
+            self._decay_counter += 1
+            if self._decay_counter >= self._decay_interval:
+                self._decay_counter = 0
+                self._apply_decay()
 
     def search(
         self,
@@ -383,34 +395,36 @@ class PersistentMemory:
         category: Optional[str] = None,
         limit: int = 10,
     ) -> List[Memory]:
-        self._maybe_decay()
-        query_lower = query.lower()
-        candidates: List[Memory] = []
-        for memory in self._index.values():
-            if category and memory.category != category:
-                continue
-            if query_lower in memory.key.lower() or query_lower in memory.value.lower():
+        with self._lock:
+            self._maybe_decay()
+            query_lower = query.lower()
+            candidates: List[Memory] = []
+            seen_keys = set()
+            for memory in self._index.values():
+                if category and memory.category != category:
+                    continue
+                if query_lower in memory.key.lower() or query_lower in memory.value.lower():
+                    candidates.append(memory)
+                    seen_keys.add(memory.key)
+
+            semantic_hits = self._embedding_index.search(query, top_k=max(limit, 10))
+            for key, _ in semantic_hits:
+                if key in seen_keys:
+                    continue
+                memory = self._index.get(key)
+                if memory and (category is None or memory.category == category):
+                    candidates.append(memory)
+                    seen_keys.add(key)
+
+            for memory in self._index.values():
+                if memory.key in seen_keys:
+                    continue
+                if category and memory.category != category:
+                    continue
                 candidates.append(memory)
 
-        semantic_hits = self._embedding_index.search(query, top_k=max(limit, 10))
-        semantic_keys = {k for k, _ in semantic_hits}
-        if semantic_keys:
-            for key in semantic_keys:
-                memory = self._index.get(key)
-                if memory and memory not in candidates:
-                    if category is None or memory.category == category:
-                        candidates.append(memory)
-
-        seen = {id(m) for m in candidates}
-        for memory in self._index.values():
-            if id(memory) in seen:
-                continue
-            if category and memory.category != category:
-                continue
-            candidates.append(memory)
-
-        candidates.sort(key=lambda m: persistent_memory._importance(m), reverse=True)
-        return candidates[:limit]
+            candidates.sort(key=lambda m: self._importance(m), reverse=True)
+            return candidates[:limit]
 
     def _importance(self, memory: Memory, now: Optional[datetime] = None) -> float:
         """综合重要度：confidence + access_count 加成 + 分类加成 + 访问时间加成。"""

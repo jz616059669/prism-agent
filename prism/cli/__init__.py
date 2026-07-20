@@ -239,6 +239,7 @@ from prism.cli.workspace import workspace  # noqa: E402
 from prism.cli.memory import memory  # noqa: E402
 from prism.cli.mcp import mcp  # noqa: E402
 from prism.cli.batch import batch  # noqa: E402
+from prism.cli.setup_cmds import setup  # noqa: E402
 try:
     from prism.cli.api_server import api_server  # noqa: E402
 except Exception:  # noqa: BLE001
@@ -263,6 +264,7 @@ cli.add_command(plugin)
 cli.add_command(theme)
 cli.add_command(rag)
 cli.add_command(conditions)
+cli.add_command(setup)
 
 
 def main():

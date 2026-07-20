@@ -1,13 +1,42 @@
 """PRISM Agent - Gateway Commands"""
 from __future__ import annotations
 
-from typing import Optional
+import os
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 import click
+import yaml
 
 from prism.logging import logger
 import traceback
 
+
+def _resolve_config_path() -> Path:
+    return Path(os.environ.get("PRISM_HOME", Path.home() / ".prism")) / "config.yaml"
+
+
+def _load_config(path: Path) -> Dict[str, Any]:
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+        return data if isinstance(data, dict) else {}
+    return {}
+
+
+def setup_gateway_platform(cfg: Dict[str, Any], platform: str, values: Dict[str, Any]) -> None:
+    if "gateway" not in cfg:
+        cfg["gateway"] = {}
+    cfg["gateway"][platform] = {
+        "token": values.get("token") or "",
+        "app_id": values.get("app_id") or "",
+        "app_secret": values.get("app_secret") or "",
+        "encrypt_key": values.get("encrypt_key") or "",
+        "verification_token": values.get("verification_token") or "",
+    }
+    cfg["gateway"]["platforms"] = list(
+        set((cfg["gateway"].get("platforms") or []) + [platform])
+    )
 
 @click.group()
 def gateway():
@@ -22,6 +51,7 @@ def gateway():
 @click.option('--app-secret', help='飞书 App Secret')
 @click.option('--encrypt-key', help='飞书 Encrypt Key')
 @click.option('--verification-token', help='飞书 Verification Token')
+@click.option('--agent-id', help='企业微信 Agent ID')
 @click.option('--webhook', is_flag=True, help='启用本地 Webhook 接收（仅飞书）')
 @click.option('--host', default='127.0.0.1', help='Webhook 监听地址')
 @click.option('--port', default=9000, type=int, help='Webhook 监听端口')
@@ -32,6 +62,7 @@ def start(
     app_secret: Optional[str],
     encrypt_key: Optional[str],
     verification_token: Optional[str],
+    agent_id: Optional[str],
     webhook: bool,
     host: str,
     port: int,
@@ -79,6 +110,7 @@ def start(
     if platform == 'feishu':
         try:
             from prism.gateway.feishu import FeishuAdapter, FeishuConfig
+            from prism.agent import create_agent
             adapter = FeishuAdapter(FeishuConfig(
                 app_id=app_id or '',
                 app_secret=app_secret or '',
@@ -86,7 +118,29 @@ def start(
                 verification_token=verification_token or '',
             ))
             gw.register('feishu', adapter)
-            gw.start(lambda m: click.echo(f"[feishu] {m.message.get('text','')}"))
+            agent = create_agent()
+            sessions: Dict[str, Any] = {}
+
+            def _feishu_handler(msg):
+                try:
+                    text = getattr(msg, 'text', '') or ''
+                    chat_id = getattr(msg, 'chat_id', '') or ''
+                    user_id = getattr(msg, 'user_id', '') or ''
+                    if not text:
+                        return
+                    click.echo(f"[feishu] {text}")
+                    if chat_id not in sessions:
+                        sessions[chat_id] = create_agent()
+                    try:
+                        reply = sessions[chat_id].chat(text)
+                    except Exception as e:
+                        reply = f"抱歉，处理你的消息时出错了：{e}"
+                    if reply:
+                        adapter.send(chat_id, reply)
+                except Exception as e:
+                    click.echo(f"[feishu] handler error: {e}")
+
+            gw.start(_feishu_handler)
             started = True
             click.echo("feishu WebSocket 已启动")
         except Exception as e:
@@ -111,7 +165,7 @@ def start(
             from prism.gateway.wechat import WechatAdapter, WechatConfig
             adapter = WechatAdapter(WechatConfig(
                 corp_id=app_id or '',
-                agent_id=app_secret or '',
+                agent_id=agent_id or '',
                 secret=token or '',
                 token=token or '',
             ))

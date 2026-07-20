@@ -63,7 +63,9 @@ class NotificationSystem:
             if os.name == "nt":
                 try:
                     from win10toast import ToastNotifier
-                    ToastNotifier().show_toast(notification.title, notification.body, duration=5, threaded=True)
+                    if not hasattr(self, "_toast_notifier") or self._toast_notifier is None:
+                        self._toast_notifier = ToastNotifier()
+                    self._toast_notifier.show_toast(notification.title, notification.body, duration=5, threaded=True)
                     return
                 except Exception:
                     pass

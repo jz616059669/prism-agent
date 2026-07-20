@@ -522,3 +522,10 @@ try:
     registry.register(TextToSpeechTool())
 except Exception as exc:
     logger.debug("multimodal tools import failed: %s", exc)
+
+try:
+    from prism.tools.gateway_manage import register as register_gateway_tools
+
+    register_gateway_tools(registry)
+except Exception as exc:
+    logger.debug("gateway manage tools import failed: %s", exc)

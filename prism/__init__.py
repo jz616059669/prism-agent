@@ -15,7 +15,7 @@ _version_path = _base / "VERSION"
 if _version_path.exists():
     __version__ = _version_path.read_text(encoding="utf-8").strip()
 else:
-    __version__ = "2.1.5"
+    __version__ = "2.1.6"
 
 from prism.agent import Agent, Message, ToolCall, create_agent
 

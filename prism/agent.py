@@ -6,6 +6,7 @@ PRISM Agent - 核心Agent循环
 import json
 import os
 import logging
+import threading
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Callable
 from dataclasses import dataclass, field
@@ -72,6 +73,8 @@ class Agent:
         self._review_turn_count = 0
         self.background_review_callback: Optional[Callable[[str], None]] = None
         self.session_dir = Path.home() / ".prism" / "sessions"
+        self._last_executed: Dict[str, float] = {}
+        self._tool_lock = threading.Lock()
         self._memory_context = persistent_memory.get_context(max_items=5)
         if self._memory_context:
             self.system_prompt = self.system_prompt.rstrip() + "\n\n" + self._memory_context
@@ -213,39 +216,39 @@ class Agent:
             if "## 记忆上下文" in base:
                 base = base[: base.index("## 记忆上下文")].rstrip()
 
-            identities = [m for m in persistent_memory._index.values() if m.category == "user_profile"]
-            identity_block = ""
-            if identities:
-                lines = ["【身份】"]
-                for m in identities[:3]:
-                    lines.append(f"- {m.key}: {m.value}")
-                identity_block = "\n" + "\n".join(lines)
+            with persistent_memory._lock:
+                identities = [m for m in persistent_memory._index.values() if m.category == "user_profile"]
+                identity_block = ""
+                if identities:
+                    lines = ["【身份】"]
+                    for m in identities[:3]:
+                        lines.append(f"- {m.key}: {m.value}")
+                    identity_block = "\n" + "\n".join(lines)
 
-            # 只根据当前 query 做轻量召回，避免堆满 context
-            query_matches = persistent_memory.search(user_message, category=None, limit=3)
-            query_block = ""
-            seen = set()
-            if query_matches:
-                lines = ["【相关】"]
-                for m in query_matches:
-                    if m.key in seen:
-                        continue
-                    seen.add(m.key)
-                    lines.append(f"- [{m.category}] {m.key}: {m.value[:100]}")
-                query_block = "\n" + "\n".join(lines)
+                # 只根据当前 query 做轻量召回，避免堆满 context
+                query_matches = persistent_memory.search(user_message, category=None, limit=3)
+                query_block = ""
+                seen = set()
+                if query_matches:
+                    lines = ["【相关】"]
+                    for m in query_matches:
+                        if m.key in seen:
+                            continue
+                        seen.add(m.key)
+                        lines.append(f"- [{m.category}] {m.key}: {m.value[:100]}")
+                    query_block = "\n" + "\n".join(lines)
 
-            # 兜底：按综合重要度补齐到总数不超过 8
-            rest = sorted(
-                [m for m in persistent_memory._index.values() if m.category != "user_profile" and m.key not in seen],
-                key=lambda m: persistent_memory._importance(m),
-                reverse=True,
-            )[: max(0, 5 - len(query_matches))]
-            rest_block = ""
-            if rest:
-                lines = []
-                for m in rest:
-                    lines.append(f"- [{m.category}] {m.key}: {m.value[:80]}")
-                rest_block = "\n" + "\n".join(lines)
+                rest = sorted(
+                    [m for m in persistent_memory._index.values() if m.category != "user_profile" and m.key not in seen],
+                    key=lambda m: persistent_memory._importance(m),
+                    reverse=True,
+                )[: max(0, 5 - len(query_matches))]
+                rest_block = ""
+                if rest:
+                    lines = []
+                    for m in rest:
+                        lines.append(f"- [{m.category}] {m.key}: {m.value[:80]}")
+                    rest_block = "\n" + "\n".join(lines)
 
             injection = identity_block + query_block + rest_block
             if injection:
@@ -430,6 +433,13 @@ class Agent:
 
         logger.info("chat success model=%s tool_calls=%s", result.get('model'), len(tool_calls))
 
+        # 自动执行工具并继续对话，直到拿到最终文本回复
+        try:
+            if tool_calls:
+                assistant_content = self._auto_tool_loop(api_messages, assistant_content, tool_calls)
+        except (TypeError, AttributeError, Exception) as exc:
+            logger.debug("auto tool loop failed: %s", traceback.format_exc())
+
         try:
             from prism.usage import usage_tracker
             usage_tracker.record(
@@ -511,17 +521,16 @@ class Agent:
         # 重复执行风险检查：相同内容 60 秒内不重复执行
         if tool_name in {"execute_tool", "run_terminal", "web_search", "browser"}:
             marker = f"{tool_name}:{json.dumps(kwargs, ensure_ascii=False, sort_keys=True)}"
-            last = getattr(self, "_last_executed", {})
-            last_time = last.get(marker, 0)
-            now = datetime.now().timestamp()
-            if now - last_time < 60:
-                return {
-                    "success": False,
-                    "error": f"为避免重复执行，已拦截 {tool_name}（60 秒内相同调用不重跑）",
-                    "provider": getattr(self, "name", "local"),
-                }
-            last[marker] = now
-            self._last_executed = last
+            with self._tool_lock:
+                last_time = self._last_executed.get(marker, 0)
+                now = datetime.now().timestamp()
+                if now - last_time < 60:
+                    return {
+                        "success": False,
+                        "error": f"为避免重复执行，已拦截 {tool_name}（60 秒内相同调用不重跑）",
+                        "provider": getattr(self, "name", "local"),
+                    }
+                self._last_executed[marker] = now
 
         if not self.tools_enabled:
             return {'success': False, 'error': 'Tools disabled'}
@@ -641,7 +650,65 @@ class Agent:
             self.messages.append(Message(role="tool", content=content))
         except (TypeError, AttributeError, Exception):
             logger.debug("tool message append failed: %s", traceback.format_exc())
-    
+
+    def _auto_tool_loop(
+        self,
+        api_messages: List[Dict[str, Any]],
+        assistant_content: str,
+        tool_calls: List[Dict[str, Any]],
+    ) -> str:
+        """自动执行工具并继续对话，直到拿到最终文本回复。"""
+        try:
+            import json as _json
+        except Exception:
+            _json = None
+
+        content = assistant_content or ""
+        current_messages = list(api_messages)
+
+        for attempt in range(5):
+            results = []
+            for tc in tool_calls:
+                name = tc.get('name') or tc.get('function', {}).get('name')
+                args = tc.get('arguments') or tc.get('function', {}).get('arguments') or {}
+                if isinstance(args, str):
+                    try:
+                        args = _json.loads(args) if _json else {}
+                    except Exception:
+                        args = {"text": args}
+                result = self.execute_tool(name, **args)
+                results.append((name, result))
+
+            for name, result in results:
+                self._append_tool_message(name, result)
+
+            current_messages = [
+                {"role": m.role, "content": m.content or ""}
+                for m in self.messages
+            ]
+
+            try:
+                follow = provider_pool.chat(current_messages)
+            except Exception:
+                break
+
+            if not follow.get('success'):
+                break
+
+            next_content = follow.get('content', '') or ''
+            next_tool_calls = follow.get('tool_calls') or []
+
+            if next_content and not next_tool_calls:
+                return next_content
+
+            if not next_tool_calls:
+                return next_content or content
+
+            content = next_content
+            tool_calls = next_tool_calls
+
+        return content
+
     def list_tools(self) -> List[Dict[str, Any]]:
         """列出可用工具，合并本地 registry 与 MCP 外部工具"""
         local_tools = registry.list_tools()

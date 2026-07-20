@@ -84,6 +84,11 @@ class Config:
             for config_key, desktop_key in desktop_model_map.items():
                 value = desktop.get(desktop_key)
                 if value:
+                    if model_section.get(config_key) and model_section[config_key] != value:
+                        logger.debug(
+                            "desktop settings overriding config: %s = %r -> %r",
+                            config_key, model_section[config_key], value,
+                        )
                     model_section[config_key] = value
                 if not model_section.get(config_key):
                     env_value = os.getenv(env_map[config_key])
@@ -231,27 +236,50 @@ class Config:
         env_name = key.upper().replace('.', '_')
         return value or os.getenv(env_name, '')
     
+    def _resolve_sensitive(self, key: str, fallback: str = "") -> str:
+        if keyring is not None:
+            try:
+                stored = keyring.get_password("prism", key)
+                if stored:
+                    return stored
+            except Exception:
+                pass
+        env_name = key.upper().replace(".", "_")
+        env_value = os.getenv(env_name)
+        if env_value:
+            return env_value
+        keys = key.split('.')
+        value = self._config
+        for k in keys:
+            if isinstance(value, dict):
+                value = value.get(k)
+            else:
+                value = None
+                break
+        if value is not None:
+            return str(value)
+        return fallback
+
     def _redact_value(self, value: Any) -> Any:
         """对敏感值做脱敏显示"""
         if isinstance(value, str) and len(value) > 6:
             return f"{value[:3]}***{value[-2:]}"
         return "***"
-    
+
     def _redact_config(self, data: dict) -> dict:
         """递归脱敏配置中的敏感字段"""
         result = {}
         for k, v in data.items():
-            full_key = k
             if isinstance(v, dict):
                 result[k] = self._redact_config(v)
-            elif full_key.lower().endswith('api_key') or full_key.lower().endswith('secret') or full_key.lower().endswith('token'):
+            elif k.lower().endswith('api_key') or k.lower().endswith('secret') or k.lower().endswith('token'):
                 result[k] = self._redact_value(str(v))
             else:
                 result[k] = v
         return result
     
     def get(self, key: str, default=None):
-        """获取配置项，支持点号分隔的路径"""
+        """获取配置项，支持点号分隔的路径；敏感字段优先从 keyring 回填"""
         keys = key.split('.')
         value = self._config
         for k in keys:
@@ -261,33 +289,24 @@ class Config:
                 return default
         if value is None:
             return default
-        if key.lower().replace('.', '_') in {
-            'model_api_key',
-            'gateway_feishu_app_secret',
-            'gateway_telegram_bot_token',
-            'gateway_discord_bot_token',
-            'gateway_wechat_corp_secret',
-            'gateway_wechat_agent_secret',
-        }:
-            return self._resolve_sensitive(key, value)
+        if key in _SENSITIVE_KEYS:
+            return self._resolve_sensitive(key, default if default is not None else '')
         return value
     
     def set(self, key: str, value) -> None:
-        """设置配置项，支持点号分隔的路径；敏感字段写入 keyring"""
-        resolved = value
+        """设置配置项；敏感字段同时写入 keyring，_config 保留明文供桌面端恢复"""
         if key in _SENSITIVE_KEYS and keyring is not None:
             try:
                 keyring.set_password("prism", key, str(value))
-                resolved = value
             except Exception:
-                resolved = value
+                pass
         keys = key.split('.')
         config = self._config
         for k in keys[:-1]:
             if k not in config:
                 config[k] = {}
             config = config[k]
-        config[keys[-1]] = resolved
+        config[keys[-1]] = value
         self._save()
 
     def revert(self, key: str) -> None:

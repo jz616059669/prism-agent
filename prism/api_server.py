@@ -38,6 +38,11 @@ except Exception:  # noqa: BLE001
 
 _REQUEST_TIMEOUT = float(os.getenv("PRISM_API_REQUEST_TIMEOUT", "8"))
 
+try:
+    from prism import __version__ as _prism_version
+except Exception:
+    _prism_version = "2.1.6"
+
 
 class PRISMApiServer:
     """
@@ -58,7 +63,7 @@ class PRISMApiServer:
         self.host = host
         self.port = port
         self._agent_factory = agent_factory or self._default_factory
-        self._app = FastAPI(title="PRISM Agent API", version="2.1.4")
+        self._app = FastAPI(title="PRISM Agent API", version=_prism_version)
         self._server_thread: Optional[threading.Thread] = None
         self._running = False
         self._register_routes()
@@ -75,7 +80,7 @@ class PRISMApiServer:
 
         @app.get("/health")
         async def health() -> JSONResponse:
-            return JSONResponse({"status": "ok", "version": "2.1.4"})
+            return JSONResponse({"status": "ok", "version": _prism_version})
 
         @app.get("/v1/models")
         async def list_models(request: Request) -> JSONResponse:

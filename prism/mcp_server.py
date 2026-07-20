@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import logging
+import threading
 from typing import Any, Dict, List, Optional
 
 from prism.mcp.protocol import (
@@ -15,6 +16,11 @@ from prism.mcp.protocol import (
     make_request,
     make_response,
 )
+
+try:
+    from prism import __version__ as _PRISM_VERSION
+except Exception:
+    _PRISM_VERSION = "2.1.6"
 
 logger = logging.getLogger("prism.mcp_server")
 
@@ -143,7 +149,7 @@ class PrismMCPServer:
                 "resources": {},
                 "prompts": {},
             },
-            "serverInfo": {"name": "prism", "version": "2.1.4"},
+            "serverInfo": {"name": "prism", "version": _PRISM_VERSION},
         }
 
     def handle_request(self, payload: Dict[str, Any]) -> Dict[str, Any]:

@@ -81,12 +81,13 @@ class RetryStrategy:
             task.attempts += 1
             self._save(task)
         try:
-            if task.func in {"terminal", "web_search", "browser_navigate"}:
+            allowed_funcs = {"terminal", "web_search", "browser_navigate"}
+            if task.func in allowed_funcs:
                 from prism.tools.registry import registry
                 result = registry.execute(task.func, *task.args, **task.kwargs)
                 success = result.get("success")
             else:
-                raise ValueError("unsupported func for auto retry")
+                raise ValueError(f"unsupported func for auto retry: {task.func}")
             if not success:
                 self.record_failure(task.id, error=str(result.get("error")))
         except Exception as exc:

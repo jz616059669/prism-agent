@@ -12,6 +12,8 @@ from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
 from pathlib import Path
 
+from prism import __version__ as _prism_version
+
 
 class MCPHTTPClient:
     """MCP HTTP/SSE 客户端"""
@@ -56,7 +58,7 @@ class MCPHTTPClient:
             'params': {
                 'protocolVersion': '2024-11-05',
                 'capabilities': {},
-                'clientInfo': {'name': 'prism', 'version': '2.1.4'},
+                'clientInfo': {'name': 'prism', 'version': _prism_version},
             },
         }
         

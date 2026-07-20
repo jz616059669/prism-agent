@@ -18,6 +18,11 @@ from prism.logging import logger
 import traceback
 
 try:
+    from prism import __version__ as _PRISM_VERSION
+except Exception:
+    _PRISM_VERSION = "2.1.6"
+
+try:
     from prism.mcp.http_client import MCPHTTPClient
     _HTTP_CLIENT_AVAILABLE = True
 except Exception:
@@ -168,10 +173,12 @@ class MCPClient:
                     "params": {
                         "protocolVersion": "2024-11-05",
                         "capabilities": {},
-                        "clientInfo": {"name": "prism", "version": "2.1.4"},
+                        "clientInfo": {"name": "prism", "version": _PRISM_VERSION},
                     },
                 }
                 request_str = json.dumps(init_request, ensure_ascii=False) + "\n"
+                if process.poll() is not None:
+                    raise RuntimeError(f"stdio server {server.name} already exited")
                 process.stdin.write(request_str)
                 process.stdin.flush()
 
@@ -179,15 +186,16 @@ class MCPClient:
                 if response and "result" in response:
                     self._stdio_initialized[server.name] = True
                     notify = {"jsonrpc": "2.0", "method": "notifications/initialized"}
-                    process.stdin.write(json.dumps(notify, ensure_ascii=False) + "\n")
-                    process.stdin.flush()
+                    if process.poll() is None:
+                        process.stdin.write(json.dumps(notify, ensure_ascii=False) + "\n")
+                        process.stdin.flush()
                     print(f"[MCP] stdio 服务器初始化成功: {server.name}")
                 else:
                     # 宽松处理：部分简易 server 不遵循完整握手
                     self._stdio_initialized[server.name] = True
                     print(f"[MCP] stdio 服务器 {server.name} 未返回有效初始化响应，仍允许调用")
             except Exception as e:
-                self._stdio_initialized[server.name] = True
+                self._stdio_initialized.pop(server.name, None)
                 print(f"[MCP] stdio 初始化失败 {server.name}: {e}")
 
     def _connect_http(self, server: MCPServer):
@@ -318,6 +326,8 @@ class MCPClient:
             }
 
             request_str = json.dumps(request, ensure_ascii=False) + "\n"
+            if process.poll() is not None:
+                return {'success': False, 'error': f'Server {server.name} already exited'}
             process.stdin.write(request_str)
             process.stdin.flush()
 
@@ -364,7 +374,7 @@ class MCPClient:
             }
             process.stdin.write(json.dumps(payload, ensure_ascii=False) + "\n")
             process.stdin.flush()
-            response = self._read_stdio_response(server.name, timeout=timeout)
+            response = self._read_stdio_response(server_name, timeout=timeout)
             if response and "result" in response:
                 return response["result"].get("tools", [])
         except Exception:
