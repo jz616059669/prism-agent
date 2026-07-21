@@ -130,6 +130,13 @@ class ChatMixin:
         images = list(getattr(self, "_pending_images", []) or [])
         if not text and not images:
             return
+        if text.startswith("/"):
+            cmd = text.lower()
+            if cmd in ("/summarize", "/compact"):
+                self._handle_compact_command(cmd)
+            else:
+                self._append("PRISM", "未知命令。支持: /summarize, /compact")
+            return
         if not getattr(self, "agent", None):
             self._append("PRISM", "Error: agent 未初始化，请检查配置并保存后重试。")
             self._log_to_file("warning", "send_blocked", reason="agent is None")
