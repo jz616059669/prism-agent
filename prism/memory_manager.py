@@ -70,6 +70,11 @@ class MemoryManager:
                     except Exception:
                         pass
             summary = self.memory.compact(max_entries=self.config.max_total_entries)
+            # 自动提炼旧对话为高阶摘要
+            try:
+                self.summarize_old_chats(scope=scope_key)
+            except Exception:
+                pass
             return {
                 "scope": scope_key,
                 "compacted": True,
@@ -104,21 +109,24 @@ class MemoryManager:
                     pass
             if not old:
                 return None
-            lines: List[str] = []
-            for m in old:
-                v = getattr(m, "value", "") or ""
-                v = v.replace("\n", " ")
-                if len(v) > 80:
-                    v = v[:77] + "..."
-                lines.append(f"- {v}")
-            summary_text = "\n".join(lines)
+            # 优先用 LLM 提炼摘要；失败则回退到简单拼接
+            summary_text = self._llm_summarize(old, scope=scope_key)
+            if not summary_text:
+                lines: List[str] = []
+                for m in old:
+                    v = getattr(m, "value", "") or ""
+                    v = v.replace("\n", " ")
+                    if len(v) > 80:
+                        v = v[:77] + "..."
+                    lines.append(f"- {v}")
+                summary_text = "\n".join(lines)
             if summary_text:
                 try:
                     self.memory.remember(
                         f"chat_summary:{scope_key}:{int(time.time())}",
                         summary_text,
                         category=f"chat_summary:{scope_key}",
-                        confidence=0.7,
+                        confidence=0.75,
                     )
                 except Exception:
                     pass
@@ -131,6 +139,36 @@ class MemoryManager:
         except Exception:
             pass
         return None
+
+    def _llm_summarize(self, entries: List[Any], scope: str = "default") -> Optional[str]:
+        """用 LLM 将多条旧对话压缩为一段高阶摘要。"""
+        try:
+            from prism.providers.manager import provider_pool
+        except Exception:
+            return None
+        lines: List[str] = []
+        for m in entries[:20]:
+            v = getattr(m, "value", "") or ""
+            v = v.replace("\n", " ")
+            if len(v) > 120:
+                v = v[:117] + "..."
+            lines.append(v)
+        if not lines:
+            return None
+        prompt = (
+            "你是 PRISM 的记忆提炼器。请将以下旧对话压缩为一段高阶摘要，"
+            "只保留关键事实、用户偏好、未完成事项，控制在 300 字以内。\n\n"
+            + "\n".join(lines)
+        )
+        try:
+            result = provider_pool.chat([
+                {"role": "system", "content": "只输出摘要，不要解释。"},
+                {"role": "user", "content": prompt},
+            ])
+            content = (result or {}).get("content", "") or ""
+            return content.strip()[:500]
+        except Exception:
+            return None
 
 
 memory_manager = MemoryManager(memory=PersistentMemory())

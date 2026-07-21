@@ -1045,7 +1045,7 @@ class Agent:
 
     # ========== 记忆系统 ==========
     def _extract_user_facts(self, user_message: str, assistant_content: str) -> None:
-        """规则提取：用户称呼、偏好、事实、任务、时间、地点等。"""
+        """规则提取 + 可选 LLM 辅助提取：用户称呼、偏好、事实、任务、时间、地点等。"""
         import re
         text = user_message or ""
         combined = text + chr(10) + assistant_content
@@ -1067,6 +1067,7 @@ class Agent:
             (r"下周([^，。]{1,20})", "user_context", "plan"),
             (r"明天([^，。]{1,20})", "user_context", "plan"),
             (r"提醒我([^，。]{1,20})", "user_context", "reminder"),
+            (r"([^，。]{1,10})是我([^，。]{1,10})", "user_profile", "relationship"),
         ]
         for pattern, category, key in patterns:
             m = re.search(pattern, combined)
@@ -1078,6 +1079,54 @@ class Agent:
                     except Exception:
                         pass
                 break
+
+        # LLM 辅助提取：当规则未命中时，尝试让模型提炼用户事实
+        try:
+            if getattr(self, "llm_extract_enabled", False):
+                self._llm_extract_facts(text, assistant_content or "")
+        except Exception:
+            pass
+
+    def _llm_extract_facts(self, user_message: str, assistant_content: str) -> None:
+        """用 LLM 从对话中提取用户事实并写入持久记忆。"""
+        try:
+            from prism.providers.manager import provider_pool
+        except Exception:
+            return
+        prompt = (
+            "你是 PRISM 的记忆提取器。从以下对话中提取用户事实（偏好、身份、习惯、关系、任务、计划等），"
+            "只输出 JSON 数组，每个元素为 {\"category\":\"user_profile|user_preference|user_context\",\"key\":\"简短key\",\"value\":\"事实值\"}。"
+            "如果没有可提取事实，输出 []。\n\n"
+            f"用户：{user_message[:500]}\n助手：{assistant_content[:500]}"
+        )
+        try:
+            result = provider_pool.chat([
+                {"role": "system", "content": "只输出 JSON 数组，不要解释。"},
+                {"role": "user", "content": prompt},
+            ])
+        except Exception:
+            return
+        content = (result or {}).get("content", "") or ""
+        content = content.strip()
+        if not content.startswith("["):
+            return
+        try:
+            import json as _json
+            facts = _json.loads(content)
+        except Exception:
+            return
+        if not isinstance(facts, list):
+            return
+        for item in facts[:5]:
+            try:
+                category = item.get("category") or "user_profile"
+                key = item.get("key") or "fact"
+                value = item.get("value") or ""
+                value = str(value).strip()
+                if value and len(value) <= 60:
+                    persistent_memory.remember(key, value, category=category, confidence=0.8)
+            except Exception:
+                continue
 
     def remember(self, key: str, value: str, category: str = "general") -> None:
         """存储到持久记忆"""

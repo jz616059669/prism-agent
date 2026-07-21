@@ -44,6 +44,9 @@ class Memory:
     access_count: int = 0
     last_accessed_at: str = ""
     digest: str = ""
+    # 记忆冲突解决
+    supersedes_key: str = ""
+    conflict_status: str = ""
 
 
 class _EmbeddingClient:
@@ -255,8 +258,10 @@ class PersistentMemory:
         # 先清理 duplicate digest（理论上 remember 已经拦截，这里做二次兜底）
         seen: Dict[str, str] = {}
         for key, m in list(self._index.items()):
-            d = getattr(m, "digest", "")
-            if d and d in seen:
+            d = getattr(m, "digest", "") or ""
+            if not d:
+                continue
+            if d in seen:
                 del self._index[key]
                 self._embedding_index.remove(key)
                 continue
@@ -280,9 +285,95 @@ class PersistentMemory:
         if self._index:
             self._save()
 
+    def compact(self, max_entries: int = 120) -> Dict[str, Any]:
+        """
+        主动整理记忆库：
+        - 合并相似/重复条目
+        - 压缩超长条目
+        - 清理过期低置信条目
+        返回整理结果。
+        """
+        with self._lock:
+            before = len(self._index)
+            merged = 0
+            compressed = 0
+            removed = 0
+            # 先按 digest 合并重复
+            by_digest: Dict[str, List[str]] = {}
+            for key, m in list(self._index.items()):
+                d = getattr(m, "digest", "") or key
+                by_digest.setdefault(d, []).append(key)
+            for keys in by_digest.values():
+                if len(keys) <= 1:
+                    continue
+                    # 保留 access_count 最高的一条
+                best = max(keys, key=lambda k: int(getattr(self._index[k], "access_count", 0) or 0))
+                for k in keys:
+                    if k == best:
+                        continue
+                    merged += 1
+                    del self._index[k]
+                    self._embedding_index.remove(k)
+            # 压缩超长条目
+            for m in self._index.values():
+                v = getattr(m, "value", "") or ""
+                if len(v) > 200:
+                    m.value = v[:197].rstrip() + "..."
+                    m.updated_at = _now_iso()
+                    compressed += 1
+            # 清理过期低置信条目
+            cutoff = datetime.now() - timedelta(days=30)
+            for key, m in list(self._index.items()):
+                conf = getattr(m, "confidence", 1.0) or 1.0
+                last = getattr(m, "last_accessed_at", "") or getattr(m, "updated_at", "") or getattr(m, "created_at", "") or ""
+                try:
+                    last_dt = datetime.fromisoformat(last)
+                except Exception:
+                    last_dt = None
+                if last_dt is not None and last_dt < cutoff and conf < 0.3:
+                    del self._index[key]
+                    self._embedding_index.remove(key)
+                    removed += 1
+            if self._index:
+                self._save()
+            return {
+                "before": before,
+                "after": len(self._index),
+                "merged": merged,
+                "compressed": compressed,
+                "removed": removed,
+            }
+
     def configure_embeddings(self, base_url: str, api_key: str, model: str) -> None:
         """启用语义检索。未调用时退化为纯字符串匹配。"""
         self._embedding_index.configure(base_url, api_key, model)
+
+    def _resolve_conflict(self, new_key: str, new_value: str, category: str) -> None:
+        """按 category 检查是否已存在相反/矛盾记忆，若存在则更新为新值并标记 supersedes。"""
+        neg_patterns = ['不喜欢', '讨厌', '反感', '别叫', '不要', '不是', '不会', '不']
+        is_neg = any(p in new_value for p in neg_patterns)
+        for key, m in list(self._index.items()):
+            if m.category != category or key == new_key:
+                continue
+            if getattr(m, "conflict_status", "") == "superseded":
+                continue
+            val = m.value
+            pos_match = any(p in val for p in ['喜欢', '爱', '常', '经常', '是'])
+            neg_match = any(p in val for p in neg_patterns)
+            if is_neg and pos_match:
+                m.conflict_status = "superseded"
+                m.supersedes_key = new_key
+                m.confidence = max(0.1, m.confidence - 0.3)
+                m.updated_at = _now_iso()
+                logger.debug("memory conflict resolved: %s superseded by %s", key, new_key)
+                return
+            if not is_neg and neg_match:
+                m.conflict_status = "superseded"
+                m.supersedes_key = new_key
+                m.confidence = max(0.1, m.confidence - 0.3)
+                m.updated_at = _now_iso()
+                logger.debug("memory conflict resolved: %s superseded by %s", key, new_key)
+                return
 
     def remember(
         self,
@@ -324,6 +415,7 @@ class PersistentMemory:
                     last_accessed_at="",
                     digest=_short(f"{category}:{value}", limit=64),
                 )
+                self._resolve_conflict(key, value, category)
             memory.access_count = int(memory.access_count) + 1
             memory.last_accessed_at = now
             self._index[key] = memory
@@ -398,14 +490,32 @@ class PersistentMemory:
         with self._lock:
             self._maybe_decay()
             query_lower = query.lower()
+            # 简单同义词/归一化：常见称呼、语气词、代词
+            norm_map = {
+                '贾总': ['贾总', 'boss', '老板', '老大'],
+                '你': ['你', '您', 'prism', '助手', 'agent'],
+                '我': ['我', '本人', '本人', '鄙人'],
+            }
+            synonyms: List[str] = []
+            for base, alts in norm_map.items():
+                if base in query_lower:
+                    synonyms.extend(alts)
+            synonyms = list(set(synonyms))
+
             candidates: List[Memory] = []
             seen_keys = set()
             for memory in self._index.values():
                 if category and memory.category != category:
                     continue
-                if query_lower in memory.key.lower() or query_lower in memory.value.lower():
+                key_lower = memory.key.lower()
+                val_lower = memory.value.lower()
+                if query_lower in key_lower or query_lower in val_lower:
                     candidates.append(memory)
                     seen_keys.add(memory.key)
+                elif synonyms:
+                    if any(s in key_lower or s in val_lower for s in synonyms):
+                        candidates.append(memory)
+                        seen_keys.add(memory.key)
 
             semantic_hits = self._embedding_index.search(query, top_k=max(limit, 10))
             for key, _ in semantic_hits:
@@ -423,7 +533,8 @@ class PersistentMemory:
                     continue
                 candidates.append(memory)
 
-            candidates.sort(key=lambda m: self._importance(m), reverse=True)
+            now = datetime.now()
+            candidates.sort(key=lambda m: self._importance(m, now=now), reverse=True)
             return candidates[:limit]
 
     def _importance(self, memory: Memory, now: Optional[datetime] = None) -> float:
