@@ -858,7 +858,11 @@ class Agent:
                 self._append_tool_message(name, result)
 
             current_messages = [
-                {"role": m.role, "content": m.content or ""}
+                {
+                    "role": m.role,
+                    "content": m.content or "",
+                    "tool_calls": getattr(m, "tool_calls", None),
+                }
                 for m in self.messages
             ]
 
