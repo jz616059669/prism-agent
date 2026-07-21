@@ -424,14 +424,22 @@ class Agent:
     def _tool_precheck(self, tool_name: str, kwargs: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
         工具调用前轻量校验：
+        - 角色权限
         - 危险命令风险提示
         - 基于近期记忆避免明显重复/冲突
         """
         try:
-            if tool_name in {"run_terminal", "execute_tool"}:
+            # 角色权限检查
+            role_error = security_manager.check_role(tool_name)
+            if role_error:
+                return {
+                    "success": False,
+                    "error": role_error,
+                    "tool": tool_name,
+                }
+            if tool_name in {"run_terminal", "execute_tool", "terminal"}:
                 command = kwargs.get("command") or kwargs.get("text") or ""
                 command_lower = (command or "").lower()
-                # 高危命令提示
                 dangerous = ["rm -rf /", "rm -rf ~", "rm -rf c:\\", "del /s /q c:\\", "format c:", "shutdown", "reboot", "rm -rf /*", "mkfs"]
                 if any(pat in command_lower for pat in dangerous):
                     return {

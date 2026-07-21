@@ -27,6 +27,10 @@ DANGEROUS_TOOLS = {
     "file_read",
     "terminal",
     "code_execution",
+    "gateway_setup",
+    "gateway_start",
+    "gateway_stop",
+    "gateway_status",
 }
 
 HIGH_RISK_COMMANDS = [
@@ -36,7 +40,7 @@ HIGH_RISK_COMMANDS = [
     "sudo ", "su ", "chmod 777", "chown ",
     "curl | bash", "wget | bash",
     "python -c", "python3 -c", "perl -e", "ruby -e",
-    "eval ", "exec ", ":(){", "fork bomb",
+    "eval ", "exec ", ":() {", "fork bomb",
     "> /dev/", ">/dev/", "2>/dev/",
     # Windows
     "powershell", "cmd.exe", "cmd /c", "reg delete", "reg add",
@@ -47,6 +51,38 @@ HIGH_RISK_COMMANDS = [
     "wusa.exe", "msiexec", "bcdedit", "diskpart",
     "format c:", "format d:",
 ]
+
+
+class Role:
+    USER = "user"
+    ADMIN = "admin"
+    SYSTEM = "system"
+
+
+ROLE_HIERARCHY = {
+    Role.USER: 0,
+    Role.ADMIN: 1,
+    Role.SYSTEM: 2,
+}
+
+# 工具默认所需最低角色；未列出则允许 user 调用
+TOOL_ROLES = {
+    "gateway_setup": Role.ADMIN,
+    "gateway_start": Role.ADMIN,
+    "gateway_stop": Role.ADMIN,
+    "file_write": Role.USER,
+    "file_patch": Role.USER,
+    "terminal": Role.USER,
+    "code_execution": Role.USER,
+    "web_search": Role.USER,
+    "browser_navigate": Role.USER,
+    "browser_click": Role.USER,
+    "browser_type": Role.USER,
+    "browser_evaluate": Role.USER,
+    "browser_screenshot": Role.USER,
+    "browser_scroll": Role.USER,
+    "file_read": Role.USER,
+}
 
 
 @dataclass
@@ -71,7 +107,8 @@ class SecurityManager:
         self._allowed_dirs: List[str] = []
         self._blocked_dirs: List[str] = []
         self._max_file_size: int = 10 * 1024 * 1024  # 10MB
-    
+        self.user_role: str = Role.USER
+
     def configure(self, allowed_dirs: Optional[List[str]] = None, blocked_dirs: Optional[List[str]] = None, max_file_size: Optional[int] = None) -> None:
         """配置安全策略"""
         if allowed_dirs is not None:
@@ -80,7 +117,21 @@ class SecurityManager:
             self._blocked_dirs = [str(Path(d).resolve()) for d in blocked_dirs]
         if max_file_size is not None:
             self._max_file_size = max_file_size
-    
+
+    def set_user_role(self, role: str) -> None:
+        """设置当前用户角色"""
+        if role in ROLE_HIERARCHY:
+            self.user_role = role
+
+    def check_role(self, tool_name: str) -> Optional[str]:
+        """检查当前用户角色是否有权调用该工具；返回错误信息则拦截"""
+        required = TOOL_ROLES.get(tool_name, Role.USER)
+        current_level = ROLE_HIERARCHY.get(self.user_role, 0)
+        required_level = ROLE_HIERARCHY.get(required, 0)
+        if current_level < required_level:
+            return f"权限不足：工具 {tool_name} 需要 {required} 权限，当前角色 {self.user_role}"
+        return None
+
     def check(self, tool_name: str, kwargs: Dict[str, Any], user: str = "") -> Optional[str]:
         """
         检查是否允许执行；返回错误信息则拦截，返回 None 则放行。
@@ -91,7 +142,14 @@ class SecurityManager:
         command = self._extract_command(tool_name, kwargs)
         if not command:
             return None
-        
+
+        # 角色权限检查
+        role_error = self.check_role(tool_name)
+        if role_error:
+            logger.warning("%s | tool=%s user=%s", role_error, tool_name, user)
+            self._audit(tool_name, kwargs, success=False, error=role_error, user=user)
+            return role_error
+
         # 文件访问控制
         if tool_name in {"file_read", "file_write", "file_patch"}:
             raw_path = kwargs.get("path") or kwargs.get("file_path") or ""
@@ -115,7 +173,7 @@ class SecurityManager:
                     logger.warning(msg)
                     self._audit(tool_name, kwargs, success=False, error=msg, user=user)
                     return msg
-            
+
             # 文件大小检查
             if tool_name in {"file_write", "file_patch"}:
                 content = kwargs.get("content") or kwargs.get("text") or ""
@@ -124,7 +182,7 @@ class SecurityManager:
                     logger.warning(msg)
                     self._audit(tool_name, kwargs, success=False, error=msg, user=user)
                     return msg
-        
+
         blocked_risks = []
         confirm_risks = []
         for risk in HIGH_RISK_COMMANDS:
@@ -133,21 +191,21 @@ class SecurityManager:
                     confirm_risks.append(risk)
                 else:
                     blocked_risks.append(risk)
-        
+
         if blocked_risks:
             msg = f"安全拦截：工具 {tool_name} 包含高危命令 `{blocked_risks[0]}`"
             logger.warning("%s | command=%s user=%s", msg, command, user)
             self._audit(tool_name, kwargs, success=False, error=msg, user=user)
             self._blocked.append(msg)
             return msg
-        
+
         if confirm_risks:
             msg = f"CONFIRM_REQUIRED：工具 {tool_name} 包含需确认命令 `{confirm_risks[0]}`"
             logger.warning("%s | command=%s user=%s", msg, command, user)
             self._audit(tool_name, kwargs, success=False, error=msg, user=user)
             self._pending_confirm[tool_name] = {"kwargs": kwargs, "command": command, "user": user, "risk": confirm_risks[0]}
             return msg
-        
+
         return None
     
     def confirm(self, tool_name: str) -> bool:
