@@ -92,6 +92,14 @@ class Agent:
         except (ImportError, Exception):
             pass
 
+        # 自动化记忆管理（类 Hermes）
+        try:
+            from prism.memory_manager import memory_manager
+            self._memory_manager = memory_manager
+            self._memory_manager.memory = persistent_memory
+        except Exception:
+            self._memory_manager = None
+
         # RAG 本地知识库
         self._rag = None
         self._rag_enabled = False
@@ -412,6 +420,47 @@ class Agent:
             return "请再详细说明一下你的需求，我来帮你。"
         return None
 
+    def _tool_precheck(self, tool_name: str, kwargs: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        工具调用前轻量校验：
+        - 危险命令风险提示
+        - 基于近期记忆避免明显重复/冲突
+        """
+        try:
+            if tool_name in {"run_terminal", "execute_tool"}:
+                command = kwargs.get("command") or kwargs.get("text") or ""
+                command_lower = (command or "").lower()
+                # 高危命令提示
+                dangerous = ["rm -rf /", "rm -rf ~", "rm -rf c:\\", "del /s /q c:\\", "format c:", "shutdown", "reboot", "rm -rf /*", "mkfs"]
+                if any(pat in command_lower for pat in dangerous):
+                    return {
+                        "success": False,
+                        "error": f"检测到高危命令，已拦截：{command[:100]}。如需执行请明确确认。",
+                        "tool": tool_name,
+                    }
+            # 基于近期对话记忆检查是否刚刚执行过类似工具调用
+            try:
+                recent = [m for m in (getattr(self, "messages", []) or [])[-6:]]
+                recent_tool_calls = []
+                for m in recent:
+                    if getattr(m, "role", "") == "assistant" and hasattr(m, "tool_calls"):
+                        recent_tool_calls.extend(getattr(m, "tool_calls", []) or [])
+                for tc in recent_tool_calls:
+                    name = getattr(tc, "name", "") or tc.get("name", "") if isinstance(tc, dict) else ""
+                    if name == tool_name:
+                        args = getattr(tc, "arguments", {}) or tc.get("arguments", {}) if isinstance(tc, dict) else {}
+                        if args == kwargs:
+                            return {
+                                "success": False,
+                                "error": f"刚刚执行过相同的 {tool_name}，为了避免重复，我先跳过。",
+                                "tool": tool_name,
+                            }
+            except Exception:
+                pass
+            return None
+        except Exception:
+            return None
+
     def chat(self, user_message: str, on_stream=None, **kwargs) -> str:
         """
         发送消息并获取回复
@@ -593,6 +642,15 @@ class Agent:
             except (OSError, Exception):
                 logger.debug("auto memory save failed: %s", traceback.format_exc())
 
+        # 自动化记忆管理：定期整理、摘要旧对话
+        try:
+            mgr = getattr(self, "_memory_manager", None)
+            if mgr is not None:
+                scope = getattr(self, "memory_scope", "default") or "default"
+                mgr.on_chat_turn(scope=scope)
+        except Exception:
+            pass
+
         # Background self-improvement review
         try:
             if getattr(self, "review_enabled", False):
@@ -632,6 +690,14 @@ class Agent:
                         "provider": getattr(self, "name", "local"),
                     }
                 self._last_executed[marker] = now
+
+        # 工具调用前预检：基于近期记忆和历史结果做轻量校验
+        try:
+            precheck = self._tool_precheck(tool_name, kwargs)
+            if precheck is not None:
+                return precheck
+        except Exception:
+            pass
 
         if not self.tools_enabled:
             return {'success': False, 'error': 'Tools disabled'}
