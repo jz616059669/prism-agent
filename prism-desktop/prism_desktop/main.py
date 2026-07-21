@@ -1248,7 +1248,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             width=260,
             border_radius=16,
             bgcolor=ft.Colors.SURFACE_CONTAINER,
-            value="default",
+            value="默认",
         )
         self.persona_dropdown.on_change = lambda e: self._apply_persona(e.control.value)
         self.persona_refresh_btn = ft.IconButton(icon=ft.Icons.REFRESH_ROUNDED, tooltip="刷新角色", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.SURFACE_CONTAINER, style=ft.ButtonStyle(shape=ft.CircleBorder()))

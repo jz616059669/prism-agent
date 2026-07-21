@@ -45,28 +45,28 @@ class PersonaManager:
     def _load_builtin(self):
         builtins = [
             Persona(
-                name="default",
+                name="默认",
                 description="默认助手",
                 system_prompt="你是 PRISM Agent 默认助手，帮助用户完成任务。",
-                tags=["default"],
+                tags=["默认"],
                 active=True,
             ),
             Persona(
-                name="novelist",
+                name="网文创作",
                 description="网文创作模式",
                 system_prompt="你是资深网文创作助手，擅长爽文节奏、人物塑造、对话张力。保持轻松幽默的叙事风格。",
                 tags=["创作", "网文", "小说"],
                 memory_scope="novel",
             ),
             Persona(
-                name="coder",
+                name="编程专家",
                 description="编程专家模式",
                 system_prompt="你是资深全栈工程师，擅长 Python/TypeScript/系统架构。给出可运行、可测试、带错误处理的代码。",
                 tags=["代码", "编程", "debug"],
                 memory_scope="code",
             ),
             Persona(
-                name="translator",
+                name="中英翻译",
                 description="中英翻译模式",
                 system_prompt="你是专业中英翻译，忠实原文风格，保留文化 nuance。需要专业术语时给出原文对照。",
                 tags=["翻译", "英文", "中文"],
