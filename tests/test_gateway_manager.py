@@ -48,7 +48,7 @@ def test_gateway_list_platforms_from_config(monkeypatch, tmp_path):
 
     cfg_path = tmp_path / "config.yaml"
     cfg_path.write_text(
-        "gateway:\n  platforms:\n    - feishu\n    - telegram\n",
+        "model:\n  default: test-model\n  provider: test\n  base_url: http://localhost:8000/v1\n  api_key: test-key\ngateway:\n  platforms:\n    - feishu\n    - telegram\n  feishu:\n    app_id: fake-app-id\n    app_secret: fake-app-secret\n",
         encoding="utf-8",
     )
 

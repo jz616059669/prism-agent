@@ -76,7 +76,7 @@ class Agent:
         self.session_dir = Path.home() / ".prism" / "sessions"
         self._last_executed: Dict[str, float] = {}
         self._tool_lock = threading.Lock()
-        self._memory_context = persistent_memory.get_context(max_items=8, category=self.memory_scope)
+        self._memory_context = persistent_memory.get_context(max_items=8, scope=self.memory_scope)
         if self._memory_context:
             self.system_prompt = self.system_prompt.rstrip() + "\n\n" + self._memory_context
 

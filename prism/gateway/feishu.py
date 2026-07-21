@@ -5,9 +5,11 @@ PRISM Agent - 飞书 Gateway 适配器（WebSocket 长连接）
 
 import asyncio
 import json
+import tempfile
 import threading
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
 from lark_oapi import Client as LarkClient
@@ -90,6 +92,23 @@ class FeishuAdapter(PlatformAdapter):
         self.token_expires_at: int = 0
         self._last_send_ts: float = 0.0
         self._send_lock = threading.Lock()
+
+    def _rate_limit(self, last_response) -> None:
+        """基础发送限流：避免短时间大量请求触发飞书限频"""
+        if last_response is None:
+            return
+        try:
+            retry_after = getattr(last_response, "retry_after", None) or 0
+        except Exception:
+            retry_after = 0
+        now = time.time()
+        elapsed = now - self._last_send_ts
+        min_interval = 0.25
+        if retry_after > 0:
+            min_interval = max(min_interval, float(retry_after))
+        if elapsed < min_interval:
+            time.sleep(min_interval - elapsed)
+        self._last_send_ts = time.time()
 
     def start_polling(self, handler: Callable[[Message], None]):
         """Compatibility alias for start()."""

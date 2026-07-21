@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from prism.paths import PRISM_HOME, ensure_dirs
+from prism.logging import logger
 
 try:
     import keyring

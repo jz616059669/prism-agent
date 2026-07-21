@@ -452,6 +452,14 @@ def _register_code_tools(registry):
     class CodeExecuteTool(Tool):
         name = "code_execution"
         description = "执行 Python 代码，支持超时和输出捕获"
+        input_schema = {
+            "type": "object",
+            "properties": {
+                "code": {"type": "string", "description": "Python 代码"},
+                "timeout": {"type": "integer", "description": "超时秒数", "default": 30},
+            },
+            "required": ["code"],
+        }
         
         def execute(self, code: str, timeout: int = 30, **kwargs) -> Dict[str, Any]:
             return _code_executor.execute(code, timeout=timeout)
