@@ -48,19 +48,57 @@ def gateway_status(platform: str) -> dict:
 
 
 def gateway_start(platform: str, **kwargs) -> dict:
-    from prism.cli.gateway import start as _start_cmd
-    from click.testing import CliRunner
-    args = [platform]
-    for k, v in kwargs.items():
-        if v is not None and v != '':
-            args.extend([f'--{k.replace("_", "-")}', str(v)])
-    runner = CliRunner()
-    result = runner.invoke(_start_cmd, args, standalone_mode=False, prog_name='prism')
-    return {
-        "success": result.exit_code == 0,
-        "output": result.output,
-        "exception": str(result.exception) if result.exception else None,
-    }
+    try:
+        from prism.gateway import gateway as gw
+        if platform == 'feishu':
+            from prism.gateway.feishu import FeishuAdapter, FeishuConfig
+            adapter = FeishuAdapter(FeishuConfig(
+                app_id=kwargs.get('app_id', ''),
+                app_secret=kwargs.get('app_secret', ''),
+                encrypt_key=kwargs.get('encrypt_key', ''),
+                verification_token=kwargs.get('verification_token', ''),
+            ))
+            gw.register('feishu', adapter)
+            sessions = {}
+
+            def _handler(msg):
+                try:
+                    text = getattr(msg, 'text', '') or ''
+                    chat_id = getattr(msg, 'chat_id', '') or ''
+                    user_id = getattr(msg, 'user_id', '') or ''
+                    message_type = getattr(msg, 'message_type', 'text') or 'text'
+                    if not chat_id:
+                        return
+                    if chat_id not in sessions:
+                        from prism.agent import create_agent
+                        sessions[chat_id] = create_agent()
+                    if message_type == 'text':
+                        thinking_msg_id = adapter.send_thinking(chat_id)
+                        try:
+                            reply = sessions[chat_id].chat(text)
+                        except Exception as e:
+                            reply = f"抱歉，处理你的消息时出错了：{e}"
+                        if reply:
+                            if thinking_msg_id:
+                                adapter.update_message(thinking_msg_id, reply)
+                            else:
+                                adapter.send(chat_id, reply)
+                    else:
+                        thinking_msg_id = adapter.send_thinking(chat_id, f"正在修炼中…… 收到{message_type}消息")
+                        reply = f"我收到了你的{message_type}消息，当前版本主要支持文字对话，这类消息暂不能深度处理。"
+                        if thinking_msg_id:
+                            adapter.update_message(thinking_msg_id, reply)
+                        else:
+                            adapter.send(chat_id, reply)
+                except Exception as e:
+                    print(f"[feishu] handler error: {e}")
+
+            gw.start(_handler)
+            return {"success": True, "output": "feishu WebSocket 已启动"}
+        else:
+            return {"success": False, "output": f"暂不支持平台: {platform}"}
+    except Exception as e:
+        return {"success": False, "output": str(e)}
 
 
 def gateway_stop(platform: str) -> dict:
