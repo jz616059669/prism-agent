@@ -1100,6 +1100,20 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
 
         self.gateway_start_btn.on_click = _do_start
         self.gateway_stop_btn.on_click = _do_stop
+
+        def _poll_gateway_status(_=None):
+            try:
+                from prism.cli.gateway import gateway_status
+                status = gateway_status("feishu")
+                self._refresh_gateway_ui(running=bool(status.get("running")), log=(status.get("detail") or {}).get("feishu", {}).get("pid") and "运行中" or "未启动")
+            except Exception:
+                pass
+
+        try:
+            self.page.set_interval(5000, _poll_gateway_status)
+        except Exception:
+            pass
+
         return [
             ft.Row([self.gateway_status_icon, self.gateway_status_text], spacing=8),
             ft.Row([self.gateway_start_btn, self.gateway_stop_btn], spacing=8),

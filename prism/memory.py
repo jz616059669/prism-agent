@@ -500,7 +500,7 @@ class PersistentMemory:
                         candidates[key] = max(candidates.get(key, 0.0), float(score))
                 except (TypeError, AttributeError, Exception):
                     pass
-                # 过滤 + 排序
+                # 过滤 + 轻量 rerank：按相似度和重要度综合排序
                 filtered = []
                 for key, score in candidates.items():
                     mem = self._index.get(key)
@@ -508,9 +508,10 @@ class PersistentMemory:
                         continue
                     if float(mem.confidence) < float(min_confidence):
                         continue
-                    filtered.append((key, score, self._importance(mem)))
-                filtered.sort(key=lambda x: (x[1], x[2]), reverse=True)
-                return [k for k, _, _ in filtered[: max(0, limit)]]
+                    importance = self._importance(mem)
+                    filtered.append((key, score, importance, mem))
+                filtered.sort(key=lambda x: (x[1] * 0.7 + min(x[2], 1.0) * 0.3), reverse=True)
+                return [k for k, _, _, _ in filtered[: max(0, limit)]]
         except (TypeError, AttributeError, Exception):
             return []
 
