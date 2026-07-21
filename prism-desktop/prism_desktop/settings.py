@@ -98,6 +98,7 @@ class SettingsMixin:
             desktop_state_path.parent.mkdir(parents=True, exist_ok=True)
             state = {
                 "current_session": self._current_session_name,
+                "current_persona": getattr(self, "persona_dropdown", None).value if hasattr(self, "persona_dropdown") and self.persona_dropdown is not None else "",
                 "unsent_messages": [
                     {
                         "role": getattr(m, "role", "user"),
@@ -123,6 +124,14 @@ class SettingsMixin:
             if not desktop_state_path.exists():
                 return
             state = json.loads(desktop_state_path.read_text(encoding="utf-8"))
+            # 恢复角色选择，但不恢复会话历史（避免残留旧消息）
+            current_persona = state.get("current_persona") or ""
+            if current_persona and hasattr(self, "persona_dropdown") and self.persona_dropdown is not None:
+                try:
+                    self.persona_dropdown.value = current_persona
+                    self._apply_persona(current_persona)
+                except Exception:
+                    pass
             draft = state.get("chat_draft") or ""
             if draft and hasattr(self, "input_field") and self.input_field is not None:
                 self.input_field.value = draft
