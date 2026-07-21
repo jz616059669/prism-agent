@@ -1114,6 +1114,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.gateway_log_text = ft.Text("", size=11, color=ft.Colors.ON_SURFACE_VARIANT, max_lines=3, overflow=ft.TextOverflow.ELLIPSIS)
 
         def _do_start(_):
+            print("[gateway] start button clicked")
             self._set_status("正在启动飞书 gateway...", ft.Colors.AMBER_400)
             self.gateway_start_btn.disabled = True
             try:
@@ -1156,17 +1157,25 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         ]
 
     def _start_gateway_worker(self):
+        log_lines = []
         try:
             from prism.cli.gateway import gateway_status, gateway_start
             status = gateway_status("feishu")
+            log_lines.append(f"status={status}")
             if status.get("running"):
                 self._refresh_gateway_ui(running=True, log="已运行")
                 return
-            gateway_start("feishu")
-            self._refresh_gateway_ui(running=True, log="已启动")
-            self._set_status("飞书 gateway 已启动", ft.Colors.GREEN_400)
+            result = gateway_start("feishu")
+            log_lines.append(f"start={result}")
+            if result.get("success"):
+                self._refresh_gateway_ui(running=True, log="feishu WebSocket 已启动")
+                self._set_status("飞书 gateway 已启动", ft.Colors.GREEN_400)
+            else:
+                self._refresh_gateway_ui(running=False, log=(result.get("output") or str(result)))
+                self._set_status(f"gateway 启动失败: {result.get('output') or result}", ft.Colors.RED_400)
         except Exception as exc:
-            self._refresh_gateway_ui(running=False, log=f"启动失败: {exc}")
+            log_lines.append(f"exc={exc}")
+            self._refresh_gateway_ui(running=False, log="\n".join(log_lines))
             self._set_status(f"gateway 启动失败: {exc}", ft.Colors.RED_400)
 
     def _refresh_gateway_ui(self, running: bool, log: str = ""):

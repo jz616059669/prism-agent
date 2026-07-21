@@ -94,10 +94,13 @@ def gateway_start(platform: str, **kwargs) -> dict:
                     print(f"[feishu] handler error: {e}")
 
             gw.start(_handler)
+            print("[gateway_start] start() returned")
             return {"success": True, "output": "feishu WebSocket 已启动"}
         else:
             return {"success": False, "output": f"暂不支持平台: {platform}"}
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return {"success": False, "output": str(e)}
 
 
