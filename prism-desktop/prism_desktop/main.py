@@ -91,6 +91,9 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.provider_textfield = ft.TextField(label=_("model_provider"), value=prism_config.get("model.provider", "stepfun") or "stepfun", width=260)
         self.base_url_textfield = ft.TextField(label=_("base_url"), value=prism_config.get("model.base_url", "https://api.stepfun.com/step_plan/v1") or "https://api.stepfun.com/step_plan/v1", width=260)
         self.api_key_textfield = ft.TextField(label=_("api_key"), password=True, can_reveal_password=True, value=prism_config.get("model.api_key", "") or "", width=260)
+        self.test_connection_btn = ft.TextButton("测试连接", icon=ft.Icons.WIFI_ROUNDED, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12)))
+        self.test_connection_btn.on_click = lambda e: self._test_model_connection()
+        self.model_connection_status_text = ft.Text("", size=12, color=ft.Colors.ON_SURFACE_VARIANT)
         self.review_enabled_switch = ft.Switch(label="后台复盘", value=bool(int(os.getenv("PRISM_REVIEW_ENABLED", "1") or 1)))
         self.review_interval_field = ft.TextField(label="", value=str(int(os.getenv("PRISM_REVIEW_INTERVAL", "5") or 5)), width=64, keyboard_type=ft.KeyboardType.NUMBER, dense=True, content_padding=ft.Padding(4, 2, 4, 2), text_size=12)
         self.review_enabled_switch.on_change = lambda e: (self._apply_review_env(), self._save_settings())
@@ -469,6 +472,37 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self.agent = None
             self._log_error("agent init", exc)
             raise
+
+    def _test_model_connection(self) -> None:
+        def _run():
+            provider = (getattr(self, "provider_textfield", None) or type("T", (), {"value": ""})()).value or ""
+            base_url = (getattr(self, "base_url_textfield", None) or type("T", (), {"value": ""})()).value or ""
+            api_key = (getattr(self, "api_key_textfield", None) or type("T", (), {"value": ""})()).value or ""
+            model = (getattr(self, "model_dropdown", None) or type("T", (), {"value": ""})()).value or ""
+            status_text = getattr(self, "model_connection_status_text", None)
+            if status_text is not None:
+                try:
+                    status_text.value = "正在测试..."
+                    status_text.color = ft.Colors.ON_SURFACE_VARIANT
+                    if hasattr(status_text, "update"):
+                        status_text.update()
+                except Exception:
+                    pass
+            try:
+                from prism.providers.manager import OpenAIProvider
+                provider_obj = OpenAIProvider(name=provider or "test", base_url=base_url, api_key=api_key, model=model or "step-3.7-flash")
+                ok = provider_obj.is_available()
+                if status_text is not None:
+                    status_text.value = "连接正常" if ok else "连接失败，请检查 Key/额度/模型名"
+                    status_text.color = ft.Colors.GREEN_400 if ok else ft.Colors.RED_400
+                    if hasattr(status_text, "update"):
+                        status_text.update()
+            except Exception as exc:
+                if status_text is not None:
+                    status_text.value = f"异常：{exc}"
+                    status_text.color = ft.Colors.RED_400
+                    if hasattr(status_text, "update"):
+                        status_text.update()
 
     def _maybe_show_setup_wizard(self):
         try:
@@ -1355,6 +1389,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 self.provider_textfield,
                 self.base_url_textfield,
                 self.api_key_textfield,
+                ft.Row([self.test_connection_btn, self.model_connection_status_text], spacing=8, tight=True),
                 ft.Row([self.review_enabled_switch, self.review_interval_field], spacing=4, tight=True),
                 ft.Row([save_btn, ft.TextButton("预设管理", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.SURFACE_CONTAINER, color=ft.Colors.ON_SURFACE), on_click=lambda e: self._open_preset_manager())], spacing=8, tight=True),
             ]),

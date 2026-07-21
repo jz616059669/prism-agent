@@ -119,6 +119,12 @@ class OpenAIProvider(Provider):
         except Exception:
             return False
 
+    def _headers(self) -> Dict[str, str]:
+        try:
+            return {"Authorization": f"Bearer {self.api_key}"}
+        except Exception:
+            return {}
+
 
 class ProviderPool:
     """提供商池 - 支持多key轮转、自动降级、MoA多模型投票"""
@@ -229,6 +235,10 @@ class ProviderPool:
                     break
         if status is None:
             return False
+        if status == 429:
+            lower = error_str.lower()
+            if any(s in lower for s in ['no left credit', 'insufficient_quota', 'quota', 'credit', 'exceeded']):
+                return False
         return status in {429, 500, 502, 503, 504}
 
     def _delay_for_retry(self, attempt: int) -> float:
