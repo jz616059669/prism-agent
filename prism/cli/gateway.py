@@ -38,6 +38,43 @@ def setup_gateway_platform(cfg: Dict[str, Any], platform: str, values: Dict[str,
         set((cfg["gateway"].get("platforms") or []) + [platform])
     )
 
+def gateway_status(platform: str) -> dict:
+    from prism.gateway import gateway as gw
+    adapter = gw.get_adapter(platform)
+    if adapter is None:
+        return {"running": False, "platform": platform}
+    running = bool(getattr(adapter, "running", False))
+    return {"running": running, "platform": platform}
+
+
+def gateway_start(platform: str, **kwargs) -> dict:
+    from prism.cli.gateway import start as _start_cmd
+    from click.testing import CliRunner
+    args = [platform]
+    for k, v in kwargs.items():
+        if v is not None and v != '':
+            args.extend([f'--{k.replace("_", "-")}', str(v)])
+    runner = CliRunner(mix_stderr=False)
+    result = runner.invoke(_start_cmd, args, standalone_mode=False, prog_name='prism')
+    return {
+        "success": result.exit_code == 0,
+        "output": result.output,
+        "exception": str(result.exception) if result.exception else None,
+    }
+
+
+def gateway_stop(platform: str) -> dict:
+    from prism.cli.gateway import stop as _stop_cmd
+    from click.testing import CliRunner
+    runner = CliRunner(mix_stderr=False)
+    result = runner.invoke(_stop_cmd, [platform], standalone_mode=False, prog_name='prism')
+    return {
+        "success": result.exit_code == 0,
+        "output": result.output,
+        "exception": str(result.exception) if result.exception else None,
+    }
+
+
 @click.group()
 def gateway():
     """Gateway 控制命令"""
