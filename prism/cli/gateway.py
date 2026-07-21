@@ -52,11 +52,17 @@ def gateway_start(platform: str, **kwargs) -> dict:
         from prism.gateway import gateway as gw
         if platform == 'feishu':
             from prism.gateway.feishu import FeishuAdapter, FeishuConfig
+            from prism.config import config as prism_config
+            feishu_cfg = (prism_config.get('gateway.feishu') or {})
+            app_id = kwargs.get('app_id') or feishu_cfg.get('app_id') or ''
+            app_secret = kwargs.get('app_secret') or feishu_cfg.get('app_secret') or ''
+            encrypt_key = kwargs.get('encrypt_key') or feishu_cfg.get('encrypt_key') or ''
+            verification_token = kwargs.get('verification_token') or feishu_cfg.get('verification_token') or ''
             adapter = FeishuAdapter(FeishuConfig(
-                app_id=kwargs.get('app_id', ''),
-                app_secret=kwargs.get('app_secret', ''),
-                encrypt_key=kwargs.get('encrypt_key', ''),
-                verification_token=kwargs.get('verification_token', ''),
+                app_id=app_id,
+                app_secret=app_secret,
+                encrypt_key=encrypt_key,
+                verification_token=verification_token,
             ))
             gw.register('feishu', adapter)
             sessions = {}
