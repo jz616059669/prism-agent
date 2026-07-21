@@ -80,16 +80,23 @@ def gateway_start(platform: str, **kwargs) -> dict:
                         from prism.agent import create_agent
                         sessions[chat_id] = create_agent()
                     if message_type == 'text':
+                        print(f"[feishu] text branch: text={text[:120]}")
                         thinking_msg_id = adapter.send_thinking(chat_id)
+                        print(f"[feishu] thinking_msg_id={thinking_msg_id}")
                         try:
                             reply = sessions[chat_id].chat(text)
                         except Exception as e:
+                            import traceback
+                            traceback.print_exc()
                             reply = f"抱歉，处理你的消息时出错了：{e}"
+                        print(f"[feishu] reply={reply[:120]}")
                         if reply:
                             if thinking_msg_id:
-                                adapter.update_message(thinking_msg_id, reply)
+                                ok = adapter.update_message(thinking_msg_id, reply)
+                                print(f"[feishu] update_message={ok}")
                             else:
-                                adapter.send(chat_id, reply)
+                                ok = adapter.send(chat_id, reply)
+                                print(f"[feishu] send={ok}")
                     else:
                         thinking_msg_id = adapter.send_thinking(chat_id, f"正在修炼中…… 收到{message_type}消息")
                         reply = f"我收到了你的{message_type}消息，当前版本主要支持文字对话，这类消息暂不能深度处理。"
@@ -219,16 +226,23 @@ def start(
                     if chat_id not in sessions:
                         sessions[chat_id] = create_agent()
                     if message_type == 'text':
+                        print(f"[feishu] text branch: text={text[:120]}")
                         thinking_msg_id = adapter.send_thinking(chat_id)
+                        print(f"[feishu] thinking_msg_id={thinking_msg_id}")
                         try:
                             reply = sessions[chat_id].chat(text)
                         except Exception as e:
+                            import traceback
+                            traceback.print_exc()
                             reply = f"抱歉，处理你的消息时出错了：{e}"
+                        print(f"[feishu] reply={reply[:120]}")
                         if reply:
                             if thinking_msg_id:
-                                adapter.update_message(thinking_msg_id, reply)
+                                ok = adapter.update_message(thinking_msg_id, reply)
+                                print(f"[feishu] update_message={ok}")
                             else:
-                                adapter.send(chat_id, reply)
+                                ok = adapter.send(chat_id, reply)
+                                print(f"[feishu] send={ok}")
                     else:
                         thinking_msg_id = adapter.send_thinking(chat_id, f"正在修炼中…… 收到{message_type}消息")
                         reply = f"我收到了你的{message_type}消息，当前版本主要支持文字对话，这类消息暂不能深度处理。"
