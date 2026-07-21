@@ -89,7 +89,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             width=260,
         )
         self.provider_textfield = ft.TextField(label=_("model_provider"), value=prism_config.get("model.provider", "stepfun") or "stepfun", width=260)
-        self.base_url_textfield = ft.TextField(label=_("base_url"), value=prism_config.get("model.base_url", "https://api.stepfun.com/step_plan/v1") or "https://api.stepfun.com/step_plan/v1", width=260)
+        self.base_url_textfield = ft.TextField(label=_("base_url"), value=prism_config.get("model.base_url", "https://api.stepfun.com/v1") or "https://api.stepfun.com/v1", width=260)
         self.api_key_textfield = ft.TextField(label=_("api_key"), password=True, can_reveal_password=True, value=prism_config.get("model.api_key", "") or "", width=260)
         self.review_enabled_switch = ft.Switch(label="后台复盘", value=bool(int(os.getenv("PRISM_REVIEW_ENABLED", "1") or 1)))
         self.review_interval_field = ft.TextField(label="", value=str(int(os.getenv("PRISM_REVIEW_INTERVAL", "5") or 5)), width=64, keyboard_type=ft.KeyboardType.NUMBER, dense=True, content_padding=ft.Padding(4, 2, 4, 2), text_size=12)
