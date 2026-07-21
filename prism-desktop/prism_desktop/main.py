@@ -32,6 +32,7 @@ import traceback
 from prism.config import config as prism_config
 from prism.agent import create_agent
 from prism.tools.browser_bridge import open_page, page_snapshot, close_browser
+from prism.session_registry import session_registry
 INIT_ERROR_LOG = Path.home() / '.prism' / 'init-error.log'
 
 
@@ -2073,10 +2074,23 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         def _run():
             try:
                 name = self._current_session_name or f"session_{int(time.time())}"
-                path = self.agent.save_session(name)
+                payload = {
+                    "system_prompt": getattr(self.agent, "system_prompt", "") or "",
+                    "messages": [
+                        {
+                            "role": getattr(m, "role", ""),
+                            "content": (getattr(m, "content", "") or ""),
+                            "timestamp": getattr(m, "timestamp", None).isoformat() if getattr(m, "timestamp", None) else "",
+                            "metadata": getattr(m, "metadata", None) or {},
+                        }
+                        for m in getattr(self.agent, "messages", []) or []
+                    ],
+                }
+                path = session_registry.save_session(name, payload)
+                self._current_session_name = name
+                self._settings["current_session"] = name
                 self._append_terminal(f"session saved: {path}")
                 self._set_status("会话已保存", ft.Colors.GREEN_400)
-                self._settings["current_session"] = name
                 self._refresh_sessions()
             except Exception as e:
                 self._append_terminal(f"session save failed: {e}")
@@ -2091,23 +2105,22 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         if not query:
             self._refresh_sessions()
             return
+
         def _run():
-            try:
-                names = self.agent.list_sessions()
-            except Exception:
-                names = []
-            pinned = self._settings.get("pinned_sessions", {}) or {}
-            names = [n for n in names if query in n.lower()]
-            names = sorted(names, key=lambda n: (not pinned.get(n, False), n))
+            records = session_registry.search_sessions(query, limit=50)
             self.session_list.controls.clear()
-            if not names:
+            if not records:
                 self.session_list.controls.append(ft.Text("无匹配会话", color=ft.Colors.ON_SURFACE_VARIANT, size=12))
                 try:
                     self.session_list.update()
                 except Exception:
                     pass
                 return
-            for name in names:
+            pinned = self._settings.get("pinned_sessions", {}) or {}
+            pinned_names = {k for k, v in pinned.items() if v}
+            records = sorted(records, key=lambda x: (x.get("name") not in pinned_names, x.get("name") or ""))
+            for rec in records:
+                name = rec.get("name") or ""
                 is_current = name == self._current_session_name
                 pin_btn = ft.IconButton(
                     icon=ft.Icons.PUSH_PIN_ROUNDED if pinned.get(name) else ft.Icons.PUSH_PIN_OUTLINE_ROUNDED,
@@ -2134,7 +2147,9 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 del_btn.on_click = lambda e, n=name: self._delete_session(n)
                 export_btn = ft.IconButton(icon=ft.Icons.DOWNLOAD_OUTLINED, tooltip="导出 Markdown", icon_color=ft.Colors.ON_SURFACE_VARIANT, width=36, height=36)
                 export_btn.on_click = lambda e, n=name: self._export_session(n)
-                session_row = ft.Row([pin_btn, load_btn, rename_btn, export_btn, del_btn], spacing=6, tight=True)
+                compact_btn = ft.IconButton(icon=ft.Icons.COMPRESS_OUTLINED, tooltip="压缩会话", icon_color=ft.Colors.ON_SURFACE_VARIANT, width=36, height=36)
+                compact_btn.on_click = lambda e, n=name: self._compact_session(n)
+                session_row = ft.Row([pin_btn, load_btn, rename_btn, compact_btn, export_btn, del_btn], spacing=6, tight=True)
                 session_row._session_name = name
                 session_wrap = ft.Container(
                     content=session_row,
@@ -2143,6 +2158,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     bgcolor=ft.Colors.TRANSPARENT,
                     animate=ft.Animation(duration=120, curve=ft.AnimationCurve.EASE_OUT),
                 )
+
                 def _on_session_hover(e, w=session_wrap):
                     w.bgcolor = ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE) if e.data == 'true' else ft.Colors.TRANSPARENT
                     try:
@@ -2165,16 +2181,18 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         def _run():
             self.session_list.controls.clear()
             try:
-                names = self.agent.list_sessions()
+                records = session_registry.list_sessions()
             except Exception as exc:
                 self._log_error("list sessions", exc)
-                names = []
+                records = []
             pinned = self._settings.get("pinned_sessions", {}) or {}
-            names = sorted(names, key=lambda n: (not pinned.get(n, False), n))
-            if not names:
+            pinned_names = {k for k, v in pinned.items() if v}
+            records = sorted(records, key=lambda x: (x.get("name") not in pinned_names, x.get("name") or ""))
+            if not records:
                 self.session_list.controls.append(self._session_empty_state)
             else:
-                for name in names:
+                for rec in records:
+                    name = rec.get("name") or ""
                     is_current = name == self._current_session_name
                     pin_btn = ft.IconButton(
                         icon=ft.Icons.PUSH_PIN_ROUNDED if pinned.get(name) else ft.Icons.PUSH_PIN_OUTLINE_ROUNDED,
@@ -2201,7 +2219,9 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     del_btn.on_click = lambda e, n=name: self._delete_session(n)
                     export_btn = ft.IconButton(icon=ft.Icons.DOWNLOAD_OUTLINED, tooltip="导出 Markdown", icon_color=ft.Colors.ON_SURFACE_VARIANT, width=36, height=36)
                     export_btn.on_click = lambda e, n=name: self._export_session(n)
-                    session_row = ft.Row([pin_btn, load_btn, rename_btn, export_btn, del_btn], spacing=6, tight=True)
+                    compact_btn = ft.IconButton(icon=ft.Icons.COMPRESS_OUTLINED, tooltip="压缩会话", icon_color=ft.Colors.ON_SURFACE_VARIANT, width=36, height=36)
+                    compact_btn.on_click = lambda e, n=name: self._compact_session(n)
+                    session_row = ft.Row([pin_btn, load_btn, rename_btn, compact_btn, export_btn, del_btn], spacing=6, tight=True)
                     session_row._session_name = name
                     session_wrap = ft.Container(
                         content=session_row,
@@ -2210,6 +2230,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                         bgcolor=ft.Colors.TRANSPARENT,
                         animate=ft.Animation(duration=120, curve=ft.AnimationCurve.EASE_OUT),
                     )
+
                     def _on_session_hover(e, w=session_wrap):
                         w.bgcolor = ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE) if e.data == 'true' else ft.Colors.TRANSPARENT
                         try:
@@ -2228,7 +2249,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
     def _delete_session(self, name: str):
         def _run():
             try:
-                ok = self.agent.delete_session(name)
+                ok = session_registry.delete_session(name)
                 if ok and name == self._current_session_name:
                     self._current_session_name = None
                 self._append_terminal(f"session delete {name}: {'ok' if ok else 'failed'}")
@@ -2245,26 +2266,47 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
     def _export_session(self, name: str):
         def _run():
             try:
-                session = self.agent.load_session(name)
-                messages = getattr(session, "messages", [])
+                payload = session_registry.get_session(name)
+                if not payload:
+                    self._set_status("会话不存在", ft.Colors.RED_400)
+                    return
+                messages = payload.get("messages", [])
                 lines = [f"# PRISM Session: {name}", ""]
                 for m in messages:
-                    role = m.role if hasattr(m, "role") else getattr(m, "role", "unknown")
-                    content = m.content if hasattr(m, "content") else getattr(m, "content", "")
+                    role = m.get("role", "")
+                    content = m.get("content", "") or ""
                     if role == "system":
                         continue
                     label = "你" if role == "user" else ("PRISM" if role == "assistant" else role)
                     lines.append(f"## {label}")
                     lines.append(content or "")
                     lines.append("")
-                path = os.path.join(self.agent.session_dir, f"{name}.md")
-                with open(path, "w", encoding="utf-8") as f:
-                    f.write("\n".join(lines))
+                path = Path.home() / ".prism" / "sessions" / f"{name}.md"
+                path.write_text("\n".join(lines), encoding="utf-8")
                 self._append_terminal(f"session exported: {path}")
                 self._set_status("会话已导出", ft.Colors.GREEN_400)
             except Exception as exc:
                 self._log_error("session export", exc)
                 self._set_status("导出失败", ft.Colors.RED_400)
+        try:
+            threading.Thread(target=_run, daemon=True).start()
+        except Exception:
+            _run()
+
+    def _compact_session(self, name: str):
+        def _run():
+            try:
+                result = session_registry.compact_session(name)
+                if result.get("success"):
+                    self._append_terminal(f"session compacted: {name}")
+                    self._set_status("会话已压缩", ft.Colors.GREEN_400)
+                    self._refresh_sessions()
+                else:
+                    self._append_terminal(f"compact failed: {result.get('error')}")
+                    self._set_status("压缩失败", ft.Colors.RED_400)
+            except Exception as exc:
+                self._log_error("session compact", exc)
+                self._set_status("压缩异常", ft.Colors.RED_400)
         try:
             threading.Thread(target=_run, daemon=True).start()
         except Exception:

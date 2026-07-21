@@ -134,8 +134,10 @@ class ChatMixin:
             cmd = text.lower()
             if cmd in ("/summarize", "/compact"):
                 self._handle_compact_command(cmd)
+            elif cmd == "/rollback":
+                self._handle_rollback_command()
             else:
-                self._append("PRISM", "未知命令。支持: /summarize, /compact")
+                self._append("PRISM", "未知命令。支持: /summarize, /compact, /rollback")
             return
         if not getattr(self, "agent", None):
             self._append("PRISM", "Error: agent 未初始化，请检查配置并保存后重试。")
