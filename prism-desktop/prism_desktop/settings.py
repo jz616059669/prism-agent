@@ -46,8 +46,30 @@ class SettingsMixin:
                 yaml.safe_dump(self._settings, allow_unicode=True, sort_keys=False),
                 encoding="utf-8",
             )
+            try:
+                self._sync_model_to_prism_config()
+            except Exception:
+                logger.debug("sync model to prism config failed: %s", traceback.format_exc())
         except Exception:
             logger.debug("save settings failed: %s", traceback.format_exc())
+            pass
+
+    def _sync_model_to_prism_config(self) -> None:
+        try:
+            provider = (getattr(self, "provider_textfield", None) or type("T", (), {"value": ""})()).value or ""
+            base_url = (getattr(self, "base_url_textfield", None) or type("T", (), {"value": ""})()).value or ""
+            api_key = (getattr(self, "api_key_textfield", None) or type("T", (), {"value": ""})()).value or ""
+            model = (getattr(self, "model_dropdown", None) or type("T", (), {"value": ""})()).value or ""
+            if provider:
+                prism_config.set("model.provider", provider)
+            if base_url:
+                prism_config.set("model.base_url", base_url)
+            if api_key:
+                prism_config.set("model.api_key", api_key)
+            if model:
+                prism_config.set("model.default", model)
+        except Exception:
+            logger.debug("sync model to prism config failed: %s", traceback.format_exc())
             pass
 
     def _apply_settings(self) -> None:

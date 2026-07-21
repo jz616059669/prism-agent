@@ -54,7 +54,7 @@ def gateway_start(platform: str, **kwargs) -> dict:
     for k, v in kwargs.items():
         if v is not None and v != '':
             args.extend([f'--{k.replace("_", "-")}', str(v)])
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     result = runner.invoke(_start_cmd, args, standalone_mode=False, prog_name='prism')
     return {
         "success": result.exit_code == 0,
@@ -66,7 +66,7 @@ def gateway_start(platform: str, **kwargs) -> dict:
 def gateway_stop(platform: str) -> dict:
     from prism.cli.gateway import stop as _stop_cmd
     from click.testing import CliRunner
-    runner = CliRunner(mix_stderr=False)
+    runner = CliRunner()
     result = runner.invoke(_stop_cmd, [platform], standalone_mode=False, prog_name='prism')
     return {
         "success": result.exit_code == 0,
