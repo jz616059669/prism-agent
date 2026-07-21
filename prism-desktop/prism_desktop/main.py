@@ -75,7 +75,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._perf_frames = 0
         self._perf_last_ts = None
         self._perf_mem_mb = 0.0
-        self._terminal_lines = ["PRISM Desktop 已启动"]
+        self._terminal_lines = []
         self._mcp_logs: List[str] = []
         self._init_error: Optional[BaseException] = None
         self.agent = None
