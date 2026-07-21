@@ -163,10 +163,12 @@ class Config:
                 raise ConfigError('gateway.platforms 必须是数组')
             for platform in platforms:
                 if platform == 'feishu':
-                    if not gateway.get('feishu', {}).get('app_id'):
-                        raise ConfigError('gateway.feishu.app_id 必填')
-                    if not gateway.get('feishu', {}).get('app_secret'):
-                        raise ConfigError('gateway.feishu.app_secret 必填')
+                    feishu_cfg = gateway.get('feishu') or {}
+                    if any(feishu_cfg.get(k) for k in ['app_id', 'app_secret', 'encrypt_key', 'verification_token', 'token']):
+                        if not feishu_cfg.get('app_id'):
+                            raise ConfigError('gateway.feishu.app_id 必填')
+                        if not feishu_cfg.get('app_secret'):
+                            raise ConfigError('gateway.feishu.app_secret 必填')
 
     def _merge_desktop_settings(self) -> None:
         desktop_settings_file = self.config_dir / "desktop_settings.json"
