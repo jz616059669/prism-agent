@@ -69,6 +69,7 @@ class Agent:
         self.tools_enabled = True
         self.enable_auto_memory = enable_auto_memory
         self.memory_scope: str = "default"
+        self.llm_extract_enabled = bool(enable_auto_memory)
         self.review_enabled = bool(int(os.getenv("PRISM_REVIEW_ENABLED", "0") or 0))
         self.review_interval = int(os.getenv("PRISM_REVIEW_INTERVAL", "5") or 5)
         self._review_turn_count = 0
