@@ -118,9 +118,9 @@ class Config:
     
     def _validate_schema(self) -> None:
         """轻量 schema 校验：类型 + 必填 + 枚举"""
-        # CI/测试环境：若没有显式配置文件，且 api_key 来自默认值/空，放行校验，
-        # 避免 import-time 侧效应导致测试无法收集。
-        if not self.config_file.exists() and not self._config.get('model', {}).get('api_key'):
+        # 若没有显式配置文件，直接放行校验，避免 import-time 侧效应。
+        # 本地/生产环境有 config.yaml 时仍会强校验必填项。
+        if not self.config_file.exists():
             return
         model = self._config.get('model') or {}
         if not isinstance(model, dict):

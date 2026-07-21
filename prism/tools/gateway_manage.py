@@ -107,10 +107,12 @@ class GatewayStartTool(Tool):
 
 class GatewayStatusTool(Tool):
     name = "gateway_status"
-    description = "查看 gateway 运行状态与已配置平台"
+    description = "查看 gateway 运行状态与已配置平台；可选 platform"
     input_schema = {
         "type": "object",
-        "properties": {},
+        "properties": {
+            "platform": {"type": "string", "description": "平台名称，如 feishu，不传则返回全部"},
+        },
         "required": [],
     }
 

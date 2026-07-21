@@ -475,6 +475,45 @@ class PersistentMemory:
                 return memory.value
         return None
 
+    def recall_by_query(self, query: str, limit: int = 5, min_confidence: float = 0.35, semantic_threshold: float = 0.35) -> List[str]:
+        """
+        按 query 召回记忆 keys：
+        1. 先做文本匹配 + 语义召回，收集候选
+        2. 按 key 去重
+        3. 过滤低置信度/低相似度
+        4. 按重要度排序后返回 keys
+        """
+        try:
+            with self._lock:
+                candidates: Dict[str, float] = {}
+                # 文本命中直接记高分
+                q = (query or "").lower()
+                for key, mem in self._index.items():
+                    if q in mem.key.lower() or q in (mem.value or "").lower():
+                        candidates[key] = max(candidates.get(key, 0.0), 0.6)
+                # 语义召回
+                try:
+                    semantic_hits = self._embedding_index.search(query, top_k=max(limit, 10))
+                    for key, score in semantic_hits:
+                        if score < semantic_threshold:
+                            continue
+                        candidates[key] = max(candidates.get(key, 0.0), float(score))
+                except (TypeError, AttributeError, Exception):
+                    pass
+                # 过滤 + 排序
+                filtered = []
+                for key, score in candidates.items():
+                    mem = self._index.get(key)
+                    if not mem:
+                        continue
+                    if float(mem.confidence) < float(min_confidence):
+                        continue
+                    filtered.append((key, score, self._importance(mem)))
+                filtered.sort(key=lambda x: (x[1], x[2]), reverse=True)
+                return [k for k, _, _ in filtered[: max(0, limit)]]
+        except (TypeError, AttributeError, Exception):
+            return []
+
     def forget(self, key: str) -> bool:
         with self._lock:
             if key in self._index:

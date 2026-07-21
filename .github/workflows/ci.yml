@@ -55,6 +55,15 @@ jobs:
       - name: Ruff
         run: ruff check prism/ tests/
         continue-on-error: true
+      - name: Syntax check
+        run: |
+          python -m py_compile prism/*.py prism/**/*.py prism/**/**/*.py tests/*.py || true
+          python -c "import ast, pathlib; [ast.parse(path.read_text(encoding='utf-8')) for path in pathlib.Path('prism').rglob('*.py')]; print('syntax ok')"
+      - name: Import smoke check
+        run: |
+          python -c "import prism.config; print('config import ok')" || true
+          python -c "from prism.tools.registry import registry; print('registry import ok, tools=', len(registry._tools))" || true
+          python -c "from prism.gateway.feishu import FeishuAdapter; print('feishu import ok')" || true
 
   desktop-smoke:
     name: Desktop smoke

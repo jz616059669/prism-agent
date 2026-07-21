@@ -311,11 +311,11 @@ class Agent:
                         lines.append(f"- {m.key}: {m.value}")
                     identity_block = "\n" + "\n".join(lines)
 
-                # 主动 recall：先用 recall() 拿高置信度记忆，再做语义召回
+                # 主动 recall：先用 recall_by_query() 拿高置信度记忆，再做语义召回
                 recall_keys = set()
                 query_matches = []
                 try:
-                    for key in (persistent_memory.recall(user_message, limit=3) or []):
+                    for key in (persistent_memory.recall_by_query(user_message, limit=3) or []):
                         recall_keys.add(key)
                         mem = persistent_memory._index.get(key)
                         if mem:
