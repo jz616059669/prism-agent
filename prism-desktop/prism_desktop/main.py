@@ -143,6 +143,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self.page.add_periodic_callback(_tick, 1000)
             self._start_perf_monitor()
             self.page.add_periodic_callback(lambda _: self._perf_tick(), 1000)
+            self.page.add_periodic_callback(lambda _: self._refresh_usage_dash(), 5000)
         presets = (self._settings.get("model_presets") or {})
         current_preset = self._settings.get("model_preset_name", "")
         if current_preset and current_preset in presets:
