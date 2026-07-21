@@ -563,9 +563,15 @@ class Agent:
 
         # 如果有流式回调，使用流式请求
         if on_stream is not None:
-            result = provider_pool.stream_chat(api_messages, on_chunk=on_stream, **kwargs)
+            chat_fn = provider_pool.stream_chat
         else:
-            result = provider_pool.chat(api_messages)
+            chat_fn = provider_pool.chat
+        try:
+            from prism.observability import trace_agent_call
+            chat_fn = trace_agent_call(chat_fn)
+        except Exception:
+            pass
+        result = chat_fn(api_messages, on_chunk=on_stream, **kwargs) if on_stream is not None else chat_fn(api_messages)
 
         if not result.get('success'):
             logger.warning("chat failed: %s", result.get('error'))

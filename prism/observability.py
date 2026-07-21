@@ -79,3 +79,52 @@ def _append_trace(record: Dict[str, Any]) -> None:
     path = _TRACE_DIR / f"{datetime.now().strftime('%Y%m%d')}.jsonl"
     with open(path, "a", encoding="utf-8") as f:
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+
+def trace_agent_call(fn: Callable[..., Dict[str, Any]]) -> Callable[..., Dict[str, Any]]:
+    """agent 顶层调用 trace：记录模型名、latency、工具调用数、成功/失败"""
+    def wrapper(*args: Any, **kwargs: Any) -> Dict[str, Any]:
+        start = time.time()
+        try:
+            result = fn(*args, **kwargs)
+            latency_ms = int((time.time() - start) * 1000)
+            tool_count = len(result.get("tool_calls") or []) if isinstance(result, dict) else 0
+            fn_name = getattr(fn, "__name__", None) or getattr(fn, "_mock_name", None) or str(fn)
+            logger.debug(
+                "trace agent fn=%s latency=%dms success=%s tools=%d",
+                fn_name,
+                latency_ms,
+                result.get("success") if isinstance(result, dict) else None,
+                tool_count,
+            )
+            try:
+                _append_trace({
+                    "ts": datetime.now().isoformat(),
+                    "type": "agent",
+                    "name": fn_name,
+                    "success": result.get("success") if isinstance(result, dict) else None,
+                    "error": result.get("error") if isinstance(result, dict) else None,
+                    "latency_ms": latency_ms,
+                    "tool_count": tool_count,
+                })
+            except Exception:
+                pass
+            return result
+        except Exception as exc:
+            latency_ms = int((time.time() - start) * 1000)
+            fn_name = getattr(fn, "__name__", None) or getattr(fn, "_mock_name", None) or str(fn)
+            logger.debug("trace agent fn=%s latency=%dms error=%s", fn_name, latency_ms, exc)
+            try:
+                _append_trace({
+                    "ts": datetime.now().isoformat(),
+                    "type": "agent",
+                    "name": fn_name,
+                    "success": False,
+                    "error": str(exc),
+                    "latency_ms": latency_ms,
+                    "tool_count": 0,
+                })
+            except Exception:
+                pass
+            raise
+    return wrapper
