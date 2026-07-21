@@ -123,25 +123,6 @@ class SettingsMixin:
             if not desktop_state_path.exists():
                 return
             state = json.loads(desktop_state_path.read_text(encoding="utf-8"))
-            session_name = state.get("current_session")
-            if session_name and getattr(self, "agent", None) and hasattr(self.agent, "load_session"):
-                if self.agent.load_session(session_name):
-                    self._current_session_name = session_name
-                    self.chat_list.controls.clear()
-                    if hasattr(self, "_chat_placeholder") and self._chat_placeholder:
-                        self._chat_placeholder.visible = False
-                    for m in self.agent.messages:
-                        if getattr(m, "role", "") == "system":
-                            continue
-                        role_label = "你" if getattr(m, "role", "") == "user" else ("PRISM" if getattr(m, "role", "") == "assistant" else getattr(m, "role", ""))
-                        self._append(role_label, getattr(m, "content", "") or "")
-                    unsent = state.get("unsent_messages") or []
-                    for m in unsent:
-                        role_label = "你" if m.get("role") == "user" else (m.get("role") or "")
-                        content = m.get("content") or ""
-                        if role_label and content:
-                            self._append(role_label, content)
-                    self.chat_list.update()
             draft = state.get("chat_draft") or ""
             if draft and hasattr(self, "input_field") and self.input_field is not None:
                 self.input_field.value = draft
