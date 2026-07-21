@@ -1251,6 +1251,9 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             value="default",
         )
         self.persona_dropdown.on_change = lambda e: self._apply_persona(e.control.value)
+        self.persona_refresh_btn = ft.IconButton(icon=ft.Icons.REFRESH_ROUNDED, tooltip="刷新角色", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.SURFACE_CONTAINER, style=ft.ButtonStyle(shape=ft.CircleBorder()))
+        self.persona_refresh_btn.on_click = lambda e: self._refresh_personas()
+        self._refresh_personas()
 
         # 会话
         self.session_new_btn = ft.IconButton(icon=ft.Icons.ADD_ROUNDED, tooltip="新建对话", icon_color=ft.Colors.PRIMARY, bgcolor=ft.Colors.with_opacity(0.08, ft.Colors.PRIMARY), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.PRIMARY)))
@@ -1384,7 +1387,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 ft.Row([ft.Icon(ft.Icons.AUTO_STORIES_ROUNDED, size=14, color=ft.Colors.PRIMARY), ft.Text("后台复盘", size=11, color=ft.Colors.ON_SURFACE), self.review_enabled_switch, ft.Text(f"每 {self.review_interval_field.value} 轮", size=10, color=ft.Colors.ON_SURFACE_VARIANT)], spacing=6, tight=True),
             ]),
             _section_card("角色人格", ft.Icons.PERSON_ROUNDED, [
-                self.persona_dropdown,
+                ft.Row([self.persona_dropdown, self.persona_refresh_btn], spacing=6),
                 ft.Text("切换后独立记忆 + 系统提示词", size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.85),
             ]),
         ])
@@ -3046,6 +3049,18 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 self.usage_cost_text.update()
         except Exception as exc:
             self._append_terminal(f"usage dash error: {exc}")
+
+    def _refresh_personas(self):
+        try:
+            from prism.personas import persona_manager
+            items = persona_manager.list_personas()
+            self.persona_dropdown.options = [ft.dropdown.Option(p.get("name", "")) for p in items] if items else []
+            self.persona_dropdown.value = self.persona_dropdown.value or ""
+            self.persona_dropdown.update()
+            self._set_status(f"已刷新角色列表：{len(items)} 个", ft.Colors.GREEN_400)
+        except Exception as exc:
+            self._set_status("刷新角色失败", ft.Colors.RED_400)
+            self._append_terminal(f"persona refresh error: {exc}")
 
     def _apply_persona(self, name: str):
         try:
