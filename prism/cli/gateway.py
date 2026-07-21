@@ -81,15 +81,30 @@ def gateway_start(platform: str, **kwargs) -> dict:
                         sessions[chat_id] = create_agent()
                     if message_type == 'text':
                         print(f"[feishu] text branch: text={text[:120]}")
-                        thinking_msg_id = adapter.send_thinking(chat_id)
+                        start = time.time()
+                        thinking_msg_id = adapter.send_thinking(chat_id, "正在思考...")
                         print(f"[feishu] thinking_msg_id={thinking_msg_id}")
+
+                        def _tick_thinking():
+                            elapsed = time.time() - start
+                            if thinking_msg_id and adapter.running:
+                                try:
+                                    adapter.update_message(thinking_msg_id, f"正在思考... ({elapsed:.1f}s)")
+                                except Exception:
+                                    pass
+
+                        ticker = threading.Thread(target=lambda: [time.sleep(1) and _tick_thinking() for _ in iter(int, 1) if adapter.running and not getattr(adapter, '_done', False)], daemon=True)
+                        adapter._done = False
+                        ticker.start()
                         try:
                             reply = sessions[chat_id].chat(text)
                         except Exception as e:
                             import traceback
                             traceback.print_exc()
                             reply = f"抱歉，处理你的消息时出错了：{e}"
-                        print(f"[feishu] reply={reply[:120]}")
+                        adapter._done = True
+                        elapsed = time.time() - start
+                        print(f"[feishu] reply={reply[:120]} elapsed={elapsed:.2f}s")
                         if reply:
                             if thinking_msg_id:
                                 ok = adapter.update_message(thinking_msg_id, reply)
@@ -98,12 +113,9 @@ def gateway_start(platform: str, **kwargs) -> dict:
                                 ok = adapter.send(chat_id, reply)
                                 print(f"[feishu] send={ok}")
                     else:
-                        thinking_msg_id = adapter.send_thinking(chat_id, f"正在修炼中…… 收到{message_type}消息")
                         reply = f"我收到了你的{message_type}消息，当前版本主要支持文字对话，这类消息暂不能深度处理。"
-                        if thinking_msg_id:
-                            adapter.update_message(thinking_msg_id, reply)
-                        else:
-                            adapter.send(chat_id, reply)
+                        ok = adapter.send(chat_id, reply)
+                        print(f"[feishu] send other={ok}")
                 except Exception as e:
                     print(f"[feishu] handler error: {e}")
 
@@ -227,15 +239,30 @@ def start(
                         sessions[chat_id] = create_agent()
                     if message_type == 'text':
                         print(f"[feishu] text branch: text={text[:120]}")
-                        thinking_msg_id = adapter.send_thinking(chat_id)
+                        start = time.time()
+                        thinking_msg_id = adapter.send_thinking(chat_id, "正在思考...")
                         print(f"[feishu] thinking_msg_id={thinking_msg_id}")
+
+                        def _tick_thinking():
+                            elapsed = time.time() - start
+                            if thinking_msg_id and adapter.running:
+                                try:
+                                    adapter.update_message(thinking_msg_id, f"正在思考... ({elapsed:.1f}s)")
+                                except Exception:
+                                    pass
+
+                        ticker = threading.Thread(target=lambda: [time.sleep(1) and _tick_thinking() for _ in iter(int, 1) if adapter.running and not getattr(adapter, '_done', False)], daemon=True)
+                        adapter._done = False
+                        ticker.start()
                         try:
                             reply = sessions[chat_id].chat(text)
                         except Exception as e:
                             import traceback
                             traceback.print_exc()
                             reply = f"抱歉，处理你的消息时出错了：{e}"
-                        print(f"[feishu] reply={reply[:120]}")
+                        adapter._done = True
+                        elapsed = time.time() - start
+                        print(f"[feishu] reply={reply[:120]} elapsed={elapsed:.2f}s")
                         if reply:
                             if thinking_msg_id:
                                 ok = adapter.update_message(thinking_msg_id, reply)
@@ -244,12 +271,9 @@ def start(
                                 ok = adapter.send(chat_id, reply)
                                 print(f"[feishu] send={ok}")
                     else:
-                        thinking_msg_id = adapter.send_thinking(chat_id, f"正在修炼中…… 收到{message_type}消息")
                         reply = f"我收到了你的{message_type}消息，当前版本主要支持文字对话，这类消息暂不能深度处理。"
-                        if thinking_msg_id:
-                            adapter.update_message(thinking_msg_id, reply)
-                        else:
-                            adapter.send(chat_id, reply)
+                        ok = adapter.send(chat_id, reply)
+                        print(f"[feishu] send other={ok}")
                 except Exception as e:
                     click.echo(f"[feishu] handler error: {e}")
 
