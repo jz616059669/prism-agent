@@ -6,6 +6,8 @@ PRISM Agent - API Server Mode
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import hmac
 import json
 import os
 import threading
@@ -15,7 +17,7 @@ from prism.logging import logger
 
 try:
     from fastapi import FastAPI, Request  # type: ignore[import-untyped]
-    from fastapi.responses import JSONResponse  # type: ignore[import-untyped]
+    from fastapi.responses import JSONResponse, StreamingResponse  # type: ignore[import-untyped]
     import uvicorn  # type: ignore[import-untyped]
 
     _FASTAPI_AVAILABLE = True
@@ -23,6 +25,7 @@ except Exception:  # noqa: BLE001
     FastAPI = None  # type: ignore[misc,assignment]
     Request = None  # type: ignore[misc,assignment]
     JSONResponse = None  # type: ignore[misc,assignment]
+    StreamingResponse = None  # type: ignore[misc,assignment]
     uvicorn = None  # type: ignore[misc,assignment]
     _FASTAPI_AVAILABLE = False
 
@@ -37,6 +40,39 @@ except Exception:  # noqa: BLE001
 
 
 _REQUEST_TIMEOUT = float(os.getenv("PRISM_API_REQUEST_TIMEOUT", "8"))
+_API_KEY = os.getenv("PRISM_API_KEY") or os.getenv("PRISM_API_TOKEN") or ""
+
+
+def _check_auth(request: Request) -> Optional[JSONResponse]:
+    if not _API_KEY:
+        return None
+    provided = request.headers.get("Authorization") or request.headers.get("x-api-key") or ""
+    if provided.startswith("Bearer "):
+        provided = provided.split(" ", 1)[1]
+    expected = _API_KEY
+    if not hmac.compare_digest(provided, expected):
+        return JSONResponse({"error": {"message": "Invalid API key", "type": "auth_error"}}, status_code=401)
+    return None
+
+
+async def _event_generator(agent: Any, text: str):
+    try:
+        yield f"data: {json.dumps({'object': 'chat.completion.chunk', 'choices': [{'index': 0, 'delta': {'role': 'assistant', 'content': ''}, 'finish_reason': None}]}, ensure_ascii=False)}\n\n"
+        token = ""
+        loop = asyncio.get_running_loop()
+        reply = await asyncio.wait_for(
+            loop.run_in_executor(None, agent.chat, text or ""),
+            timeout=_REQUEST_TIMEOUT,
+        )
+        for ch in reply:
+            token += ch
+            yield f"data: {json.dumps({'object': 'chat.completion.chunk', 'choices': [{'index': 0, 'delta': {'content': ch}, 'finish_reason': None}]}, ensure_ascii=False)}\n\n"
+        yield f"data: {json.dumps({'object': 'chat.completion.chunk', 'choices': [{'index': 0, 'delta': {}, 'finish_reason': 'stop'}]}, ensure_ascii=False)}\n\n"
+        yield "data: [DONE]\n\n"
+    except asyncio.TimeoutError:
+        yield f"data: {json.dumps({'error': {'message': 'request timeout after {_REQUEST_TIMEOUT}s', 'type': 'timeout_error'}}, ensure_ascii=False)}\n\n"
+    except Exception as exc:  # noqa: BLE001
+        yield f"data: {json.dumps({'error': {'message': str(exc), 'type': 'prism_error'}}, ensure_ascii=False)}\n\n"
 
 try:
     from prism import __version__ as _prism_version
@@ -104,8 +140,10 @@ class PRISMApiServer:
                 return JSONResponse({"error": str(exc)}, status_code=500)
 
         @app.post("/v1/chat/completions")
-        async def chat_completions(request: Request) -> JSONResponse:
+        async def chat_completions(request: Request) -> Any:
             try:
+                if _check_auth(request):
+                    return _check_auth(request)
                 body = await request.json()
                 messages = body.get("messages") or []
                 user_content = ""
@@ -117,13 +155,12 @@ class PRISMApiServer:
                             part.get("text", "") for part in user_content if isinstance(part, dict)
                         )
                 stream = bool(body.get("stream", False))
-                if stream:
-                    return JSONResponse(
-                        {"error": {"message": "stream is not supported in this build", "type": "invalid_request_error"}},
-                        status_code=400,
-                    )
                 sid = body.get("session_id") or body.get("user") or "api"
                 agent = self._agent_factory(session_id=sid)
+                if stream:
+                    if StreamingResponse is None:
+                        return JSONResponse({"error": {"message": "streaming not supported", "type": "invalid_request_error"}}, status_code=400)
+                    return StreamingResponse(_event_generator(agent, user_content or ""), media_type="text/event-stream")
                 try:
                     response_text = await asyncio.wait_for(
                         asyncio.get_running_loop().run_in_executor(None, agent.chat, user_content or ""),

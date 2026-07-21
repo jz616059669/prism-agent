@@ -5,6 +5,8 @@ PRISM Agent - 统一配置系统
 
 import json
 import os
+import threading
+import time
 import yaml
 from pathlib import Path
 from typing import Any, Optional
@@ -41,7 +43,51 @@ class Config:
         self.config_file = self.config_dir / "config.yaml"
         self.env_file = self.config_dir / ".env"
         self._config = {}
+        self._config_mtime = 0.0
+        self._watch_stop = threading.Event()
+        self._watch_thread: Optional[threading.Thread] = None
+        self._on_change: Optional[Any] = None
         self._load()
+        self._start_watcher()
+    
+    def on_change(self, callback: Any) -> None:
+        """注册配置变更回调：接收新旧 config dict"""
+        self._on_change = callback
+    
+    def _start_watcher(self) -> None:
+        try:
+            if self._watch_thread and self._watch_thread.is_alive():
+                return
+            self._watch_stop.clear()
+            self._watch_thread = threading.Thread(target=self._watch_loop, daemon=True)
+            self._watch_thread.start()
+        except Exception:
+            logger.debug("config watcher start failed", exc_info=True)
+    
+    def _watch_loop(self) -> None:
+        try:
+            while not self._watch_stop.is_set():
+                try:
+                    mtime = self.config_file.stat().st_mtime if self.config_file.exists() else 0.0
+                except OSError:
+                    mtime = 0.0
+                if mtime and mtime != self._config_mtime:
+                    old = self._config.copy()
+                    self._load()
+                    self._config_mtime = mtime
+                    if self._on_change:
+                        try:
+                            self._on_change(old, self._config.copy())
+                        except Exception:
+                            logger.debug("config on_change callback failed", exc_info=True)
+                self._watch_stop.wait(1.0)
+        except Exception:
+            logger.debug("config watcher loop failed", exc_info=True)
+    
+    def stop_watcher(self) -> None:
+        self._watch_stop.set()
+        if self._watch_thread and self._watch_thread.is_alive():
+            self._watch_thread.join(timeout=2.0)
     
     def _load(self) -> None:
         """加载配置文件"""
@@ -60,6 +106,62 @@ class Config:
         self._load_hooks()
         # Load workspaces config
         self._load_workspaces()
+
+        # 配置 schema 校验
+        try:
+            self._validate_schema()
+        except ConfigError as exc:
+            raise
+        except Exception:
+            logger.debug("schema validation skipped", exc_info=True)
+    
+    def _validate_schema(self) -> None:
+        """轻量 schema 校验：类型 + 必填 + 枚举"""
+        model = self._config.get('model') or {}
+        if not isinstance(model, dict):
+            raise ConfigError('model 必须是对象')
+        if not model.get('default'):
+            raise ConfigError('model.default 必填')
+        if not model.get('provider'):
+            raise ConfigError('model.provider 必填')
+        base_url = model.get('base_url')
+        if base_url and not isinstance(base_url, str):
+            raise ConfigError('model.base_url 必须是字符串')
+        api_key = model.get('api_key')
+        if not api_key:
+            api_key = self._resolve_sensitive('model.api_key', '')
+        if not api_key:
+            raise ConfigError('model.api_key 必填')
+
+        api_server = self._config.get('api_server') or {}
+        if api_server.get('enabled'):
+            host = api_server.get('host')
+            port = api_server.get('port')
+            if host and not isinstance(host, str):
+                raise ConfigError('api_server.host 必须是字符串')
+            if port is not None and not isinstance(port, int):
+                raise ConfigError('api_server.port 必须是整数')
+
+        memory = self._config.get('memory') or {}
+        if memory:
+            if not isinstance(memory, dict):
+                raise ConfigError('memory 必须是对象')
+            if 'enabled' in memory and not isinstance(memory['enabled'], bool):
+                raise ConfigError('memory.enabled 必须是布尔值')
+
+        gateway = self._config.get('gateway') or {}
+        if gateway:
+            if not isinstance(gateway, dict):
+                raise ConfigError('gateway 必须是对象')
+            platforms = gateway.get('platforms') or []
+            if not isinstance(platforms, list):
+                raise ConfigError('gateway.platforms 必须是数组')
+            for platform in platforms:
+                if platform == 'feishu':
+                    if not gateway.get('feishu', {}).get('app_id'):
+                        raise ConfigError('gateway.feishu.app_id 必填')
+                    if not gateway.get('feishu', {}).get('app_secret'):
+                        raise ConfigError('gateway.feishu.app_secret 必填')
 
     def _merge_desktop_settings(self) -> None:
         desktop_settings_file = self.config_dir / "desktop_settings.json"
@@ -224,18 +326,6 @@ class Config:
                 '。可用命令：prism config set <key> <value>，或编辑 ' + str(getattr(self, 'config_file', 'config.yaml'))
             )
 
-    def _resolve_sensitive(self, key: str, value: str) -> str:
-        """敏感字段优先回退 keyring，其次环境变量，最后保持原值。"""
-        if not value and keyring is not None:
-            try:
-                stored = keyring.get_password("prism", key)
-                if stored:
-                    return stored
-            except Exception:
-                pass
-        env_name = key.upper().replace('.', '_')
-        return value or os.getenv(env_name, '')
-    
     def _resolve_sensitive(self, key: str, fallback: str = "") -> str:
         if keyring is not None:
             try:

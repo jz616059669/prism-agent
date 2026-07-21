@@ -1070,6 +1070,80 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._save_settings()
         self._set_status(f"预设已保存：{name}")
 
+    def _build_gateway_section(self):
+        self.gateway_status_text = ft.Text("未启动", size=12, color=ft.Colors.ON_SURFACE_VARIANT)
+        self.gateway_status_icon = ft.Container(width=8, height=8, bgcolor=ft.Colors.OUTLINE_VARIANT, border_radius=4)
+        self.gateway_start_btn = ft.TextButton("启动", icon=ft.Icons.PLAY_ARROW_ROUNDED, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER))
+        self.gateway_stop_btn = ft.TextButton("停止", icon=ft.Icons.STOP_ROUNDED, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.SURFACE_CONTAINER, color=ft.Colors.ON_SURFACE), visible=False)
+        self.gateway_log_text = ft.Text("", size=11, color=ft.Colors.ON_SURFACE_VARIANT, max_lines=3, overflow=ft.TextOverflow.ELLIPSIS)
+
+        def _do_start(_):
+            self._set_status("正在启动飞书 gateway...", ft.Colors.AMBER_400)
+            self.gateway_start_btn.disabled = True
+            try:
+                self.gateway_start_btn.update()
+            except Exception:
+                pass
+            threading.Thread(target=self._start_gateway_worker, daemon=True).start()
+
+        def _do_stop(_):
+            self._set_status("正在停止飞书 gateway...", ft.Colors.AMBER_400)
+            try:
+                from prism.cli.gateway import gateway_status, gateway_stop
+                status = gateway_status("feishu")
+                if status.get("running"):
+                    gateway_stop("feishu")
+            except Exception as exc:
+                self._log_error("stop gateway", exc)
+            self._refresh_gateway_ui(running=False, log="已停止")
+
+        self.gateway_start_btn.on_click = _do_start
+        self.gateway_stop_btn.on_click = _do_stop
+        return [
+            ft.Row([self.gateway_status_icon, self.gateway_status_text], spacing=8),
+            ft.Row([self.gateway_start_btn, self.gateway_stop_btn], spacing=8),
+            self.gateway_log_text,
+        ]
+
+    def _start_gateway_worker(self):
+        try:
+            from prism.cli.gateway import gateway_status, gateway_start
+            status = gateway_status("feishu")
+            if status.get("running"):
+                self._refresh_gateway_ui(running=True, log="已运行")
+                return
+            gateway_start("feishu")
+            self._refresh_gateway_ui(running=True, log="已启动")
+            self._set_status("飞书 gateway 已启动", ft.Colors.GREEN_400)
+        except Exception as exc:
+            self._refresh_gateway_ui(running=False, log=f"启动失败: {exc}")
+            self._set_status(f"gateway 启动失败: {exc}", ft.Colors.RED_400)
+
+    def _refresh_gateway_ui(self, running: bool, log: str = ""):
+        try:
+            if running:
+                self.gateway_status_text.value = "运行中"
+                self.gateway_status_text.color = ft.Colors.GREEN_400
+                self.gateway_status_icon.bgcolor = ft.Colors.GREEN_400
+                self.gateway_start_btn.visible = False
+                self.gateway_stop_btn.visible = True
+            else:
+                self.gateway_status_text.value = "未启动"
+                self.gateway_status_text.color = ft.Colors.ON_SURFACE_VARIANT
+                self.gateway_status_icon.bgcolor = ft.Colors.OUTLINE_VARIANT
+                self.gateway_start_btn.visible = True
+                self.gateway_start_btn.disabled = False
+                self.gateway_stop_btn.visible = False
+            if log:
+                self.gateway_log_text.value = log
+            for ctrl in [self.gateway_status_text, self.gateway_status_icon, self.gateway_start_btn, self.gateway_stop_btn, self.gateway_log_text]:
+                try:
+                    ctrl.update()
+                except Exception:
+                    pass
+        except Exception:
+            logger.debug("refresh gateway ui failed: %s", traceback.format_exc())
+
     def _build_sidebar(self) -> ft.Container:
         self._sidebar_container = ft.Container(animate=ft.Animation(duration=300, curve=ft.AnimationCurve.EASE_IN_OUT),
             content=ft.Column(
@@ -1265,6 +1339,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 ft.Row([self.review_enabled_switch, self.review_interval_field], spacing=4, tight=True),
                 ft.Row([save_btn, ft.TextButton("预设管理", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.SURFACE_CONTAINER, color=ft.Colors.ON_SURFACE), on_click=lambda e: self._open_preset_manager())], spacing=8, tight=True),
             ]),
+            _section_card("飞书 Gateway", ft.Icons.CLOUD_ROUNDED, self._build_gateway_section()),
             _section_card("浏览器控制", ft.Icons.LANGUAGE_ROUNDED, [
                 browser_hint,
                 self.url_field,
