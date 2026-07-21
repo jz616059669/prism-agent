@@ -277,10 +277,16 @@ class Agent:
 - 安全第一，危险操作先确认
 - 工具使用：只调用用户请求中明确需要或与当前任务直接相关的工具；若无工具调用必要，不要为了演示而执行工具。
 - 当用户要求生成文件、保存文件、安装包、执行脚本时，优先直接生成或完成，减少反复确认。
+- 如果不确定答案或信息可能过时，明确告诉用户，不要编造。
 """
     
     def _inject_memory_context(self, user_message: str) -> None:
-        """动态注入记忆上下文：身份类优先，再按当前query召回相关记忆"""
+        """
+        动态注入记忆上下文：
+        1. 身份类固定注入
+        2. 对当前 query 主动 recall + 语义召回，最多 3 条
+        3. 其余按重要度补位，总记忆条数控制在 5 条内
+        """
         try:
             base = (self.system_prompt or "").rstrip()
             # 移除旧记忆块，避免重复堆叠
@@ -296,17 +302,31 @@ class Agent:
                         lines.append(f"- {m.key}: {m.value}")
                     identity_block = "\n" + "\n".join(lines)
 
-                # 只根据当前 query 做轻量召回，避免堆满 context
-                query_matches = persistent_memory.search(user_message, category=None, limit=3)
-                query_block = ""
+                # 主动 recall：先用 recall() 拿高置信度记忆，再做语义召回
+                recall_keys = set()
+                query_matches = []
+                try:
+                    for key in (persistent_memory.recall(user_message, limit=3) or []):
+                        recall_keys.add(key)
+                        mem = persistent_memory._index.get(key)
+                        if mem:
+                            query_matches.append(mem)
+                except (TypeError, AttributeError, Exception):
+                    recall_keys = set()
+
+                if not query_matches:
+                    query_matches = persistent_memory.search(user_message, category=None, limit=3)
+
                 seen = set()
+                query_block = ""
                 if query_matches:
-                    lines = ["【相关】"]
+                    lines = ["【相关记忆】"]
                     for m in query_matches:
                         if m.key in seen:
                             continue
                         seen.add(m.key)
-                        lines.append(f"- [{m.category}] {m.key}: {m.value[:100]}")
+                        recall_keys.add(m.key)
+                        lines.append(f"- [{m.category}] {m.key}: {m.value[:120]}")
                     query_block = "\n" + "\n".join(lines)
 
                 rest = sorted(
@@ -318,7 +338,7 @@ class Agent:
                 if rest:
                     lines = []
                     for m in rest:
-                        lines.append(f"- [{m.category}] {m.key}: {m.value[:80]}")
+                        lines.append(f"- [{m.category}] {m.key}: {m.value[:100]}")
                     rest_block = "\n" + "\n".join(lines)
 
             injection = identity_block + query_block + rest_block
