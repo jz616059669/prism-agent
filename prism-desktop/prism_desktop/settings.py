@@ -42,6 +42,22 @@ class SettingsMixin:
                     self._settings["review_interval"] = max(1, int((self.review_interval_field.value or "5").strip() or 5))
             except Exception:
                 pass
+            # 同时把当前模型配置写回 self._settings，确保重启后 UI 一致
+            try:
+                provider = (getattr(self, "provider_textfield", None) or type("T", (), {"value": ""})()).value or ""
+                base_url = (getattr(self, "base_url_textfield", None) or type("T", (), {"value": ""})()).value or ""
+                api_key = (getattr(self, "api_key_textfield", None) or type("T", (), {"value": ""})()).value or ""
+                model = (getattr(self, "model_dropdown", None) or type("T", (), {"value": ""})()).value or ""
+                if provider:
+                    self._settings["provider"] = provider
+                if base_url:
+                    self._settings["base_url"] = base_url
+                if api_key:
+                    self._settings["api_key"] = api_key
+                if model:
+                    self._settings["model"] = model
+            except Exception:
+                logger.debug("persist model settings failed: %s", traceback.format_exc())
             config_path.write_text(
                 yaml.safe_dump(self._settings, allow_unicode=True, sort_keys=False),
                 encoding="utf-8",
