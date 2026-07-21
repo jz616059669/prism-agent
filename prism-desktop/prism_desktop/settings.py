@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Dict
 
 import flet as ft
 
+from prism.config import config as prism_config
 from prism.logging import logger
 import traceback
 
