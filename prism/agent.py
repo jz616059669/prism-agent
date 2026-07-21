@@ -979,7 +979,7 @@ class Agent:
 
     # ========== 记忆系统 ==========
     def _extract_user_facts(self, user_message: str, assistant_content: str) -> None:
-        """简单规则提取：用户称呼 / 偏好 / 身份等事实。"""
+        """规则提取：用户称呼、偏好、事实、任务、时间、地点等。"""
         import re
         text = user_message or ""
         combined = text + chr(10) + assistant_content
@@ -991,13 +991,26 @@ class Agent:
             (r"我喜欢([^，。]{1,20})", "user_preference", "like"),
             (r"我不喜欢([^，。]{1,20})", "user_preference", "dislike"),
             (r"记住我的([^，。]{1,20})", "user_profile", "fact"),
+            (r"我的([^，。]{1,20})是([^，。]{1,20})", "user_profile", "attribute"),
+            (r"我住在([^，。]{1,20})", "user_profile", "location"),
+            (r"我的([^，。]{1,10})是([^，。]{1,20})", "user_profile", "fact"),
+            (r"请记住([^，。]{1,30})", "user_profile", "fact"),
+            (r"别忘了([^，。]{1,30})", "user_profile", "fact"),
+            (r"我在做([^，。]{1,20})", "user_context", "task"),
+            (r"正在做([^，。]{1,20})", "user_context", "task"),
+            (r"下周([^，。]{1,20})", "user_context", "plan"),
+            (r"明天([^，。]{1,20})", "user_context", "plan"),
+            (r"提醒我([^，。]{1,20})", "user_context", "reminder"),
         ]
         for pattern, category, key in patterns:
             m = re.search(pattern, combined)
             if m:
                 value = m.group(1).strip().strip(chr(10) + chr(13) + "，。,.:; ")
-                if value and len(value) <= 20:
-                    persistent_memory.remember(key, value, category=category, confidence=0.85)
+                if value and len(value) <= 30:
+                    try:
+                        persistent_memory.remember(key, value, category=category, confidence=0.85)
+                    except Exception:
+                        pass
                 break
 
     def remember(self, key: str, value: str, category: str = "general") -> None:
