@@ -73,6 +73,7 @@ def gateway_start(platform: str, **kwargs) -> dict:
                     chat_id = getattr(msg, 'chat_id', '') or ''
                     user_id = getattr(msg, 'user_id', '') or ''
                     message_type = getattr(msg, 'message_type', 'text') or 'text'
+                    print(f"[feishu] handler received: type={message_type} chat={chat_id} user={user_id}")
                     if not chat_id:
                         return
                     if chat_id not in sessions:

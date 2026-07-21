@@ -352,7 +352,7 @@ class FeishuAdapter(PlatformAdapter):
                 ws_client = FeishuWSClient(
                     self.config.app_id,
                     self.config.app_secret,
-                    event_handler=EventDispatcherHandler.builder("", "")
+                    event_handler=EventDispatcherHandler.builder(self.config.app_id, self.config.app_secret)
                     .register_p2_im_message_receive_v1(
                         self._on_message_received,
                     )
