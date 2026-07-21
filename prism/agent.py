@@ -68,6 +68,7 @@ class Agent:
         self.max_messages = 200  # 防止上下文无限增长
         self.tools_enabled = True
         self.enable_auto_memory = enable_auto_memory
+        self.memory_scope: str = "default"
         self.review_enabled = bool(int(os.getenv("PRISM_REVIEW_ENABLED", "0") or 0))
         self.review_interval = int(os.getenv("PRISM_REVIEW_INTERVAL", "5") or 5)
         self._review_turn_count = 0
@@ -75,7 +76,7 @@ class Agent:
         self.session_dir = Path.home() / ".prism" / "sessions"
         self._last_executed: Dict[str, float] = {}
         self._tool_lock = threading.Lock()
-        self._memory_context = persistent_memory.get_context(max_items=5)
+        self._memory_context = persistent_memory.get_context(max_items=8, category=self.memory_scope)
         if self._memory_context:
             self.system_prompt = self.system_prompt.rstrip() + "\n\n" + self._memory_context
 
@@ -584,9 +585,10 @@ class Agent:
         # 自动记忆：若开启，则将本轮关键信息写入持久记忆
         if getattr(self, "enable_auto_memory", False):
             try:
-                turn_key = f"chat:{datetime.now().isoformat()}"
+                scope = getattr(self, "memory_scope", "default") or "default"
+                turn_key = f"chat:{scope}:{datetime.now().isoformat()}"
                 turn_value = f"用户: {user_message}\n助手: {assistant_content or '[无回复]'}"
-                persistent_memory.remember(turn_key, turn_value, category="chat_history")
+                persistent_memory.remember(turn_key, turn_value, category=f"chat_history:{scope}")
                 self._extract_user_facts(user_message, assistant_content or "")
             except (OSError, Exception):
                 logger.debug("auto memory save failed: %s", traceback.format_exc())

@@ -3073,6 +3073,10 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self._set_status(f"已切换角色: {persona.name}", ft.Colors.GREEN_400)
             if getattr(self, "agent", None) and persona.system_prompt:
                 self.agent.system_prompt = persona.system_prompt
+            # 同步记忆隔离维度
+            scope = getattr(persona, "memory_scope", "default") or "default"
+            if hasattr(self, "agent") and self.agent is not None:
+                self.agent.memory_scope = scope
         except Exception as exc:
             self._set_status("角色切换失败", ft.Colors.RED_400)
             self._append_terminal(f"persona error: {exc}")

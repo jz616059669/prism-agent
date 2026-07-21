@@ -466,18 +466,19 @@ class PersistentMemory:
     def list_by_category(self, category: str) -> List[Memory]:
         return [m for m in self._index.values() if m.category == category]
 
-    def get_context(self, max_items: int = 5, budget_chars: int = 1500) -> str:
+    def get_context(self, max_items: int = 5, budget_chars: int = 1500, scope: str = "default") -> str:
         """
         生成记忆上下文块，并尽量控制在 budget_chars 以内。
         结构: 【身份】→【相关(query命中)】→【兜底(按重要度)】
         """
-        # 身份类记忆
+        scope_chat_prefix = f"chat_history:{scope}"
+        # 身份类记忆全局加载
         identities = [m for m in self._index.values() if m.category == "user_profile"]
-        # chat_history 只保留 top2，避免占满 context
-        rest = [m for m in self._index.values() if m.category != "user_profile"]
+        # 按 scope 过滤对话记忆，避免不同 persona 串扰
+        rest = [m for m in self._index.values() if m.category != "user_profile" and (m.category == scope_chat_prefix or m.category == "chat_history")]
         rest.sort(key=lambda m: self._importance(m), reverse=True)
-        chat = [m for m in rest if m.category == "chat_history"][:2]
-        non_chat = [m for m in rest if m.category != "chat_history"]
+        chat = rest[:2]
+        non_chat = [m for m in self._index.values() if m.category not in ("user_profile", "chat_history", scope_chat_prefix)]
 
         # 先放身份，再放 chat_history，再按重要度取非chat记忆
         picked = identities + chat
@@ -511,7 +512,7 @@ class PersistentMemory:
             for m in identities[:3]:
                 lines.append(f"- {m.key}: {m.value}")
         for m in picked[len(identities):]:
-            if m.category == "chat_history":
+            if m.category in ("chat_history", scope_chat_prefix):
                 lines.append(f"- {m.value}")
             else:
                 val = m.value
