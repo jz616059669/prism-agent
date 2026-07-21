@@ -47,6 +47,9 @@ class Memory:
     # 记忆冲突解决
     supersedes_key: str = ""
     conflict_status: str = ""
+    # 记忆质量追踪
+    usage_score: float = 0.0
+    last_used_at: str = ""
 
 
 class _EmbeddingClient:
@@ -314,13 +317,16 @@ class PersistentMemory:
                     merged += 1
                     del self._index[k]
                     self._embedding_index.remove(k)
-            # 压缩超长条目
-            for m in self._index.values():
-                v = getattr(m, "value", "") or ""
-                if len(v) > 200:
-                    m.value = v[:197].rstrip() + "..."
-                    m.updated_at = _now_iso()
-                    compressed += 1
+            # 压缩超长条目：优先用 LLM 压缩为 1-2 句摘要，失败则硬截断
+            try:
+                self._llm_compress_long_entries()
+            except Exception:
+                for m in self._index.values():
+                    v = getattr(m, "value", "") or ""
+                    if len(v) > 200:
+                        m.value = v[:197].rstrip() + "..."
+                        m.updated_at = _now_iso()
+                        compressed += 1
             # 清理过期低置信条目
             cutoff = datetime.now() - timedelta(days=30)
             for key, m in list(self._index.items()):
@@ -343,6 +349,37 @@ class PersistentMemory:
                 "compressed": compressed,
                 "removed": removed,
             }
+
+    def _llm_compress_long_entries(self) -> None:
+        """用 LLM 把超长记忆条目压缩为短摘要，保留核心语义。"""
+        try:
+            from prism.providers.manager import provider_pool
+        except Exception:
+            return
+        changed = False
+        for m in list(self._index.values()):
+            v = getattr(m, "value", "") or ""
+            if len(v) <= 200:
+                continue
+            prompt = (
+                "请将以下记忆压缩为 1-2 句短摘要，保留关键事实、偏好、未完成事项：\n\n"
+                + v[:800]
+            )
+            try:
+                result = provider_pool.chat([
+                    {"role": "system", "content": "只输出压缩后摘要，不要解释。"},
+                    {"role": "user", "content": prompt},
+                ])
+                content = (result or {}).get("content", "") or ""
+                content = content.strip()
+                if content and len(content) < len(v):
+                    m.value = content[:200]
+                    m.updated_at = _now_iso()
+                    changed = True
+            except Exception:
+                continue
+        if changed:
+            self._save()
 
     def configure_embeddings(self, base_url: str, api_key: str, model: str) -> None:
         """启用语义检索。未调用时退化为纯字符串匹配。"""
@@ -486,6 +523,7 @@ class PersistentMemory:
         query: str,
         category: Optional[str] = None,
         limit: int = 10,
+        semantic_threshold: float = 0.65,
     ) -> List[Memory]:
         with self._lock:
             self._maybe_decay()
@@ -518,7 +556,9 @@ class PersistentMemory:
                         seen_keys.add(memory.key)
 
             semantic_hits = self._embedding_index.search(query, top_k=max(limit, 10))
-            for key, _ in semantic_hits:
+            for key, score in semantic_hits:
+                if score < semantic_threshold:
+                    continue
                 if key in seen_keys:
                     continue
                 memory = self._index.get(key)
@@ -538,7 +578,7 @@ class PersistentMemory:
             return candidates[:limit]
 
     def _importance(self, memory: Memory, now: Optional[datetime] = None) -> float:
-        """综合重要度：confidence + access_count 加成 + 分类加成 + 访问时间加成。"""
+        """综合重要度：confidence + access_count 加成 + 分类加成 + 访问时间加成 + 质量追踪加成。"""
         if now is None:
             now = datetime.now()
         score = float(memory.confidence)
@@ -553,6 +593,20 @@ class PersistentMemory:
                     score += 0.3
                 elif hours < 168:
                     score += 0.15
+        except Exception:
+            pass
+        # 记忆质量追踪：被实际用过的记忆加权
+        try:
+            usage = float(getattr(memory, "usage_score", 0.0) or 0.0)
+            score += min(usage * 0.2, 0.5)
+            last_used = getattr(memory, "last_used_at", "") or ""
+            if last_used:
+                last_used_dt = datetime.fromisoformat(last_used)
+                hours = max((now - last_used_dt).total_seconds() / 3600.0, 0.0)
+                if hours < 24:
+                    score += 0.2
+                elif hours < 168:
+                    score += 0.1
         except Exception:
             pass
         return score
