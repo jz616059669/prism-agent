@@ -508,10 +508,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         try:
             has_key = bool(prism_config.get("model.api_key"))
             has_provider = bool(prism_config.get("model.provider"))
-            mcp_configured = bool(prism_config.get("mcp.servers"))
             if has_key and has_provider:
-                if mcp_configured:
-                    return
+                return
         except Exception as exc:
             self._log_error("setup wizard check", exc)
         wizard_provider = ft.TextField(label=_("model_provider"), value="stepfun", width=320)
