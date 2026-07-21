@@ -379,3 +379,48 @@ class ChatMixin:
                 self._on_input_change()
         except Exception:
             logger.debug("apply prompt template failed: %s", traceback.format_exc())
+
+    def _handle_compact_command(self, cmd: str) -> None:
+        try:
+            if cmd == "/compact":
+                messages = []
+                try:
+                    if hasattr(self, "agent") and self.agent:
+                        messages = [
+                            {"role": getattr(m, "role", ""), "content": getattr(m, "content", "") or ""}
+                            for m in getattr(self.agent, "messages", []) or []
+                        ]
+                except Exception:
+                    messages = []
+                if not messages:
+                    self._append("PRISM", "当前没有可压缩的对话上下文。")
+                    return
+                try:
+                    from prism.context_compactor import context_compactor
+                    summary = context_compactor.compact(getattr(self, "session_id", "default"), messages)
+                    text = summary.summary or "（摘要为空）"
+                except Exception:
+                    text = "压缩模块暂不可用，请稍后重试。"
+                self._append("PRISM", f"上下文摘要：\n{text}")
+                self._set_status("上下文已压缩", ft.Colors.GREEN_400)
+            elif cmd == "/summarize":
+                try:
+                    from prism.context_compactor import context_compactor
+                    messages = []
+                    try:
+                        if hasattr(self, "agent") and self.agent:
+                            messages = [
+                                {"role": getattr(m, "role", ""), "content": getattr(m, "content", "") or ""}
+                                for m in getattr(self.agent, "messages", []) or []
+                            ]
+                    except Exception:
+                        messages = []
+                    summary = context_compactor.compact(getattr(self, "session_id", "default"), messages or [])
+                    text = summary.summary or "（摘要为空）"
+                except Exception:
+                    text = "摘要模块暂不可用，请稍后重试。"
+                self._append("PRISM", f"对话摘要：\n{text}")
+                self._set_status("摘要完成", ft.Colors.GREEN_400)
+        except Exception as exc:
+            self._append("PRISM", f"命令执行失败: {exc}")
+            self._log_error("compact command", exc)
