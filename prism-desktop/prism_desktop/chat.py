@@ -165,25 +165,30 @@ class ChatMixin:
         stream_widget = None
         stream_text = ""
         _last_update = [0.0]
+        _stream_content_ref = None
 
         def _throttled_update(w, value: str):
+            nonlocal _stream_content_ref
             now = __import__("time").time()
-            if now - _last_update[0] >= 0.1 or len(value) - len(w.content.controls[2].value or "") >= 24:
+            target = _stream_content_ref
+            if target is None:
+                target = w.content.controls[2]
+            if now - _last_update[0] >= 0.1 or len(value) - len((target.value or "")) >= 24:
                 try:
-                    stream_content = w.content.controls[2]
-                    stream_content.value = value
+                    target.value = value
                     w.update()
                     _last_update[0] = now
                 except Exception:
                     logger.debug("stream chunk update failed: %s", traceback.format_exc())
 
         def _ensure_stream_widget() -> ft.Container:
-            nonlocal stream_widget
+            nonlocal stream_widget, _stream_content_ref
             if stream_widget is None:
                 role_text = ft.Text("PRISM", size=11, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_500)
                 timestamp = datetime.now().strftime("%H:%M")
                 time_text = ft.Text(timestamp, size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.8)
                 stream_content = ft.Text("", selectable=True, color=ft.Colors.ON_SURFACE, expand=True)
+                _stream_content_ref = stream_content
                 row = ft.Row(
                     [role_text, ft.Container(expand=True), time_text],
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
