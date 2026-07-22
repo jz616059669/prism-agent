@@ -37,6 +37,8 @@ jobs:
         run: python -m pytest tests/ -q --timeout=120
         env:
           PRISM_SKIP_UPDATE_CHECK: "1"
+          STEPFUN_API_KEY: "fake"
+          OPENAI_API_KEY: "fake"
 
   lint:
     name: Lint
