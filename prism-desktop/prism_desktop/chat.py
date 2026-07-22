@@ -220,7 +220,7 @@ class ChatMixin:
                 self._log_to_file("info", "stream_start", text=text, model=getattr(self.agent, "model", "unknown"))
                 result = self.agent.chat(
                     multimodal_content,
-                    on_chunk=lambda c: _stream_chunk(c) if getattr(self, "_generating", False) else None,
+                    on_stream=lambda c: _stream_chunk(c) if getattr(self, "_generating", False) else None,
                 )
                 self._log_to_file("info", "chat_result", result_type=type(result).__name__, result_preview=str(result)[:200])
                 if isinstance(result, dict):
