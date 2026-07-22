@@ -227,22 +227,27 @@ class ChatMixin:
                     multimodal_content,
                     on_stream=lambda c: _stream_chunk(c) if getattr(self, "_generating", False) else None,
                 )
-                self._log_to_file("info", "chat_result", result_type=type(result).__name__, result_preview=str(result)[:200])
+                logger.info("chat result type=%s preview=%s", type(result).__name__, str(result)[:200])
                 if isinstance(result, dict):
                     if not result.get("success"):
                         self._append("PRISM", f"Error: {result.get('error', 'Unknown error')}")
                     elif result.get("content"):
                         self._append("PRISM", result["content"])
+                    elif stream_text:
+                        self._append("PRISM", stream_text)
                     else:
                         self._append("PRISM", " ")
                 elif isinstance(result, str):
                     if result:
                         self._append("PRISM", result)
+                    elif stream_text:
+                        self._append("PRISM", stream_text)
                     else:
                         self._append("PRISM", " ")
                 else:
                     self._append("PRISM", f"Error: 未知返回类型 {type(result).__name__}")
             except Exception as exc:
+                logger.error("send exception: %s", exc, exc_info=True)
                 self._append("PRISM", f"Error: {exc}")
                 self._log_to_file("error", "send_exception", error=str(exc))
             finally:
