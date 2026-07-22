@@ -1088,16 +1088,33 @@ class Agent:
             (r"提醒我([^，。]{1,20})", "user_context", "reminder"),
             (r"([^，。]{1,10})是我([^，。]{1,10})", "user_profile", "relationship"),
         ]
+        negative_hints = ["他妈的", "tm", "sb", "傻逼", "只回答", "回答一个字", "回答仅", "一个字", "说全", "别只", "别回复", "别回", "别再说", "别说了", "闭嘴"]
+        def _is_negative(value: str) -> bool:
+            v = (value or "").strip().lower()
+            return any(h in v for h in negative_hints)
+
         for pattern, category, key in patterns:
             m = re.search(pattern, combined)
             if m:
                 value = m.group(1).strip().strip(chr(10) + chr(13) + "，。,.:; ")
-                if value and len(value) <= 30:
-                    try:
-                        persistent_memory.remember(key, value, category=category, confidence=0.85)
-                    except Exception:
-                        pass
+                if not value or len(value) > 30:
+                    continue
+                if _is_negative(value):
+                    continue
+                try:
+                    persistent_memory.remember(key, value, category=category, confidence=0.85)
+                except Exception:
+                    pass
                 break
+
+        # 额外防止把“不满/抱怨”的整句误存入偏好
+        try:
+            complaints = [line for line in combined.splitlines() if line.startswith("用户: ")]
+            for line in complaints:
+                if _is_negative(line):
+                    continue
+        except Exception:
+            pass
 
         # LLM 辅助提取：当规则未命中时，尝试让模型提炼用户事实
         try:
