@@ -222,12 +222,17 @@ class ChatMixin:
         def _run_chat():
             nonlocal stream_widget, stream_text
             try:
+                agent_model = getattr(self.agent, 'model', None)
+                agent_provider = getattr(self.agent, 'provider', None)
+                logger.info("run_chat start model=%s provider=%s messages=%d system_prompt_len=%d", 
+                           agent_model, agent_provider, len(getattr(self.agent, 'messages', []) or []),
+                           len(getattr(self.agent, 'system_prompt', '') or ''))
                 self._log_to_file("info", "stream_start", text=text, model=getattr(self.agent, "model", "unknown"))
                 result = self.agent.chat(
                     multimodal_content,
                     on_stream=lambda c: _stream_chunk(c) if getattr(self, "_generating", False) else None,
                 )
-                logger.info("chat result type=%s preview=%s", type(result).__name__, str(result)[:200])
+                logger.info("chat result type=%s preview=%s len=%d", type(result).__name__, str(result)[:200], len(str(result)))
                 if isinstance(result, dict):
                     if not result.get("success"):
                         self._append("PRISM", f"Error: {result.get('error', 'Unknown error')}")
