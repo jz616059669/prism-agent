@@ -57,8 +57,20 @@ class OpenAIProvider(Provider):
             http_client=httpx.Client(timeout=120),
         )
     
+    def _apply_max_tokens(self, kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        if 'max_tokens' not in kwargs:
+            try:
+                from prism.config import config as cfg
+                cfg_max = int((cfg.get('model.max_tokens') or 0) or 0)
+            except Exception:
+                cfg_max = 0
+            if cfg_max > 0:
+                kwargs['max_tokens'] = cfg_max
+        return kwargs
+
     def chat(self, messages: List[Dict], **kwargs) -> Dict[str, Any]:
         """发送聊天请求"""
+        kwargs = self._apply_max_tokens(kwargs)
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -83,6 +95,7 @@ class OpenAIProvider(Provider):
 
     def stream_chat(self, messages: List[Dict], on_chunk, stop_callback=None, **kwargs) -> Dict[str, Any]:
         """流式聊天请求，逐 chunk 回调"""
+        kwargs = self._apply_max_tokens(kwargs)
         full_content: List[str] = []
         try:
             stream = self.client.chat.completions.create(
