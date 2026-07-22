@@ -379,11 +379,13 @@ class FeishuAdapter(PlatformAdapter):
 
     def _on_message_received(self, event: P2ImMessageReceiveV1) -> None:
         try:
+            print(f"[Feishu] raw event type={type(event).__name__}")
             message = getattr(event, 'event', event).message
             sender = getattr(event, 'event', event).sender
             chat_id = message.chat_id
             user_id = sender.sender_id.open_id if sender and sender.sender_id else ""
             message_type = getattr(message, "message_type", "") or "text"
+            print(f"[Feishu] parsed message type={message_type} chat={chat_id} user={user_id}")
             text = ""
             media_url = None
             file_id = None
