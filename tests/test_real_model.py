@@ -59,9 +59,9 @@ def test_real_call_with_valid_key():
     运行方式：
         set OPENAI_API_KEY=sk-... && pytest tests/test_real_model.py::test_real_call_with_valid_key -v
     """
-    api_key = os.getenv("OPENAI_API_KEY") or prism_config.get("model.api_key")
-    if not api_key:
-        pytest.skip("未配置 API Key，跳过真实调用测试")
+    api_key = os.getenv("OPENAI_API_KEY") or prism_config.get("model.api_key") or ""
+    if not api_key or api_key in {"fake", "sk-test", "test"}:
+        pytest.skip("未配置有效 API Key，跳过真实调用测试")
     
     pool = ProviderPool()
     result = pool.chat([{"role": "user", "content": "hi"}])
