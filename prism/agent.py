@@ -1125,6 +1125,10 @@ class Agent:
 
     def _llm_extract_facts(self, user_message: str, assistant_content: str) -> None:
         """用 LLM 从对话中提取用户事实并写入持久记忆。"""
+        negative_hints = ["他妈的", "tm", "sb", "傻逼", "只回答", "回答一个字", "回答仅", "一个字", "说全", "别只", "别回复", "别回", "别再说", "别说了", "闭嘴", "简短", "简单"]
+        def _is_negative(value: str) -> bool:
+            v = (value or "").strip().lower()
+            return any(h in v for h in negative_hints)
         try:
             from prism.providers.manager import provider_pool
         except Exception:
@@ -1159,8 +1163,13 @@ class Agent:
                 key = item.get("key") or "fact"
                 value = item.get("value") or ""
                 value = str(value).strip()
-                if value and len(value) <= 60:
-                    persistent_memory.remember(key, value, category=category, confidence=0.8)
+                if not value or len(value) < 2 or len(value) > 60:
+                    continue
+                if _is_negative(value):
+                    continue
+                if _is_negative(key):
+                    continue
+                persistent_memory.remember(key, value, category=category, confidence=0.8)
             except Exception:
                 continue
 
