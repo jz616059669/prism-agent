@@ -573,6 +573,9 @@ class Agent:
             pass
         result = chat_fn(api_messages, on_chunk=on_stream, **kwargs) if on_stream is not None else chat_fn(api_messages)
 
+        logger.info("raw provider result success=%s content_len=%d content_preview=%s completion_tokens=%s finish_reason=%s model=%s", 
+                   result.get('success'), len((result.get('content') or '')), (result.get('content') or '')[:200],
+                   result.get('completion_tokens'), result.get('finish_reason'), result.get('model'))
         if not result.get('success'):
             logger.warning("chat failed: %s", result.get('error'))
             try:
