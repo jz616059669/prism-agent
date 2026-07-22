@@ -204,7 +204,6 @@ class ChatMixin:
                     bgcolor=ft.Colors.SURFACE_CONTAINER,
                     opacity=0,
                     animate_opacity=ft.Animation(duration=120, curve=ft.AnimationCurve.EASE_OUT),
-                    expand=False,
                 )
                 self.chat_list.controls.append(stream_widget)
                 stream_widget.opacity = 1
