@@ -177,13 +177,13 @@ class ChatMixin:
                 except Exception:
                     logger.debug("stream chunk update failed: %s", traceback.format_exc())
 
-        def _ensure_stream_widget():
+        def _ensure_stream_widget() -> ft.Container:
             nonlocal stream_widget
             if stream_widget is None:
                 role_text = ft.Text("PRISM", size=11, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_500)
                 timestamp = datetime.now().strftime("%H:%M")
                 time_text = ft.Text(timestamp, size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.8)
-                stream_content = ft.Text("", selectable=True, color=ft.Colors.ON_SURFACE)
+                stream_content = ft.Text("", selectable=True, color=ft.Colors.ON_SURFACE, expand=True)
                 row = ft.Row(
                     [role_text, ft.Container(expand=True), time_text],
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
@@ -191,7 +191,7 @@ class ChatMixin:
                 stream_widget = ft.Container(
                     content=ft.Column(
                         [row, ft.Container(height=4), stream_content],
-                        tight=True,
+                        tight=False,
                         spacing=0,
                         horizontal_alignment=ft.MainAxisAlignment.START,
                     ),
@@ -199,6 +199,7 @@ class ChatMixin:
                     bgcolor=ft.Colors.SURFACE_CONTAINER,
                     opacity=0,
                     animate_opacity=ft.Animation(duration=120, curve=ft.AnimationCurve.EASE_OUT),
+                    expand=False,
                 )
                 self.chat_list.controls.append(stream_widget)
                 stream_widget.opacity = 1
