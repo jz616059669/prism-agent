@@ -178,6 +178,7 @@ class ChatMixin:
                     target.value = value
                     w.update()
                     _last_update[0] = now
+                    print(f"[DEBUG] stream update len={len(value)} value={value[:40]}")
                 except Exception:
                     logger.debug("stream chunk update failed: %s", traceback.format_exc())
 
@@ -207,6 +208,7 @@ class ChatMixin:
                 )
                 self.chat_list.controls.append(stream_widget)
                 stream_widget.opacity = 1
+                print(f"[DEBUG] stream widget created controls={len(stream_widget.content.controls)}")
                 try:
                     self.chat_list.update()
                 except Exception:
@@ -217,6 +219,7 @@ class ChatMixin:
             nonlocal stream_text
             stream_text += c
             w = _ensure_stream_widget()
+            print(f"[DEBUG] chunk received: {repr(c)} total_len={len(stream_text)}")
             _throttled_update(w, stream_text)
 
         def _run_chat():
@@ -227,6 +230,7 @@ class ChatMixin:
                     multimodal_content,
                     on_stream=lambda c: _stream_chunk(c) if getattr(self, "_generating", False) else None,
                 )
+                print(f"[DEBUG] final result_type={type(result).__name__} result={repr(result)[:200]}")
                 self._log_to_file("info", "chat_result", result_type=type(result).__name__, result_preview=str(result)[:200])
                 if isinstance(result, dict):
                     if not result.get("success"):
