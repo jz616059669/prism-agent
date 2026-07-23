@@ -549,6 +549,8 @@ class MCPClient:
         self._watcher_thread.start()
 
     def _config_watcher(self) -> None:
+        failure_backoff = 2.0
+        max_backoff = 60.0
         while not self._watcher_stop.is_set():
             try:
                 path = Path(self._config_path) if self._config_path else None
@@ -557,9 +559,11 @@ class MCPClient:
                     if mtime != self._config_mtime:
                         self._config_mtime = mtime
                         self._reload_config()
+                failure_backoff = 2.0
             except Exception:
                 logger.debug("mcp config watcher error", exc_info=True)
-            self._watcher_stop.wait(2.0)
+                failure_backoff = min(failure_backoff * 2.0, max_backoff)
+            self._watcher_stop.wait(failure_backoff)
 
     def _reload_config(self) -> None:
         try:

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -15,6 +16,50 @@ from prism.logging import logger
 
 SESSION_DIR = PRISM_HOME / "sessions"
 SESSION_DIR.mkdir(parents=True, exist_ok=True)
+
+
+class SessionFileLock:
+    """轻量文件锁：防止同一 session 并发读写导致截断。"""
+    def __init__(self, path: Path) -> None:
+        self._path = path
+        self._fp = None
+
+    def __enter__(self):
+        if not self._path.exists():
+            return self
+        try:
+            self._fp = open(self._path, "a+")
+            if sys.platform == "win32":
+                import msvcrt
+                msvcrt.locking(self._fp.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(self._fp.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except Exception:
+            if self._fp is not None:
+                try:
+                    self._fp.close()
+                except Exception:
+                    pass
+                self._fp = None
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self._fp is not None:
+            try:
+                if sys.platform == "win32":
+                    import msvcrt
+                    msvcrt.locking(self._fp.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    import fcntl
+                    fcntl.flock(self._fp.fileno(), fcntl.LOCK_UN)
+            except Exception:
+                pass
+            try:
+                self._fp.close()
+            except Exception:
+                pass
+            self._fp = None
 
 
 class SessionRecord:
@@ -63,7 +108,8 @@ class SessionRegistry:
         if not path.exists():
             return None
         try:
-            return json.loads(path.read_text(encoding="utf-8"))
+            with SessionFileLock(path):
+                return json.loads(path.read_text(encoding="utf-8"))
         except Exception:
             return None
 
@@ -72,7 +118,8 @@ class SessionRegistry:
             path = SESSION_DIR / f"{name}.json"
             payload.setdefault("created_at", datetime.now().isoformat())
             payload.setdefault("tags", [])
-            path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+            with SessionFileLock(path):
+                path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
             return path
         except OSError as exc:
             logger.debug("save session failed: %s", exc)
@@ -81,8 +128,9 @@ class SessionRegistry:
     def delete_session(self, name: str) -> bool:
         path = SESSION_DIR / f"{name}.json"
         try:
-            if path.exists():
-                path.unlink()
+            with SessionFileLock(path):
+                if path.exists():
+                    path.unlink()
             return True
         except OSError:
             return False
@@ -152,26 +200,31 @@ class SessionRegistry:
         return results
 
     def compact_session(self, name: str) -> Dict[str, Any]:
-        payload = self.get_session(name)
-        if not payload:
-            return {"success": False, "error": "session not found"}
-        try:
-            from prism.context_compactor import context_compactor
-            messages = payload.get("messages", [])
-            summary = context_compactor.compact(name, messages)
-            compacted = {
-                "system_prompt": payload.get("system_prompt", ""),
-                "messages": [
-                    {"role": "system", "content": summary.summary or ""},
-                    {"role": "user", "content": "[上下文已压缩]" },
-                ],
-                "tags": payload.get("tags", []),
-                "created_at": payload.get("created_at", datetime.now().isoformat()),
-            }
-            self.save_session(name, compacted)
-            return {"success": True, "summary": summary.summary}
-        except Exception as exc:
-            return {"success": False, "error": str(exc)}
+        path = SESSION_DIR / f"{name}.json"
+        with SessionFileLock(path):
+            if not path.exists():
+                return {"success": False, "error": "session not found"}
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+            except Exception:
+                return {"success": False, "error": "session not found"}
+            try:
+                from prism.context_compactor import context_compactor
+                messages = payload.get("messages", [])
+                summary = context_compactor.compact(name, messages)
+                compacted = {
+                    "system_prompt": payload.get("system_prompt", ""),
+                    "messages": [
+                        {"role": "system", "content": summary.summary or ""},
+                        {"role": "user", "content": "[上下文已压缩]"},
+                    ],
+                    "tags": payload.get("tags", []),
+                    "created_at": payload.get("created_at", datetime.now().isoformat()),
+                }
+                path.write_text(json.dumps(compacted, ensure_ascii=False, indent=2), encoding="utf-8")
+                return {"success": True, "summary": summary.summary}
+            except Exception as exc:
+                return {"success": False, "error": str(exc)}
 
 
 session_registry = SessionRegistry()

@@ -90,27 +90,34 @@ class SettingsMixin:
             pass
 
     def _apply_settings(self) -> None:
+        def _ui():
+            try:
+                theme = self._settings.get("theme", "Dark")
+                self._apply_theme(theme)
+                if hasattr(self, "provider_textfield"):
+                    provider = self._settings.get("provider", "stepfun")
+                    self.provider_textfield.value = provider
+                if hasattr(self, "base_url_textfield"):
+                    base_url = self._settings.get("base_url", "https://api.stepfun.com/step_plan/v1")
+                    self.base_url_textfield.value = base_url
+                if hasattr(self, "api_key_textfield"):
+                    api_key = self._settings.get("api_key", "")
+                    self.api_key_textfield.value = api_key
+                if hasattr(self, "review_enabled_switch"):
+                    self.review_enabled_switch.value = bool(self._settings.get("review_enabled", True))
+                if hasattr(self, "review_interval_field"):
+                    self.review_interval_field.value = str(int(self._settings.get("review_interval", 5) or 5))
+                self._apply_review_env()
+                try:
+                    self.page.update()
+                except Exception:
+                    pass
+            except Exception:
+                logger.debug("apply settings failed: %s", traceback.format_exc())
         try:
-            theme = self._settings.get("theme", "Dark")
-            self._apply_theme(theme)
-            if hasattr(self, "provider_textfield"):
-                provider = self._settings.get("provider", "stepfun")
-                self.provider_textfield.value = provider
-            if hasattr(self, "base_url_textfield"):
-                base_url = self._settings.get("base_url", "https://api.stepfun.com/step_plan/v1")
-                self.base_url_textfield.value = base_url
-            if hasattr(self, "api_key_textfield"):
-                api_key = self._settings.get("api_key", "")
-                self.api_key_textfield.value = api_key
-            if hasattr(self, "review_enabled_switch"):
-                self.review_enabled_switch.value = bool(self._settings.get("review_enabled", True))
-            if hasattr(self, "review_interval_field"):
-                self.review_interval_field.value = str(int(self._settings.get("review_interval", 5) or 5))
-            self._apply_review_env()
-            self.page.update()
+            self._run_on_ui(_ui)
         except Exception:
-            logger.debug("apply settings failed: %s", traceback.format_exc())
-            pass
+            logger.debug("apply settings run_on_ui failed", exc_info=True)
 
     def _apply_review_env(self) -> None:
         try:

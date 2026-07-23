@@ -234,29 +234,34 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
     def _render_memory_items(self, items):
         if not hasattr(self, "memory_list") or self.memory_list is None:
             return
-        self.memory_list.controls.clear()
-        if not items:
-            self.memory_list.controls.append(ft.Text("暂无记忆", size=12, color=ft.Colors.ON_SURFACE_VARIANT))
-        else:
-            for m in items:
-                key = getattr(m, "key", "") or ""
-                value = getattr(m, "value", "") or ""
-                category = getattr(m, "category", "general") or "general"
-                confidence = getattr(m, "confidence", 1.0)
-                access_count = getattr(m, "access_count", 0)
-                short_value = value if len(value) <= 120 else value[:117] + "..."
-                row = ft.Row([
-                    ft.Column([
-                        ft.Row([ft.Text(key, size=12, color=ft.Colors.ON_SURFACE), ft.Text(f"[{category}]", size=10, color=ft.Colors.ON_SURFACE_VARIANT)], spacing=6, tight=True),
-                        ft.Text(short_value, size=11, color=ft.Colors.ON_SURFACE_VARIANT, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
-                        ft.Text(f"confidence={confidence:.2f} access={access_count}", size=10, color=ft.Colors.ON_SURFACE_VARIANT),
-                    ], spacing=2, expand=True),
-                    ft.IconButton(icon=ft.Icons.EDIT_ROUNDED, tooltip="编辑", icon_size=14, icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE_VARIANT)), on_click=lambda e, k=key: self._edit_memory(k)),
-                    ft.IconButton(icon=ft.Icons.DELETE_OUTLINE_ROUNDED, tooltip="删除", icon_size=14, icon_color=ft.Colors.ERROR, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ERROR)), on_click=lambda e, k=key: self._delete_memory(k)),
-                ], spacing=8, tight=True)
-                self.memory_list.controls.append(row)
+        def _apply():
+            self.memory_list.controls.clear()
+            if not items:
+                self.memory_list.controls.append(ft.Text("暂无记忆", size=12, color=ft.Colors.ON_SURFACE_VARIANT))
+            else:
+                for m in items:
+                    key = getattr(m, "key", "") or ""
+                    value = getattr(m, "value", "") or ""
+                    category = getattr(m, "category", "general") or "general"
+                    confidence = getattr(m, "confidence", 1.0)
+                    access_count = getattr(m, "access_count", 0)
+                    short_value = value if len(value) <= 120 else value[:117] + "..."
+                    row = ft.Row([
+                        ft.Column([
+                            ft.Row([ft.Text(key, size=12, color=ft.Colors.ON_SURFACE), ft.Text(f"[{category}]", size=10, color=ft.Colors.ON_SURFACE_VARIANT)], spacing=6, tight=True),
+                            ft.Text(short_value, size=11, color=ft.Colors.ON_SURFACE_VARIANT, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
+                            ft.Text(f"confidence={confidence:.2f} access={access_count}", size=10, color=ft.Colors.ON_SURFACE_VARIANT),
+                        ], spacing=2, expand=True),
+                        ft.IconButton(icon=ft.Icons.EDIT_ROUNDED, tooltip="编辑", icon_size=14, icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE_VARIANT)), on_click=lambda e, k=key: self._edit_memory(k)),
+                        ft.IconButton(icon=ft.Icons.DELETE_OUTLINE_ROUNDED, tooltip="删除", icon_size=14, icon_color=ft.Colors.ERROR, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ERROR)), on_click=lambda e, k=key: self._delete_memory(k)),
+                    ], spacing=8, tight=True)
+                    self.memory_list.controls.append(row)
+            try:
+                self.memory_list.update()
+            except Exception:
+                pass
         try:
-            self.memory_list.update()
+            self._run_on_ui(_apply)
         except Exception:
             pass
 
@@ -480,29 +485,34 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             api_key = (getattr(self, "api_key_textfield", None) or type("T", (), {"value": ""})()).value or ""
             model = (getattr(self, "model_dropdown", None) or type("T", (), {"value": ""})()).value or ""
             status_text = getattr(self, "model_connection_status_text", None)
-            if status_text is not None:
-                try:
-                    status_text.value = "正在测试..."
-                    status_text.color = ft.Colors.ON_SURFACE_VARIANT
-                    if hasattr(status_text, "update"):
-                        status_text.update()
-                except Exception:
-                    pass
+            def _set_status(value, color):
+                nonlocal status_text
+                if status_text is not None:
+                    def _ui():
+                        try:
+                            status_text.value = value
+                            status_text.color = color
+                            if hasattr(status_text, "update"):
+                                status_text.update()
+                        except Exception:
+                            pass
+                    try:
+                        self._run_on_ui(_ui)
+                    except Exception:
+                        pass
+            _set_status("正在测试...", ft.Colors.ON_SURFACE_VARIANT)
             try:
                 from prism.providers.manager import OpenAIProvider
                 provider_obj = OpenAIProvider(name=provider or "test", base_url=base_url, api_key=api_key, model=model or "step-3.7-flash")
                 ok = provider_obj.is_available()
-                if status_text is not None:
-                    status_text.value = "连接正常" if ok else "连接失败，请检查 Key/额度/模型名"
-                    status_text.color = ft.Colors.GREEN_400 if ok else ft.Colors.RED_400
-                    if hasattr(status_text, "update"):
-                        status_text.update()
+                _set_status("连接正常" if ok else "连接失败，请检查 Key/额度/模型名", ft.Colors.GREEN_400 if ok else ft.Colors.RED_400)
             except Exception as exc:
-                if status_text is not None:
-                    status_text.value = f"异常：{exc}"
-                    status_text.color = ft.Colors.RED_400
-                    if hasattr(status_text, "update"):
-                        status_text.update()
+                _set_status(f"异常：{exc}", ft.Colors.RED_400)
+
+        try:
+            threading.Thread(target=_run, daemon=True).start()
+        except Exception:
+            _run()
 
     def _maybe_show_setup_wizard(self):
         try:
@@ -642,43 +652,51 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 pass
 
     def _refresh_mcp(self) -> None:
-        if not hasattr(self, "mcp_server_list") or self.mcp_server_list is None:
-            return
+        def _ui():
+            if not hasattr(self, "mcp_server_list") or self.mcp_server_list is None:
+                return
+            try:
+                from prism.mcp import mcp_client
+                servers = getattr(mcp_client, "servers", {})
+                tools_map = getattr(mcp_client, "tools", {})
+                self.mcp_server_list.controls.clear()
+                self.mcp_status_list.controls.clear()
+                self._mcp_tool_counts = {}
+                if not servers:
+                    self.mcp_server_list.controls.append(ft.Text("未配置 MCP 服务器", size=11, color=ft.Colors.ON_SURFACE_VARIANT))
+                else:
+                    for name, srv in servers.items():
+                        status = getattr(srv, "status", "unknown")
+                        icon = ft.Icons.CHECK_CIRCLE_ROUNDED if status == "connected" else ft.Icons.ERROR_ROUNDED
+                        color = ft.Colors.GREEN_400 if status == "connected" else ft.Colors.RED_400
+                        row = ft.Row([
+                            ft.Icon(icon, size=14, color=color),
+                            ft.Text(f"{name}", size=11, color=ft.Colors.ON_SURFACE, expand=True),
+                            ft.Text(status, size=10, color=ft.Colors.ON_SURFACE_VARIANT),
+                        ], spacing=6, tight=True)
+                        self.mcp_server_list.controls.append(row)
+                        try:
+                            tool_names = [t.get("name") for t in tools_map.get(name, {}).get("tools", []) if isinstance(t, dict)]
+                            self._mcp_tool_counts[name] = len(tool_names)
+                        except Exception:
+                            self._mcp_tool_counts[name] = 0
+                        status_row = ft.Row([
+                            ft.Text("工具数", size=11, color=ft.Colors.ON_SURFACE_VARIANT),
+                            ft.Text(str(self._mcp_tool_counts.get(name, 0)), size=11, color=ft.Colors.ON_SURFACE),
+                        ], spacing=6, tight=True)
+                        self.mcp_status_list.controls.append(status_row)
+                self._append_terminal(f"mcp refreshed: {len(servers)} servers")
+            except Exception as exc:
+                self._log_error("refresh mcp", exc)
+            try:
+                self._run_on_ui(self.mcp_server_list.update)
+                self._run_on_ui(self.mcp_status_list.update)
+            except Exception:
+                pass
         try:
-            from prism.mcp import mcp_client
-            servers = getattr(mcp_client, "servers", {})
-            tools_map = getattr(mcp_client, "tools", {})
-            self.mcp_server_list.controls.clear()
-            self.mcp_status_list.controls.clear()
-            self._mcp_tool_counts = {}
-            if not servers:
-                self.mcp_server_list.controls.append(ft.Text("未配置 MCP 服务器", size=11, color=ft.Colors.ON_SURFACE_VARIANT))
-            else:
-                for name, srv in servers.items():
-                    status = getattr(srv, "status", "unknown")
-                    icon = ft.Icons.CHECK_CIRCLE_ROUNDED if status == "connected" else ft.Icons.ERROR_ROUNDED
-                    color = ft.Colors.GREEN_400 if status == "connected" else ft.Colors.RED_400
-                    row = ft.Row([
-                        ft.Icon(icon, size=14, color=color),
-                        ft.Text(f"{name}", size=11, color=ft.Colors.ON_SURFACE, expand=True),
-                        ft.Text(status, size=10, color=ft.Colors.ON_SURFACE_VARIANT),
-                    ], spacing=6, tight=True)
-                    self.mcp_server_list.controls.append(row)
-                    try:
-                        tool_names = [t.get("name") for t in tools_map.get(name, {}).get("tools", []) if isinstance(t, dict)]
-                        self._mcp_tool_counts[name] = len(tool_names)
-                    except Exception:
-                        self._mcp_tool_counts[name] = 0
-                    status_row = ft.Row([
-                        ft.Text("工具数", size=10, color=ft.Colors.ON_SURFACE_VARIANT),
-                        ft.Text(str(self._mcp_tool_counts.get(name, 0)), size=10, color=ft.Colors.ON_SURFACE),
-                    ], spacing=6, tight=True)
-                    self.mcp_status_list.controls.append(status_row)
-            self.mcp_server_list.update()
-            self.mcp_status_list.update()
-            self._append_terminal(f"mcp refreshed: {len(servers)} servers")
-        except Exception as exc:
-            self._log_error("refresh mcp", exc)
+            threading.Thread(target=_ui, daemon=True).start()
+        except Exception:
+            _ui()
 
     def _save_settings_debounced(self) -> None:
         if self._save_settings_timer is not None:
@@ -690,15 +708,34 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.page.on_resized = lambda e: self._save_settings_debounced()
         try:
             self.page.window_prevent_close = True
-            self.page.on_window_event = lambda e: (
-                self._persist_runtime_state(),
-                getattr(self.page, "window_close", lambda: None)(),
-            )
+            def _on_window_event(e):
+                try:
+                    self._cancel_background_timers()
+                except Exception:
+                    pass
+                try:
+                    self._persist_runtime_state()
+                except Exception:
+                    pass
+                try:
+                    getattr(self.page, "window_close", lambda: None)()
+                except Exception:
+                    pass
+            self.page.on_window_event = _on_window_event
         except Exception:
             try:
                 self._persist_runtime_state()
             except Exception:
                 pass
+
+    def _cancel_background_timers(self) -> None:
+        for attr in ("_save_settings_timer", "_input_timer"):
+            t = getattr(self, attr, None)
+            if t is not None:
+                try:
+                    t.cancel()
+                except Exception:
+                    pass
 
     def _bind_tray(self) -> None:
         try:
@@ -726,38 +763,20 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                                         self.page.window_show()
                                     else:
                                         self.page.visible = True
+                                    self._run_on_ui(self._refresh_sessions)
+                                    self._run_on_ui(self._refresh_mcp)
+                                    self._run_on_ui(self._refresh_skills)
+                                    self._set_status("就绪", ft.Colors.GREEN_400)
+                                    self._run_on_ui(self.page.update)
                                     if hasattr(self, "input_field") and self.input_field is not None:
                                         try:
-                                            self.input_field.focus()
-                                        except Exception as exc:
-                                            logger.debug("input focus failed: %s", exc)
-                                    if hasattr(self, "_refresh_sessions"):
-                                        try:
-                                            self._refresh_sessions()
-                                        except Exception as exc:
-                                            logger.debug("refresh sessions failed: %s", exc)
-                                    if hasattr(self, "_refresh_mcp"):
-                                        try:
-                                            self._refresh_mcp()
-                                        except Exception as exc:
-                                            logger.debug("refresh mcp failed: %s", exc)
-                                    if hasattr(self, "_refresh_skills"):
-                                        try:
-                                            self._refresh_skills()
-                                        except Exception as exc:
-                                            logger.debug("refresh skills failed: %s", exc)
-                                    try:
-                                        self._set_status("就绪", ft.Colors.GREEN_400)
-                                    except Exception as exc:
-                                        logger.debug("set status ready failed: %s", exc)
-                                    try:
-                                        self.page.update()
-                                    except Exception as exc:
-                                        logger.debug("page update failed: %s", exc)
+                                            self._run_on_ui(self.input_field.focus)
+                                        except Exception:
+                                            pass
                                 except Exception:
                                     logger.debug('desktop exception: %s', traceback.format_exc())
                             try:
-                                _ui_show()
+                                self._run_on_ui(_ui_show)
                             except Exception:
                                 pass
                     except Exception:
@@ -788,26 +807,34 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         except Exception as exc:
             self._log_error("tray bind outer", exc)
 
-    def _apply_theme(self, name: str):
-        name = (name or "Dark").strip()
-        if name == "Light":
-            self.page.theme_mode = ft.ThemeMode.LIGHT
-            self.page.theme = ft.Theme(color_scheme_seed="blue", use_material3=True)
-        elif name == "Midnight":
-            self.page.theme_mode = ft.ThemeMode.DARK
-            self.page.theme = ft.Theme(color_scheme_seed="indigo")
-        elif name == "Warm":
-            self.page.theme_mode = ft.ThemeMode.LIGHT
-            self.page.theme = ft.Theme(color_scheme_seed="orange")
-        else:
-            self.page.theme_mode = ft.ThemeMode.DARK
-            self.page.theme = ft.Theme(color_scheme_seed="blue", use_material3=True)
-        self.page.animate = ft.Animation(duration=300, curve=ft.AnimationCurve.EASE_IN_OUT)
-        self.page.update()
-        self._append_terminal(f"theme -> {name}")
-        self._save_settings()
-
-
+    def _apply_theme(self, name: str) -> None:
+        def _ui():
+            try:
+                if name == "Warm":
+                    self.page.theme_mode = ft.ThemeMode.LIGHT
+                    self.page.theme = ft.Theme(color_scheme_seed="orange")
+                elif name == "Light":
+                    self.page.theme_mode = ft.ThemeMode.LIGHT
+                    self.page.theme = ft.Theme(color_scheme_seed="blue", use_material3=True)
+                elif name == "Midnight":
+                    self.page.theme_mode = ft.ThemeMode.DARK
+                    self.page.theme = ft.Theme(color_scheme_seed="indigo", use_material3=True)
+                else:
+                    self.page.theme_mode = ft.ThemeMode.DARK
+                    self.page.theme = ft.Theme(color_scheme_seed="blue", use_material3=True)
+                self.page.animate = ft.Animation(duration=300, curve=ft.AnimationCurve.EASE_IN_OUT)
+                try:
+                    self.page.update()
+                except Exception:
+                    pass
+                self._append_terminal(f"theme -> {name}")
+                self._save_settings()
+            except Exception:
+                logger.debug("apply theme failed: %s", traceback.format_exc())
+        try:
+            self._run_on_ui(_ui)
+        except Exception:
+            logger.debug("apply theme run_on_ui failed", exc_info=True)
     def _build_appbar(self) -> ft.AppBar:
         self.title_text = ft.Text("PRISM Agent", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE)
         self.theme_icon_btn = ft.IconButton(icon=ft.Icons.SETTINGS_ROUNDED, tooltip="切换主题", icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.15, ft.Colors.ON_SURFACE_VARIANT)))
@@ -890,23 +917,27 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.page.update()
 
     def _animate_sidebar_cards(self):
-        try:
-            def _run():
-                try:
-                    time.sleep(0.1)
-                    for card in self._sidebar_container.content.controls:
-                        if hasattr(card, 'animate_opacity'):
-                            card.opacity = 1
-                            card.update()
-                            time.sleep(0.05)
-                except Exception:
-                    logger.debug('desktop exception: %s', traceback.format_exc())
+        def _run():
             try:
-                threading.Thread(target=_run, daemon=True).start()
+                for i, card in enumerate(self._sidebar_container.content.controls):
+                    if hasattr(card, 'animate_opacity'):
+                        card.opacity = 1
+                        def _ui(c=card):
+                            try:
+                                c.update()
+                            except Exception:
+                                pass
+                        try:
+                            self._run_on_ui(_ui)
+                        except Exception:
+                            pass
+                        time.sleep(0.08)
             except Exception:
-                _run()
+                pass
+        try:
+            threading.Thread(target=_run, daemon=True).start()
         except Exception:
-            logger.debug('desktop exception: %s', traceback.format_exc())
+            _run()
 
     def _cycle_theme(self):
         current = self._settings.get("theme", "Dark")
@@ -919,17 +950,22 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._apply_theme(next_theme)
 
     def _toggle_sidebar_section(self, header: ft.Container, body: ft.Container):
-        try:
-            collapsed = getattr(body, "_collapsed", False)
-            body._collapsed = not collapsed
-            body.visible = not collapsed
-            if hasattr(header, "_section_label"):
-                header._section_label.opacity = 1.0 if not collapsed else 0.7
+        def _ui():
             try:
-                body.update()
-                header.update()
+                collapsed = getattr(body, "_collapsed", False)
+                body._collapsed = not collapsed
+                body.visible = not collapsed
+                if hasattr(header, "_section_label"):
+                    header._section_label.opacity = 1.0 if not collapsed else 0.7
+                try:
+                    body.update()
+                    header.update()
+                except Exception:
+                    pass
             except Exception:
                 pass
+        try:
+            self._run_on_ui(_ui)
         except Exception:
             pass
 
@@ -1155,26 +1191,34 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         ]
 
     def _start_gateway_worker(self):
+        def _ui(running, log):
+            try:
+                self._refresh_gateway_ui(running=running, log=log)
+            except Exception:
+                pass
+            try:
+                if running:
+                    self._set_status("飞书 gateway 已启动", ft.Colors.GREEN_400)
+                else:
+                    self._set_status(f"gateway 启动失败: {log}", ft.Colors.RED_400)
+            except Exception:
+                pass
+
         log_lines = []
         try:
             from prism.cli.gateway import gateway_status, gateway_start
             status = gateway_status("feishu")
             log_lines.append(f"status={status}")
             if status.get("running"):
-                self._refresh_gateway_ui(running=True, log="已运行")
+                self.page.run_task(lambda: _ui(True, "已运行"))
                 return
             result = gateway_start("feishu")
             log_lines.append(f"start={result}")
-            if result.get("success"):
-                self._refresh_gateway_ui(running=True, log="feishu WebSocket 已启动")
-                self._set_status("飞书 gateway 已启动", ft.Colors.GREEN_400)
-            else:
-                self._refresh_gateway_ui(running=False, log=(result.get("output") or str(result)))
-                self._set_status(f"gateway 启动失败: {result.get('output') or result}", ft.Colors.RED_400)
+            log = (result.get("output") or str(result)) if not result.get("success") else "feishu WebSocket 已启动"
+            self.page.run_task(lambda r=result, l=log: _ui(bool(r.get("success")), l))
         except Exception as exc:
             log_lines.append(f"exc={exc}")
-            self._refresh_gateway_ui(running=False, log="\n".join(log_lines))
-            self._set_status(f"gateway 启动失败: {exc}", ft.Colors.RED_400)
+            self.page.run_task(lambda l="\n".join(log_lines): _ui(False, l))
 
     def _refresh_gateway_ui(self, running: bool, log: str = ""):
         try:
@@ -1907,7 +1951,10 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         if hasattr(self, "_chat_placeholder") and self._chat_placeholder:
             self._chat_placeholder.visible = True
             self.chat_list.controls.append(self._chat_placeholder)
-        self.chat_list.update()
+        try:
+            self.chat_list.update()
+        except Exception:
+            logger.debug("new session chat_list update failed", exc_info=True)
         self.input_field.value = ""
         self.input_field.focus()
         self._update_input_count()
@@ -1915,11 +1962,22 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._append_terminal("new session")
 
     def _clear_chat(self):
-        self.chat_list.controls.clear()
-        if hasattr(self, "_chat_placeholder") and self._chat_placeholder:
-            self._chat_placeholder.visible = True
-            self.chat_list.controls.append(self._chat_placeholder)
-        self.page.update(self.chat_list)
+        def _apply():
+            try:
+                self.chat_list.controls.clear()
+                if hasattr(self, "_chat_placeholder") and self._chat_placeholder:
+                    self._chat_placeholder.visible = True
+                    self.chat_list.controls.append(self._chat_placeholder)
+                try:
+                    self.chat_list.update()
+                except Exception:
+                    logger.debug("clear chat update failed", exc_info=True)
+            except Exception:
+                logger.debug("clear chat failed: %s", traceback.format_exc())
+        try:
+            self._run_on_ui(_apply)
+        except Exception:
+            logger.debug("clear chat run_on_ui failed", exc_info=True)
         self.input_field.value = ""
         self.input_field.focus()
         self._update_input_count()
@@ -2133,7 +2191,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 self._settings["current_session"] = name
                 self._append_terminal(f"session saved: {path}")
                 self._set_status("会话已保存", ft.Colors.GREEN_400)
-                self._refresh_sessions()
+                self._run_on_ui(self._refresh_sessions)
             except Exception as e:
                 self._append_terminal(f"session save failed: {e}")
                 self._set_status("会话保存失败", ft.Colors.RED_400)
@@ -2153,10 +2211,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self.session_list.controls.clear()
             if not records:
                 self.session_list.controls.append(ft.Text("无匹配会话", color=ft.Colors.ON_SURFACE_VARIANT, size=12))
-                try:
-                    self.session_list.update()
-                except Exception:
-                    pass
+                self._run_on_ui(self.session_list.update)
                 return
             pinned = self._settings.get("pinned_sessions", {}) or {}
             pinned_names = {k for k, v in pinned.items() if v}
@@ -2210,83 +2265,90 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 session_wrap.on_hover = _on_session_hover
                 if isinstance(self.session_list, ft.Column) and isinstance(session_wrap, ft.Control):
                     self.session_list.controls.append(session_wrap)
-            try:
-                self.session_list.update()
-            except Exception:
-                pass
+            self._run_on_ui(self.session_list.update)
         try:
             threading.Thread(target=_run, daemon=True).start()
         except Exception:
             _run()
+
+    def _run_on_ui(self, fn, *args, **kwargs):
+        try:
+            if hasattr(self, "page") and self.page is not None and hasattr(self.page, "run_task"):
+                self.page.run_task(lambda f=fn, a=args, kw=kwargs: f(*a, **kw))
+            else:
+                fn(*args, **kwargs)
+        except Exception:
+            pass
 
     def _refresh_sessions(self):
-        def _run():
-            self.session_list.controls.clear()
-            try:
-                records = session_registry.list_sessions()
-            except Exception as exc:
-                self._log_error("list sessions", exc)
-                records = []
-            pinned = self._settings.get("pinned_sessions", {}) or {}
-            pinned_names = {k for k, v in pinned.items() if v}
-            records = sorted(records, key=lambda x: (x.get("name") not in pinned_names, x.get("name") or ""))
-            if not records:
-                self.session_list.controls.append(self._session_empty_state)
-            else:
-                for rec in records:
-                    name = rec.get("name") or ""
-                    is_current = name == self._current_session_name
-                    pin_btn = ft.IconButton(
-                        icon=ft.Icons.PUSH_PIN_ROUNDED if pinned.get(name) else ft.Icons.PUSH_PIN_OUTLINE_ROUNDED,
-                        tooltip="置顶" if pinned.get(name) else "取消置顶",
-                        icon_color=ft.Colors.ON_SURFACE_VARIANT,
-                        width=36,
-                        height=36,
-                    )
-                    pin_btn.on_click = lambda e, n=name: self._toggle_pin_session(n)
-                    rename_btn = ft.IconButton(icon=ft.Icons.EDIT_OUTLINE, tooltip="重命名", icon_color=ft.Colors.ON_SURFACE_VARIANT, width=36, height=36)
-                    rename_btn.on_click = lambda e, n=name: self._rename_session(n)
-                    load_btn = ft.Button(
-                        name,
-                        expand=True,
-                        style=ft.ButtonStyle(
-                            bgcolor=ft.Colors.PRIMARY_CONTAINER if is_current else None,
-                            color=ft.Colors.ON_PRIMARY_CONTAINER if is_current else None,
-                            shape=ft.RoundedRectangleBorder(radius=8),
-                            padding=ft.Padding(22, 20, 22, 20),
-                        ),
-                    )
-                    load_btn.on_click = lambda e, n=name: self._load_session(n)
-                    del_btn = ft.IconButton(icon=ft.Icons.DELETE_OUTLINE, tooltip="删除会话", icon_color=ft.Colors.ERROR, width=36, height=36)
-                    del_btn.on_click = lambda e, n=name: self._delete_session(n)
-                    export_btn = ft.IconButton(icon=ft.Icons.DOWNLOAD_OUTLINED, tooltip="导出 Markdown", icon_color=ft.Colors.ON_SURFACE_VARIANT, width=36, height=36)
-                    export_btn.on_click = lambda e, n=name: self._export_session(n)
-                    compact_btn = ft.IconButton(icon=ft.Icons.COMPRESS_OUTLINED, tooltip="压缩会话", icon_color=ft.Colors.ON_SURFACE_VARIANT, width=36, height=36)
-                    compact_btn.on_click = lambda e, n=name: self._compact_session(n)
-                    session_row = ft.Row([pin_btn, load_btn, rename_btn, compact_btn, export_btn, del_btn], spacing=6, tight=True)
-                    session_row._session_name = name
-                    session_wrap = ft.Container(
-                        content=session_row,
-                        padding=ft.Padding(4, 4, 4, 4),
-                        border_radius=10,
-                        bgcolor=ft.Colors.TRANSPARENT,
-                        animate=ft.Animation(duration=120, curve=ft.AnimationCurve.EASE_OUT),
-                    )
+        def _build():
+            def _run():
+                self.session_list.controls.clear()
+                try:
+                    records = session_registry.list_sessions()
+                except Exception as exc:
+                    self._log_error("list sessions", exc)
+                    records = []
+                pinned = self._settings.get("pinned_sessions", {}) or {}
+                pinned_names = {k for k, v in pinned.items() if v}
+                records = sorted(records, key=lambda x: (x.get("name") not in pinned_names, x.get("name") or ""))
+                if not records:
+                    self.session_list.controls.append(self._session_empty_state)
+                else:
+                    for rec in records:
+                        name = rec.get("name") or ""
+                        is_current = name == self._current_session_name
+                        pin_btn = ft.IconButton(
+                            icon=ft.Icons.PUSH_PIN_ROUNDED if pinned.get(name) else ft.Icons.PUSH_PIN_OUTLINE_ROUNDED,
+                            tooltip="置顶" if pinned.get(name) else "取消置顶",
+                            icon_color=ft.Colors.ON_SURFACE_VARIANT,
+                            width=36,
+                            height=36,
+                        )
+                        pin_btn.on_click = lambda e, n=name: self._toggle_pin_session(n)
+                        rename_btn = ft.IconButton(icon=ft.Icons.EDIT_OUTLINE, tooltip="重命名", icon_color=ft.Colors.ON_SURFACE_VARIANT, width=36, height=36)
+                        rename_btn.on_click = lambda e, n=name: self._rename_session(n)
+                        load_btn = ft.Button(
+                            name,
+                            expand=True,
+                            style=ft.ButtonStyle(
+                                bgcolor=ft.Colors.PRIMARY_CONTAINER if is_current else None,
+                                color=ft.Colors.ON_PRIMARY_CONTAINER if is_current else None,
+                                shape=ft.RoundedRectangleBorder(radius=8),
+                                padding=ft.Padding(22, 20, 22, 20),
+                            ),
+                        )
+                        load_btn.on_click = lambda e, n=name: self._load_session(n)
+                        del_btn = ft.IconButton(icon=ft.Icons.DELETE_OUTLINE, tooltip="删除会话", icon_color=ft.Colors.ERROR, width=36, height=36)
+                        del_btn.on_click = lambda e, n=name: self._delete_session(n)
+                        export_btn = ft.IconButton(icon=ft.Icons.DOWNLOAD_OUTLINED, tooltip="导出 Markdown", icon_color=ft.Colors.ON_SURFACE_VARIANT, width=36, height=36)
+                        export_btn.on_click = lambda e, n=name: self._export_session(n)
+                        compact_btn = ft.IconButton(icon=ft.Icons.COMPRESS_OUTLINED, tooltip="压缩会话", icon_color=ft.Colors.ON_SURFACE_VARIANT, width=36, height=36)
+                        compact_btn.on_click = lambda e, n=name: self._compact_session(n)
+                        session_row = ft.Row([pin_btn, load_btn, rename_btn, compact_btn, export_btn, del_btn], spacing=6, tight=True)
+                        session_row._session_name = name
+                        session_wrap = ft.Container(
+                            content=session_row,
+                            padding=ft.Padding(4, 4, 4, 4),
+                            border_radius=10,
+                            bgcolor=ft.Colors.TRANSPARENT,
+                            animate=ft.Animation(duration=120, curve=ft.AnimationCurve.EASE_OUT),
+                        )
 
-                    def _on_session_hover(e, w=session_wrap):
-                        w.bgcolor = ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE) if e.data == 'true' else ft.Colors.TRANSPARENT
-                        try:
-                            w.update()
-                        except Exception:
-                            logger.debug("session hover update failed: %s", traceback.format_exc())
-                    session_wrap.on_hover = _on_session_hover
-                    self._session_all_items.append(session_row)
-                    self.session_list.controls.append(session_wrap)
-            self.session_list.update()
-        try:
-            threading.Thread(target=_run, daemon=True).start()
-        except Exception:
-            _run()
+                        def _on_session_hover(e, w=session_wrap):
+                            w.bgcolor = ft.Colors.with_opacity(0.08, ft.Colors.ON_SURFACE) if e.data == 'true' else ft.Colors.TRANSPARENT
+                            try:
+                                w.update()
+                            except Exception:
+                                logger.debug("session hover update failed: %s", traceback.format_exc())
+                        session_wrap.on_hover = _on_session_hover
+                        self._session_all_items.append(session_row)
+                        self.session_list.controls.append(session_wrap)
+                self._run_on_ui(self.session_list.update)
+            try:
+                threading.Thread(target=_run, daemon=True).start()
+            except Exception:
+                _run()
 
     def _delete_session(self, name: str):
         def _run():
@@ -2299,7 +2361,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             except Exception as e:
                 self._append_terminal(f"session delete error: {e}")
                 self._set_status("删除异常", ft.Colors.RED_400)
-            self._refresh_sessions()
+            self._run_on_ui(self._refresh_sessions)
         try:
             threading.Thread(target=_run, daemon=True).start()
         except Exception:
@@ -2342,7 +2404,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 if result.get("success"):
                     self._append_terminal(f"session compacted: {name}")
                     self._set_status("会话已压缩", ft.Colors.GREEN_400)
-                    self._refresh_sessions()
+                    self._run_on_ui(self._refresh_sessions)
                 else:
                     self._append_terminal(f"compact failed: {result.get('error')}")
                     self._set_status("压缩失败", ft.Colors.RED_400)
@@ -2359,7 +2421,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         pinned[name] = not pinned.get(name, False)
         self._settings["pinned_sessions"] = pinned
         self._save_settings_debounced()
-        self._refresh_sessions()
+        self._run_on_ui(self._refresh_sessions)
 
     def _rename_session(self, name: str):
         def on_submit(e):
@@ -2373,7 +2435,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     if ok:
                         if self._current_session_name == name:
                             self._current_session_name = new_name
-                        self._refresh_sessions()
+                        self._run_on_ui(self._refresh_sessions)
                         self._set_status(f"已重命名为: {new_name}")
                     else:
                         self._set_status("重命名失败", ft.Colors.RED_400)
@@ -2410,7 +2472,10 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                         continue
                     role_label = "你" if m.role == "user" else ("PRISM" if m.role == "assistant" else m.role)
                     self._append(role_label, m.content or "")
-                self.chat_list.update()
+                try:
+                    self.chat_list.update()
+                except Exception:
+                    logger.debug("load session chat_list update failed", exc_info=True)
         except Exception as exc:
             self._log_error("session load", exc)
             self._set_status("加载失败", ft.Colors.RED_400)
@@ -2429,10 +2494,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 text = f"{item.get('role','')} {item.get('content','')[:80]}"
                 row = ft.Row([ft.Text(text, size=12, color=ft.Colors.ON_SURFACE_VARIANT)], spacing=8)
                 self.message_store_list.controls.append(row)
-            try:
-                self.message_store_list.update()
-            except Exception:
-                pass
+            self._run_on_ui(self.message_store_list.update)
         try:
             threading.Thread(target=_run, daemon=True).start()
         except Exception:
@@ -2453,7 +2515,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 row = ft.Row([ft.Text(text, size=12, color=ft.Colors.ON_SURFACE_VARIANT)], spacing=8)
                 self.retry_list.controls.append(row)
             try:
-                self.retry_list.update()
+                self._run_on_ui(self.retry_list.update)
             except Exception:
                 pass
         try:
@@ -2541,23 +2603,28 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             items = webhook_trigger.list_webhooks()
         except Exception:
             items = []
-        self.webhook_list.controls.clear()
-        if not items:
-            self.webhook_list.controls.append(ft.Text("暂无 Webhook", size=12, color=ft.Colors.ON_SURFACE_VARIANT))
-        else:
-            for data in items:
-                row = ft.Row([
-                    ft.Column([
-                        ft.Text(data.get("path") or "/", size=12, color=ft.Colors.ON_SURFACE),
-                        ft.Text(data.get("command") or "", size=10, color=ft.Colors.ON_SURFACE_VARIANT, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
-                    ], spacing=2, expand=True),
-                    ft.Text("启用" if data.get("enabled") else "禁用", size=10, color=ft.Colors.GREEN_400 if data.get("enabled") else ft.Colors.ON_SURFACE_VARIANT),
-                    ft.IconButton(icon=ft.Icons.EDIT_ROUNDED, tooltip="编辑", icon_size=14, icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE_VARIANT)), on_click=lambda e, d=data: self._show_webhook_form(d.get("id"))),
-                    ft.IconButton(icon=ft.Icons.DELETE_OUTLINE_ROUNDED, tooltip="删除", icon_size=14, icon_color=ft.Colors.ERROR, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ERROR)), on_click=lambda e, d=data: self._delete_webhook(d.get("id"))),
-                ], spacing=8, tight=True)
-                self.webhook_list.controls.append(row)
+        def _apply():
+            self.webhook_list.controls.clear()
+            if not items:
+                self.webhook_list.controls.append(ft.Text("暂无 Webhook", size=12, color=ft.Colors.ON_SURFACE_VARIANT))
+            else:
+                for data in items:
+                    row = ft.Row([
+                        ft.Column([
+                            ft.Text(data.get("path") or "/", size=12, color=ft.Colors.ON_SURFACE),
+                            ft.Text(data.get("command") or "", size=10, color=ft.Colors.ON_SURFACE_VARIANT, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
+                        ], spacing=2, expand=True),
+                        ft.Text("启用" if data.get("enabled") else "禁用", size=10, color=ft.Colors.GREEN_400 if data.get("enabled") else ft.Colors.ON_SURFACE_VARIANT),
+                        ft.IconButton(icon=ft.Icons.EDIT_ROUNDED, tooltip="编辑", icon_size=14, icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE_VARIANT)), on_click=lambda e, d=data: self._show_webhook_form(d.get("id"))),
+                        ft.IconButton(icon=ft.Icons.DELETE_OUTLINE_ROUNDED, tooltip="删除", icon_size=14, icon_color=ft.Colors.ERROR, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ERROR)), on_click=lambda e, d=data: self._delete_webhook(d.get("id"))),
+                    ], spacing=8, tight=True)
+                    self.webhook_list.controls.append(row)
+            try:
+                self.webhook_list.update()
+            except Exception:
+                pass
         try:
-            self.webhook_list.update()
+            self._run_on_ui(_apply)
         except Exception:
             pass
 
@@ -2593,7 +2660,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 row = ft.Row([ft.Text(f"{title} {time}", size=12, color=ft.Colors.ON_SURFACE_VARIANT), ft.Text(status, size=11, color=ft.Colors.GREEN_400)], spacing=8)
                 self.schedule_list.controls.append(row)
             try:
-                self.schedule_list.update()
+                self._run_on_ui(self.schedule_list.update)
             except Exception:
                 pass
         try:
@@ -2606,22 +2673,27 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._terminal_lines.append(text)
         if len(self._terminal_lines) > 300:
             self._terminal_lines = self._terminal_lines[-300:]
-        if not hasattr(self, "terminal_list") or self.terminal_list is None or not hasattr(self.terminal_list, "page") or self.terminal_list.page is None:
-            return
-        color = ft.Colors.ON_SURFACE_VARIANT
-        if 'error' in text.lower() or '失败' in text or '错误' in text:
-            color = ft.Colors.ERROR
-        elif 'warn' in text.lower() or '警告' in text:
-            color = ft.Colors.AMBER_400
-        elif 'success' in text.lower() or '成功' in text or 'saved' in text.lower():
-            color = ft.Colors.GREEN_400
-        elif 'info' in text.lower() or '信息' in text:
-            color = ft.Colors.BLUE_400
-        line = ft.Text(text, size=12, color=color, selectable=True, font_family="Consolas, Monaco, monospace", height=18, opacity=0, animate_opacity=ft.Animation(duration=120, curve=ft.AnimationCurve.EASE_OUT))
-        self.terminal_list.controls.append(line)
-        line.opacity = 1
+        def _apply():
+            if not hasattr(self, "terminal_list") or self.terminal_list is None or not hasattr(self.terminal_list, "page") or self.terminal_list.page is None:
+                return
+            color = ft.Colors.ON_SURFACE_VARIANT
+            if 'error' in text.lower() or '失败' in text or '错误' in text:
+                color = ft.Colors.ERROR
+            elif 'warn' in text.lower() or '警告' in text:
+                color = ft.Colors.AMBER_400
+            elif 'success' in text.lower() or '成功' in text or 'saved' in text.lower():
+                color = ft.Colors.GREEN_400
+            elif 'info' in text.lower() or '信息' in text:
+                color = ft.Colors.BLUE_400
+            line = ft.Text(text, size=12, color=color, selectable=True, font_family="Consolas, Monaco, monospace", height=18, opacity=0, animate_opacity=ft.Animation(duration=120, curve=ft.AnimationCurve.EASE_OUT))
+            self.terminal_list.controls.append(line)
+            line.opacity = 1
+            try:
+                self.terminal_list.update()
+            except Exception:
+                pass
         try:
-            self.terminal_list.update()
+            self._run_on_ui(_apply)
         except Exception:
             pass
 
@@ -2629,15 +2701,20 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._mcp_logs.append(text)
         if len(self._mcp_logs) > 200:
             self._mcp_logs = self._mcp_logs[-200:]
-        if not hasattr(self, "mcp_list") or self.mcp_list is None or not hasattr(self.mcp_list, "page") or self.mcp_list.page is None:
-            return
-        self.mcp_list.controls.clear()
-        for line in self._mcp_logs[-80:]:
-            item = ft.Text(line, size=12, color=ft.Colors.ON_SURFACE, selectable=True, font_family="Consolas, Monaco, monospace", height=18, opacity=0, animate_opacity=ft.Animation(duration=100, curve=ft.AnimationCurve.EASE_OUT))
-            item.opacity = 1
-            self.mcp_list.controls.append(item)
+        def _apply():
+            if not hasattr(self, "mcp_list") or self.mcp_list is None or not hasattr(self.mcp_list, "page") or self.mcp_list.page is None:
+                return
+            self.mcp_list.controls.clear()
+            for line in self._mcp_logs[-80:]:
+                item = ft.Text(line, size=12, color=ft.Colors.ON_SURFACE, selectable=True, font_family="Consolas, Monaco, monospace", height=18, opacity=0, animate_opacity=ft.Animation(duration=100, curve=ft.AnimationCurve.EASE_OUT))
+                item.opacity = 1
+                self.mcp_list.controls.append(item)
+            try:
+                self.mcp_list.update()
+            except Exception:
+                pass
         try:
-            self.mcp_list.update()
+            self._run_on_ui(_apply)
         except Exception:
             pass
 
@@ -2677,33 +2754,41 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
     def _render_skill_items(self, skill_list):
         if not hasattr(self, "skill_list") or self.skill_list is None:
             return
-        self.skill_list.controls.clear()
-        if not skill_list:
-            self.skill_list.controls.append(ft.Container(
-                content=ft.Column([
-                    ft.Icon(ft.Icons.EXTENSION_OFF_ROUNDED, size=28, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.5),
-                    ft.Text("暂无 Skills", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.95),
-                ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER, tight=True),
-                padding=ft.Padding(48, 48, 48, 48),
-                border_radius=12,
-                bgcolor=ft.Colors.with_opacity(0.6, ft.Colors.SURFACE_CONTAINER),
-            ))
-        else:
-            for skill in skill_list:
-                status = _("skill_enabled") if skill.get('enabled') else _("skill_disabled")
-                status_color = ft.Colors.GREEN_400 if skill.get('enabled') else ft.Colors.ON_SURFACE_VARIANT
-                row = ft.Row([
-                    ft.Column([
-                        ft.Text(skill.get('name', 'unknown'), size=12, weight=ft.FontWeight.W_500, color=ft.Colors.ON_SURFACE),
-                        ft.Text(skill.get('description', ''), size=10, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.85, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
-                    ], spacing=2, expand=True),
-                    ft.Text(status, size=10, color=status_color, weight=ft.FontWeight.W_500),
-                    ft.IconButton(icon=ft.Icons.PLAY_ARROW_ROUNDED, tooltip=_("run_skill"), icon_size=14, icon_color=ft.Colors.PRIMARY, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.PRIMARY)), on_click=lambda e, n=skill.get('name'): self._execute_skill(n)),
-                    ft.IconButton(icon=ft.Icons.POWER_SETTINGS_NEW_ROUNDED, tooltip=_("skill_toggle"), icon_size=14, icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE_VARIANT)), on_click=lambda e, n=skill.get('name'): self._toggle_skill(n)),
-                    ft.IconButton(icon=ft.Icons.DELETE_OUTLINE_ROUNDED, tooltip=_("skill_uninstall"), icon_size=14, icon_color=ft.Colors.ERROR, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ERROR)), on_click=lambda e, n=skill.get('name'): self._uninstall_skill(n)),
-                ], spacing=6, tight=True)
-                self.skill_list.controls.append(row)
-        self.skill_list.update()
+        def _apply():
+            self.skill_list.controls.clear()
+            if not skill_list:
+                self.skill_list.controls.append(ft.Container(
+                    content=ft.Column([
+                        ft.Icon(ft.Icons.EXTENSION_OFF_ROUNDED, size=28, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.5),
+                        ft.Text("暂无 Skills", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.95),
+                    ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER, tight=True),
+                    padding=ft.Padding(48, 48, 48, 48),
+                    border_radius=12,
+                    bgcolor=ft.Colors.with_opacity(0.6, ft.Colors.SURFACE_CONTAINER),
+                ))
+            else:
+                for skill in skill_list:
+                    status = _("skill_enabled") if skill.get('enabled') else _("skill_disabled")
+                    status_color = ft.Colors.GREEN_400 if skill.get('enabled') else ft.Colors.ON_SURFACE_VARIANT
+                    row = ft.Row([
+                        ft.Column([
+                            ft.Text(skill.get('name', 'unknown'), size=12, weight=ft.FontWeight.W_500, color=ft.Colors.ON_SURFACE),
+                            ft.Text(skill.get('description', ''), size=10, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.85, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
+                        ], spacing=2, expand=True),
+                        ft.Text(status, size=10, color=status_color, weight=ft.FontWeight.W_500),
+                        ft.IconButton(icon=ft.Icons.PLAY_ARROW_ROUNDED, tooltip=_("run_skill"), icon_size=14, icon_color=ft.Colors.PRIMARY, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.PRIMARY)), on_click=lambda e, n=skill.get('name'): self._execute_skill(n)),
+                        ft.IconButton(icon=ft.Icons.POWER_SETTINGS_NEW_ROUNDED, tooltip=_("skill_toggle"), icon_size=14, icon_color=ft.Colors.ON_SURFACE_VARIANT, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE_VARIANT)), on_click=lambda e, n=skill.get('name'): self._toggle_skill(n)),
+                        ft.IconButton(icon=ft.Icons.DELETE_OUTLINE_ROUNDED, tooltip=_("skill_uninstall"), icon_size=14, icon_color=ft.Colors.ERROR, bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT), style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ERROR)), on_click=lambda e, n=skill.get('name'): self._uninstall_skill(n)),
+                    ], spacing=6, tight=True)
+                    self.skill_list.controls.append(row)
+            try:
+                self.skill_list.update()
+            except Exception:
+                pass
+        try:
+            self._run_on_ui(_apply)
+        except Exception:
+            pass
 
     def _filter_skills(self, text: str):
         q = (text or "").strip().lower()
@@ -2847,27 +2932,35 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self._set_status("Skill 安装异常", ft.Colors.RED_400)
 
     def _set_status(self, text: str, color=ft.Colors.GREEN_400):
-        try:
-            if not hasattr(self, "status_text") or self.status_text is None:
-                return
+        def _apply():
             try:
-                page = self.status_text.page
-            except RuntimeError:
-                return
-            if page is None:
-                return
-            try:
-                self.status_text.value = text
-                self.status_text.color = color
-                if hasattr(self, "_status_icon") and self._status_icon is not None:
-                    try:
-                        self._status_icon.bgcolor = color
-                        if getattr(self._status_icon, "page", None) is not None:
-                            self._status_icon.update()
-                    except Exception:
-                        pass
+                if not hasattr(self, "status_text") or self.status_text is None:
+                    return
                 try:
-                    self.status_text.update()
+                    page = self.status_text.page
+                except RuntimeError:
+                    return
+                if page is None:
+                    return
+                try:
+                    self.status_text.value = text
+                    self.status_text.color = color
+                    if hasattr(self, "_status_icon") and self._status_icon is not None:
+                        try:
+                            self._status_icon.bgcolor = color
+                            if getattr(self._status_icon, "page", None) is not None:
+                                self._status_icon.update()
+                        except Exception:
+                            pass
+                    try:
+                        self.status_text.update()
+                    except Exception:
+                        try:
+                            self.status_text.value = text
+                            self.status_text.color = color
+                            page.update([self.status_text])
+                        except Exception as exc:
+                            logger.debug("status fallback update failed: %s", exc)
                 except Exception:
                     try:
                         self.status_text.value = text
@@ -2876,14 +2969,11 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     except Exception as exc:
                         logger.debug("status fallback update failed: %s", exc)
             except Exception:
-                try:
-                    self.status_text.value = text
-                    self.status_text.color = color
-                    page.update([self.status_text])
-                except Exception as exc:
-                    logger.debug("status fallback update failed: %s", exc)
+                logger.debug('desktop exception: %s', traceback.format_exc())
+        try:
+            self._run_on_ui(_apply)
         except Exception:
-            logger.debug('desktop exception: %s', traceback.format_exc())
+            pass
 
     def _save_config(self):
         prism_config.set("model.default", self.model_dropdown.value)
@@ -3086,30 +3176,38 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
     def _render_workflow_items(self, items):
         if not hasattr(self, "workflow_list") or self.workflow_list is None:
             return
-        self.workflow_list.controls.clear()
-        if not items:
-            self.workflow_list.controls.append(ft.Container(
-                content=ft.Column([
-                    ft.Icon(ft.Icons.ACCOUNT_TREE_OFF_ROUNDED, size=28, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.5),
-                    ft.Text("暂无工作流", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.95),
-                ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER, tight=True),
-                padding=ft.Padding(48, 48, 48, 48),
-                border_radius=12,
-                bgcolor=ft.Colors.with_opacity(0.6, ft.Colors.SURFACE_CONTAINER),
-            ))
-        else:
-            for item in items:
-                steps = item.get("steps", [])
-                step_count = len(steps) if isinstance(steps, list) else 0
-                row = ft.Row([
-                    ft.Column([
-                        ft.Text(item.get("name", "unknown"), size=12, weight=ft.FontWeight.W_500, color=ft.Colors.ON_SURFACE),
-                        ft.Text(f"{step_count} 步骤 · {item.get('description', '')}", size=10, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.85, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
-                    ], spacing=2, expand=True),
-                    ft.TextButton("运行", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), on_click=lambda e, n=item.get("name"): self._run_workflow_from_ui(n)),
-                ], spacing=8, tight=True)
-                self.workflow_list.controls.append(row)
-        self.workflow_list.update()
+        def _apply():
+            self.workflow_list.controls.clear()
+            if not items:
+                self.workflow_list.controls.append(ft.Container(
+                    content=ft.Column([
+                        ft.Icon(ft.Icons.ACCOUNT_TREE_OFF_ROUNDED, size=28, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.5),
+                        ft.Text("暂无工作流", size=12, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.95),
+                    ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER, tight=True),
+                    padding=ft.Padding(48, 48, 48, 48),
+                    border_radius=12,
+                    bgcolor=ft.Colors.with_opacity(0.6, ft.Colors.SURFACE_CONTAINER),
+                ))
+            else:
+                for item in items:
+                    steps = item.get("steps", [])
+                    step_count = len(steps) if isinstance(steps, list) else 0
+                    row = ft.Row([
+                        ft.Column([
+                            ft.Text(item.get("name", "unknown"), size=12, weight=ft.FontWeight.W_500, color=ft.Colors.ON_SURFACE),
+                            ft.Text(f"{step_count} 步骤 · {item.get('description', '')}", size=10, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.85, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS),
+                        ], spacing=2, expand=True),
+                        ft.TextButton("运行", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.PRIMARY_CONTAINER, color=ft.Colors.ON_PRIMARY_CONTAINER), on_click=lambda e, n=item.get("name"): self._run_workflow_from_ui(n)),
+                    ], spacing=8, tight=True)
+                    self.workflow_list.controls.append(row)
+            try:
+                self.workflow_list.update()
+            except Exception:
+                pass
+        try:
+            self._run_on_ui(_apply)
+        except Exception:
+            pass
 
     def _run_workflow_from_ui(self, name: str):
         if not name:

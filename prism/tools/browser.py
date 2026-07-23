@@ -349,7 +349,10 @@ class SyncBrowserAPI:
         except Exception:
             pass
         if self._loop_thread is not None:
-            self._loop_thread.join(timeout=5)
+            try:
+                self._loop_thread.join(timeout=3)
+            except Exception:
+                pass
         self._loop = None
         self._loop_thread = None
     

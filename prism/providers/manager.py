@@ -285,11 +285,11 @@ class ProviderPool:
             'provider': getattr(provider, 'name', 'unknown'),
         }
 
-    def _stream_with_retry(self, provider: Provider, messages: List[Dict], on_chunk, max_retries: int = 3, **kwargs) -> Dict[str, Any]:
+    def _stream_with_retry(self, provider: Provider, messages: List[Dict], on_chunk, stop_callback=None, max_retries: int = 3, **kwargs) -> Dict[str, Any]:
         last_error = None
         for attempt in range(max_retries):
             try:
-                result = provider.stream_chat(messages, on_chunk, **kwargs)
+                result = provider.stream_chat(messages, on_chunk, stop_callback=stop_callback, **kwargs)
                 if result.get('success'):
                     return result
                 last_error = result.get('error')
@@ -342,9 +342,10 @@ class ProviderPool:
         if not self.providers:
             return {'success': False, 'error': '未配置可用模型提供商。'}
         
+        stop_callback = kwargs.pop('stop_callback', None)
         last_error = None
         for provider in self.providers:
-            result = self._stream_with_retry(provider, messages, on_chunk, **kwargs)
+            result = self._stream_with_retry(provider, messages, on_chunk, stop_callback=stop_callback, **kwargs)
             if result.get('success'):
                 return result
             last_error = result.get('error')

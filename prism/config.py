@@ -66,24 +66,31 @@ class Config:
             logger.debug("config watcher start failed", exc_info=True)
     
     def _watch_loop(self) -> None:
-        try:
-            while not self._watch_stop.is_set():
+        failure_backoff = 1.0
+        max_backoff = 60.0
+        while not self._watch_stop.is_set():
+            try:
                 try:
                     mtime = self.config_file.stat().st_mtime if self.config_file.exists() else 0.0
                 except OSError:
                     mtime = 0.0
                 if mtime and mtime != self._config_mtime:
                     old = self._config.copy()
-                    self._load()
+                    try:
+                        self._load()
+                    except Exception:
+                        logger.debug("config reload failed", exc_info=True)
                     self._config_mtime = mtime
                     if self._on_change:
                         try:
                             self._on_change(old, self._config.copy())
                         except Exception:
                             logger.debug("config on_change callback failed", exc_info=True)
-                self._watch_stop.wait(1.0)
-        except Exception:
-            logger.debug("config watcher loop failed", exc_info=True)
+                failure_backoff = 1.0
+            except Exception:
+                logger.debug("config watcher error", exc_info=True)
+                failure_backoff = min(failure_backoff * 2.0, max_backoff)
+            self._watch_stop.wait(min(failure_backoff, 1.0))
     
     def stop_watcher(self) -> None:
         self._watch_stop.set()

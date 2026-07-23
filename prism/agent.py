@@ -77,6 +77,7 @@ class Agent:
         self.session_dir = Path.home() / ".prism" / "sessions"
         self._last_executed: Dict[str, float] = {}
         self._tool_lock = threading.Lock()
+        self._messages_lock = threading.RLock()
         self._memory_context = persistent_memory.get_context(max_items=8, scope=self.memory_scope)
         if self._memory_context:
             self.system_prompt = self.system_prompt.rstrip() + "\n\n" + self._memory_context
@@ -133,22 +134,23 @@ class Agent:
 
     def _trim_messages(self):
         """保留 system + 最新 max_messages 条；超出时对旧消息做摘要压缩。"""
-        if len(self.messages) <= self.max_messages:
-            return
-        # 保留 system 和最后 N 条
-        system = self.messages[:1]
-        tail = self.messages[-(self.max_messages - 1):]
-        old = self.messages[1:len(self.messages) - len(tail)]
-        if old and not getattr(self, "_trimming_in_progress", False):
-            try:
-                self._trimming_in_progress = True
-                summary = self._summarize_messages(old)
-                if summary:
-                    system.append(Message(role="system", content=f"[历史摘要] {summary}"))
-            finally:
-                self._trimming_in_progress = False
-        self.messages = system + tail
-        logger.info("messages trimmed: total=%d, kept=%d", len(old) + len(system) + len(tail), len(system) + len(tail))
+        with self._messages_lock:
+            if len(self.messages) <= self.max_messages:
+                return
+            # 保留 system 和最后 N 条
+            system = self.messages[:1]
+            tail = self.messages[-(self.max_messages - 1):]
+            old = self.messages[1:len(self.messages) - len(tail)]
+            if old and not getattr(self, "_trimming_in_progress", False):
+                try:
+                    self._trimming_in_progress = True
+                    summary = self._summarize_messages(old)
+                    if summary:
+                        system.append(Message(role="system", content=f"[历史摘要] {summary}"))
+                finally:
+                    self._trimming_in_progress = False
+            self.messages = system + tail
+            logger.info("messages trimmed: total=%d, kept=%d", len(old) + len(system) + len(tail), len(system) + len(tail))
 
     def _summarize_messages(self, messages: list) -> Optional[str]:
         """对一批旧消息做简短摘要，返回可读文本；失败时返回 None。"""
@@ -298,64 +300,65 @@ class Agent:
         3. 其余按重要度补位，总记忆条数控制在 5 条内
         """
         try:
-            base = (self.system_prompt or "").rstrip()
-            # 移除旧记忆块，避免重复堆叠
-            if "## 记忆上下文" in base:
-                base = base[: base.index("## 记忆上下文")].rstrip()
+            with self._messages_lock:
+                base = (self.system_prompt or "").rstrip()
+                # 移除旧记忆块，避免重复堆叠
+                if "## 记忆上下文" in base:
+                    base = base[: base.index("## 记忆上下文")].rstrip()
 
-            with persistent_memory._lock:
-                identities = [m for m in persistent_memory._index.values() if m.category == "user_profile"]
-                identity_block = ""
-                if identities:
-                    lines = ["【身份】"]
-                    for m in identities[:3]:
-                        lines.append(f"- {m.key}: {m.value}")
-                    identity_block = "\n" + "\n".join(lines)
+                with persistent_memory._lock:
+                    identities = [m for m in persistent_memory._index.values() if m.category == "user_profile"]
+                    identity_block = ""
+                    if identities:
+                        lines = ["【身份】"]
+                        for m in identities[:3]:
+                            lines.append(f"- {m.key}: {m.value}")
+                        identity_block = "\n" + "\n".join(lines)
 
-                # 主动 recall：先用 recall_by_query() 拿高置信度记忆，再做语义召回
-                recall_keys = set()
-                query_matches = []
-                try:
-                    for key in (persistent_memory.recall_by_query(user_message, limit=3) or []):
-                        recall_keys.add(key)
-                        mem = persistent_memory._index.get(key)
-                        if mem:
-                            query_matches.append(mem)
-                except (TypeError, AttributeError, Exception):
+                    # 主动 recall：先用 recall_by_query() 拿高置信度记忆，再做语义召回
                     recall_keys = set()
+                    query_matches = []
+                    try:
+                        for key in (persistent_memory.recall_by_query(user_message, limit=3) or []):
+                            recall_keys.add(key)
+                            mem = persistent_memory._index.get(key)
+                            if mem:
+                                query_matches.append(mem)
+                    except (TypeError, AttributeError, Exception):
+                        recall_keys = set()
 
-                if not query_matches:
-                    query_matches = persistent_memory.search(user_message, category=None, limit=3)
+                    if not query_matches:
+                        query_matches = persistent_memory.search(user_message, category=None, limit=3)
 
-                seen = set()
-                query_block = ""
-                if query_matches:
-                    lines = ["【相关记忆】"]
-                    for m in query_matches:
-                        if m.key in seen:
-                            continue
-                        seen.add(m.key)
-                        recall_keys.add(m.key)
-                        lines.append(f"- [{m.category}] {m.key}: {m.value[:120]}")
-                    query_block = "\n" + "\n".join(lines)
+                    seen = set()
+                    query_block = ""
+                    if query_matches:
+                        lines = ["【相关记忆】"]
+                        for m in query_matches:
+                            if m.key in seen:
+                                continue
+                            seen.add(m.key)
+                            recall_keys.add(m.key)
+                            lines.append(f"- [{m.category}] {m.key}: {m.value[:120]}")
+                        query_block = "\n" + "\n".join(lines)
 
-                rest = sorted(
-                    [m for m in persistent_memory._index.values() if m.category != "user_profile" and m.key not in seen],
-                    key=lambda m: persistent_memory._importance(m),
-                    reverse=True,
-                )[: max(0, 5 - len(query_matches))]
-                rest_block = ""
-                if rest:
-                    lines = []
-                    for m in rest:
-                        lines.append(f"- [{m.category}] {m.key}: {m.value[:100]}")
-                    rest_block = "\n" + "\n".join(lines)
+                    rest = sorted(
+                        [m for m in persistent_memory._index.values() if m.category != "user_profile" and m.key not in seen],
+                        key=lambda m: persistent_memory._importance(m),
+                        reverse=True,
+                    )[: max(0, 5 - len(query_matches))]
+                    rest_block = ""
+                    if rest:
+                        lines = []
+                        for m in rest:
+                            lines.append(f"- [{m.category}] {m.key}: {m.value[:100]}")
+                        rest_block = "\n" + "\n".join(lines)
 
-            injection = identity_block + query_block + rest_block
-            if injection:
-                self.system_prompt = base + "\n## 记忆上下文" + injection
-                if self.messages and getattr(self.messages[0], "role", "") == "system":
-                    self.messages[0].content = self.system_prompt
+                injection = identity_block + query_block + rest_block
+                if injection:
+                    self.system_prompt = base + "\n## 记忆上下文" + injection
+                    if self.messages and getattr(self.messages[0], "role", "") == "system":
+                        self.messages[0].content = self.system_prompt
         except (TypeError, AttributeError, Exception):
             logger.debug("inject memory context failed: %s", traceback.format_exc())
 
@@ -525,8 +528,9 @@ class Agent:
         message_id = f"msg_{int(__import__('time').time()*1000)}_{len(self.messages)}"
         user_msg = Message(role="user", content=user_message)
         user_msg.id = message_id
-        self.messages.append(user_msg)
-        self._trim_messages()
+        with self._messages_lock:
+            self.messages.append(user_msg)
+            self._trim_messages()
         try:
             from prism.message_store import message_store
             message_store.add(user_msg)
@@ -634,8 +638,9 @@ class Agent:
         assistant_msg = Message(role="assistant", content=assistant_content)
         if hasattr(user_msg, "id") and user_msg.id:
             assistant_msg.id = f"reply_{user_msg.id}"
-        self.messages.append(assistant_msg)
-        self._trim_messages()
+        with self._messages_lock:
+            self.messages.append(assistant_msg)
+            self._trim_messages()
         try:
             from prism.message_store import message_store
             message_store.add(assistant_msg)
@@ -840,7 +845,8 @@ class Agent:
                 content = f"[{tool_name}] success={result.get('success')}"
                 if not result.get('success') and result.get('error'):
                     content += f" error={str(result.get('error'))[:120]}"
-            self.messages.append(Message(role="tool", content=content))
+            with self._messages_lock:
+                self.messages.append(Message(role="tool", content=content))
         except (TypeError, AttributeError, Exception):
             logger.debug("tool message append failed: %s", traceback.format_exc())
 
@@ -875,14 +881,15 @@ class Agent:
             for name, result in results:
                 self._append_tool_message(name, result)
 
-            current_messages = [
-                {
-                    "role": m.role,
-                    "content": m.content or "",
-                    "tool_calls": getattr(m, "tool_calls", None),
-                }
-                for m in self.messages
-            ]
+            with self._messages_lock:
+                current_messages = [
+                    {
+                        "role": m.role,
+                        "content": m.content or "",
+                        "tool_calls": getattr(m, "tool_calls", None),
+                    }
+                    for m in self.messages
+                ]
 
             try:
                 follow = provider_pool.chat(current_messages)
@@ -925,28 +932,30 @@ class Agent:
     
     def clear_history(self):
         """清空对话历史"""
-        self.messages = [self.messages[0]]  # 保留系统消息
-        self.tool_calls = []
+        with self._messages_lock:
+            self.messages = [self.messages[0]]  # 保留系统消息
+            self.tool_calls = []
 
     def save_session(self, name: str, tags: Optional[List[str]] = None) -> str:
         """保存当前会话到本地"""
         session_dir = Path.home() / ".prism" / "sessions"
         session_dir.mkdir(parents=True, exist_ok=True)
         path = session_dir / f"{name}.json"
-        payload = {
-            "system_prompt": self.system_prompt,
-            "messages": [
-                {
-                    "role": m.role,
-                    "content": m.content,
-                    "timestamp": m.timestamp.isoformat() if hasattr(m.timestamp, "isoformat") else str(m.timestamp),
-                    "metadata": m.metadata or {},
-                }
-                for m in self.messages
-            ],
-            "tags": tags or [],
-            "created_at": datetime.now().isoformat(),
-        }
+        with self._messages_lock:
+            payload = {
+                "system_prompt": self.system_prompt,
+                "messages": [
+                    {
+                        "role": m.role,
+                        "content": m.content,
+                        "timestamp": m.timestamp.isoformat() if hasattr(m.timestamp, "isoformat") else str(m.timestamp),
+                        "metadata": m.metadata or {},
+                    }
+                    for m in self.messages
+                ],
+                "tags": tags or [],
+                "created_at": datetime.now().isoformat(),
+            }
         path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
         return str(path)
 
@@ -957,17 +966,18 @@ class Agent:
             return False
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
-            self.system_prompt = payload.get("system_prompt", self.system_prompt)
-            self.messages = []
-            for m in payload.get("messages", []):
-                ts_raw = m.get("timestamp")
-                ts = datetime.fromisoformat(ts_raw) if ts_raw else datetime.now()
-                self.messages.append(Message(
-                    role=m.get("role", "user"),
-                    content=m.get("content", ""),
-                    timestamp=ts,
-                    metadata=m.get("metadata") or {},
-                ))
+            with self._messages_lock:
+                self.system_prompt = payload.get("system_prompt", self.system_prompt)
+                self.messages = []
+                for m in payload.get("messages", []):
+                    ts_raw = m.get("timestamp")
+                    ts = datetime.fromisoformat(ts_raw) if ts_raw else datetime.now()
+                    self.messages.append(Message(
+                        role=m.get("role", "user"),
+                        content=m.get("content", ""),
+                        timestamp=ts,
+                        metadata=m.get("metadata") or {},
+                    ))
             return True
         except (TypeError, OSError, Exception):
             logger.debug("load session failed: %s", traceback.format_exc())

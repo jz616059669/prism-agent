@@ -17,17 +17,19 @@ if TYPE_CHECKING:
 class MCPMixin:
     def _refresh_mcp(self) -> None:
         self._append_terminal("mcp refresh ...")
-        self.mcp_server_list.controls.clear()
         try:
             raw = prism_config.get("mcp.servers") or []
         except Exception:
             logger.debug("mcp config get failed: %s", traceback.format_exc())
             raw = []
         if not raw:
-            self.mcp_server_list.controls.append(
-                ft.Text("未配置 MCP 服务器", size=12, color=ft.Colors.ON_SURFACE)
-            )
-        else:
+            self._append_mcp("未配置 MCP 服务器")
+            return
+
+        def _apply():
+            if not hasattr(self, "mcp_server_list") or self.mcp_server_list is None:
+                return
+            self.mcp_server_list.controls.clear()
             for idx, server in enumerate(raw):
                 name = server.get("name") or server.get("id") or f"server_{idx+1}"
                 transport = server.get("transport", "unknown")
@@ -38,18 +40,23 @@ class MCPMixin:
                 log_btn.on_click = lambda e, s=name: self._show_mcp_log(s)
                 tools_btn = ft.TextButton("工具", data=name)
                 tools_btn.on_click = lambda e, s=name: self._show_mcp_tools(s)
-                row = ft.Row(
-                    [
-                        ft.Text(name, size=12, expand=True),
-                        ft.Text(transport, size=10, color=ft.Colors.ON_SURFACE_VARIANT),
-                        ft.Text(status, size=11, color=ft.Colors.ON_SURFACE),
-                        start_btn,
-                        tools_btn,
-                        log_btn,
-                    ]
-                )
+                row = ft.Row([
+                    ft.Text(name, size=12, expand=True),
+                    ft.Text(transport, size=10, color=ft.Colors.ON_SURFACE_VARIANT),
+                    ft.Text(status, size=11, color=ft.Colors.ON_SURFACE),
+                    start_btn,
+                    tools_btn,
+                    log_btn,
+                ])
                 self.mcp_server_list.controls.append(row)
-        self.mcp_server_list.update()
+            try:
+                self.mcp_server_list.update()
+            except Exception:
+                pass
+        try:
+            self._run_on_ui(_apply)
+        except Exception:
+            pass
         self._append_mcp(f"已刷新 MCP 服务器：{len(raw)} 个")
 
     def _toggle_mcp_server(self, name: str, button: ft.TextButton) -> None:
@@ -81,7 +88,15 @@ class MCPMixin:
                     state = "配置缺失"
                     button.text = "启动"
             self._append_mcp(f"[{name}] {state}")
-            button.update()
+            def _ui():
+                try:
+                    button.update()
+                except Exception:
+                    pass
+            try:
+                self._run_on_ui(_ui)
+            except Exception:
+                pass
         except Exception as e:
             self._append_mcp(f"[{name}] 切换失败：{e}")
 
@@ -94,16 +109,26 @@ class MCPMixin:
         try:
             from prism.mcp import mcp_client
             tools = mcp_client.list_tools(name)
-            self.mcp_list.controls.clear()
-            if not tools:
-                self.mcp_list.controls.append(ft.Text("暂无工具", size=12, color=ft.Colors.ON_SURFACE))
-            else:
-                for tool in tools:
-                    schema = tool.get("inputSchema") or {}
-                    self.mcp_list.controls.append(
-                        ft.Text(f"- {tool.get('name')}: {tool.get('description', '')}", size=11)
-                    )
-            self.mcp_list.update()
+            def _ui():
+                if not hasattr(self, "mcp_list") or self.mcp_list is None:
+                    return
+                self.mcp_list.controls.clear()
+                if not tools:
+                    self.mcp_list.controls.append(ft.Text("暂无工具", size=12, color=ft.Colors.ON_SURFACE))
+                else:
+                    for tool in tools:
+                        schema = tool.get("inputSchema") or {}
+                        self.mcp_list.controls.append(
+                            ft.Text(f"- {tool.get('name')}: {tool.get('description', '')}", size=11)
+                        )
+                try:
+                    self.mcp_list.update()
+                except Exception:
+                    pass
+            try:
+                self._run_on_ui(_ui)
+            except Exception:
+                pass
             self._append_mcp(f"[{name}] 工具数：{len(tools)}")
         except Exception as e:
             self._append_mcp(f"[{name}] 工具获取失败：{e}")

@@ -30,100 +30,117 @@ class ChatMixin:
             return [ft.Text(text, selectable=True, color=text_color)]
 
     def _append(self, role: str, text: str, retry: bool = False, retry_text: str = "", placeholder: bool = False, images=None):
-        if hasattr(self, "_chat_placeholder") and self._chat_placeholder and self._chat_placeholder in self.chat_list.controls:
-            self.chat_list.controls.remove(self._chat_placeholder)
-        if hasattr(self, "_chat_placeholder") and self._chat_placeholder:
+        def _apply():
+            if hasattr(self, "_chat_placeholder") and self._chat_placeholder and self._chat_placeholder in self.chat_list.controls:
+                self.chat_list.controls.remove(self._chat_placeholder)
+            if hasattr(self, "_chat_placeholder") and self._chat_placeholder:
+                try:
+                    self._chat_placeholder.visible = False
+                    if hasattr(self._chat_placeholder, "parent") and self._chat_placeholder.parent:
+                        self._chat_placeholder.update()
+                except Exception:
+                    logger.debug("hide placeholder failed: %s", traceback.format_exc())
+            is_user = role == "你"
+            align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
+            text_color = ft.Colors.ON_PRIMARY_CONTAINER if is_user else ft.Colors.ON_SURFACE
+            timestamp = datetime.now().strftime("%H:%M")
             try:
-                self._chat_placeholder.visible = False
-                if hasattr(self._chat_placeholder, "parent") and self._chat_placeholder.parent:
-                    self._chat_placeholder.update()
-            except Exception:
-                logger.debug("hide placeholder failed: %s", traceback.format_exc())
-        is_user = role == "你"
-        align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
-        text_color = ft.Colors.ON_PRIMARY_CONTAINER if is_user else ft.Colors.ON_SURFACE
-        timestamp = datetime.now().strftime("%H:%M")
-        try:
-            role_text = ft.Text(role, size=11, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_500)
-            time_text = ft.Text(timestamp, size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.8)
-            content = self._markdown_to_ft(text, text_color=text_color)
-            row = ft.Row(
-                [role_text, ft.Container(expand=True), time_text],
-                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-            )
-            message_widget = ft.Container(
-                content=ft.Column(
-                    [row, ft.Container(height=4), *content],
-                    tight=True,
-                    spacing=0,
-                    horizontal_alignment=align,
-                ),
-                padding=ft.Padding(14, 10, 14, 10),
-                bgcolor=ft.Colors.SURFACE_CONTAINER if not is_user else ft.Colors.PRIMARY_CONTAINER,
-                opacity=0,
-                animate_opacity=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_OUT),
-            )
-            copy_btn = ft.IconButton(
-                icon=ft.Icons.COPY_ROUNDED,
-                tooltip="复制",
-                icon_size=14,
-                icon_color=ft.Colors.ON_SURFACE_VARIANT,
-                bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT),
-                style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE_VARIANT)),
-                on_click=lambda e, t=text: self._copy_to_clipboard(t) if hasattr(self, "_copy_to_clipboard") else None,
-            )
-            message_widget = ft.Stack(
-                [
-                    message_widget,
-                    ft.Container(
-                        content=copy_btn,
-                        alignment=ft.alignment.top_right,
-                        padding=ft.Padding(6, 6, 6, 6),
+                role_text = ft.Text(role, size=11, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_500)
+                time_text = ft.Text(timestamp, size=11, color=ft.Colors.ON_SURFACE_VARIANT, opacity=0.8)
+                content = self._markdown_to_ft(text, text_color=text_color)
+                row = ft.Row(
+                    [role_text, ft.Container(expand=True), time_text],
+                    alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                )
+                message_widget = ft.Container(
+                    content=ft.Column(
+                        [row, ft.Container(height=4), *content],
+                        tight=True,
+                        spacing=0,
+                        horizontal_alignment=align,
                     ),
-                ],
-                height=None,
-            )
-            self.chat_list.controls.append(message_widget)
-            message_widget.opacity = 1
-            try:
-                self.chat_list.update()
+                    padding=ft.Padding(14, 10, 14, 10),
+                    bgcolor=ft.Colors.SURFACE_CONTAINER if not is_user else ft.Colors.PRIMARY_CONTAINER,
+                    opacity=0,
+                    animate_opacity=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_OUT),
+                )
+                copy_btn = ft.IconButton(
+                    icon=ft.Icons.COPY_ROUNDED,
+                    tooltip="复制",
+                    icon_size=14,
+                    icon_color=ft.Colors.ON_SURFACE_VARIANT,
+                    bgcolor=ft.Colors.with_opacity(0, ft.Colors.TRANSPARENT),
+                    style=ft.ButtonStyle(shape=ft.CircleBorder(), overlay_color=ft.Colors.with_opacity(0.12, ft.Colors.ON_SURFACE_VARIANT)),
+                    on_click=lambda e, t=text: self._copy_to_clipboard(t) if hasattr(self, "_copy_to_clipboard") else None,
+                )
+                message_widget = ft.Stack(
+                    [
+                        message_widget,
+                        ft.Container(
+                            content=copy_btn,
+                            alignment=ft.alignment.top_right,
+                            padding=ft.Padding(6, 6, 6, 6),
+                        ),
+                    ],
+                    height=None,
+                )
+                self.chat_list.controls.append(message_widget)
+                message_widget.opacity = 1
+                try:
+                    self.chat_list.update()
+                except Exception:
+                    logger.debug("chat_list update failed: %s", traceback.format_exc())
             except Exception:
-                logger.debug("chat_list update failed: %s", traceback.format_exc())
-            try:
-                if hasattr(self.chat_list, "scroll_to") and hasattr(self.chat_list, "page"):
-                    async def _do_scroll():
-                        await self.chat_list.scroll_to(delta=99999, duration=200)
-                    self.chat_list.page.run_task(_do_scroll)
-            except Exception:
-                logger.debug("chat scroll failed: %s", traceback.format_exc())
+                logger.debug("append message failed: %s", traceback.format_exc())
+                try:
+                    self._append_terminal(f"[CHAT ERROR] {role}: {text[:200]}")
+                except Exception as ex:
+                    logger.debug("append message fallback failed: %s", ex)
+        try:
+            self._run_on_ui(_apply)
         except Exception:
-            logger.debug("append message failed: %s", traceback.format_exc())
-            try:
-                self._append_terminal(f"[CHAT ERROR] {role}: {text[:200]}")
-            except Exception as ex:
-                logger.debug("append message fallback failed: %s", ex)
+            logger.debug("run_on_ui append failed", exc_info=True)
 
     def _apply_input_update(self):
+        def _ui():
+            try:
+                if hasattr(self, "input_count") and self.input_count and getattr(self.input_count, "page", None):
+                    count = len(self.input_field.value or "")
+                    self.input_count.value = f"{count} 字"
+                    self.input_count.update()
+                if hasattr(self, "send_btn") and self.send_btn:
+                    self.send_btn.disabled = not (self.input_field.value or "").strip()
+                    if getattr(self.send_btn, "page", None):
+                        self.send_btn.update()
+            except Exception:
+                logger.debug("apply input update failed", exc_info=True)
         try:
-            if hasattr(self, "input_count") and self.input_count and getattr(self.input_count, "page", None):
-                count = len(self.input_field.value or "")
-                self.input_count.value = f"{count} 字"
-                self.input_count.update()
-            if hasattr(self, "send_btn") and self.send_btn:
-                self.send_btn.disabled = not (self.input_field.value or "").strip()
-                if getattr(self.send_btn, "page", None):
-                    self.send_btn.update()
+            if hasattr(self, "_run_on_ui"):
+                self._run_on_ui(_ui)
+            else:
+                _ui()
         except Exception:
-            logger.debug("apply input update failed: %s", traceback.format_exc())
+            logger.debug("apply input update failed", exc_info=True)
 
     def _clear_chat(self):
+        def _apply():
+            try:
+                self.chat_list.controls.clear()
+                self.chat_list.controls.append(self._chat_placeholder)
+                try:
+                    self.chat_list.update()
+                except Exception:
+                    logger.debug("clear chat update failed", exc_info=True)
+            except Exception:
+                logger.debug("clear chat failed: %s", traceback.format_exc())
         try:
-            self.chat_list.controls.clear()
-            self.chat_list.controls.append(self._chat_placeholder)
-            self.page.update(self.chat_list)
+            self._run_on_ui(_apply)
         except Exception:
-            logger.debug("clear chat failed: %s", traceback.format_exc())
-            logger.warning("clear chat failed", exc_info=True)
+            logger.debug("clear chat run_on_ui failed", exc_info=True)
+        self.input_field.value = ""
+        self.input_field.focus()
+        self._update_input_count()
+        self._set_status("已清屏")
 
     def _send(self, retry_text: str = ""):
         text = retry_text or (self.input_field.value or "").strip()
@@ -144,10 +161,16 @@ class ChatMixin:
             self._log_to_file("warning", "send_blocked", reason="agent is None")
             return
         self.input_field.value = ""
-        self.input_field.update()
+        try:
+            self.input_field.update()
+        except Exception:
+            logger.debug("input field clear failed", exc_info=True)
         self._generating = True
         self.stop_btn.visible = True
-        self.stop_btn.update()
+        try:
+            self.stop_btn.update()
+        except Exception:
+            logger.debug("show stop button failed", exc_info=True)
         if images:
             try:
                 if hasattr(self, "_clear_pending_images"):
@@ -217,9 +240,25 @@ class ChatMixin:
             nonlocal stream_text
             stream_text += c
             w = _ensure_stream_widget()
-            _throttled_update(w, stream_text)
+            try:
+                def _apply_chunk():
+                    try:
+                        _throttled_update(w, stream_text)
+                    except Exception:
+                        logger.debug("stream chunk update failed", exc_info=True)
+                if hasattr(self, "_run_on_ui"):
+                    self._run_on_ui(_apply_chunk)
+                else:
+                    _apply_chunk()
+            except Exception:
+                logger.debug("stream chunk update failed", exc_info=True)
+            try:
+                if hasattr(self, "_chunk_count"):
+                    self._chunk_count = getattr(self, "_chunk_count", 0) + 1
+            except Exception:
+                pass
 
-        def _run_chat():
+        def _run_chat() -> None:
             nonlocal stream_widget, stream_text
             try:
                 agent_model = getattr(self.agent, 'model', None)
@@ -227,33 +266,48 @@ class ChatMixin:
                 logger.info("run_chat start model=%s provider=%s messages=%d system_prompt_len=%d", 
                            agent_model, agent_provider, len(getattr(self.agent, 'messages', []) or []),
                            len(getattr(self.agent, 'system_prompt', '') or ''))
+                try:
+                    api_msgs = [{"role": m.role, "content": (m.content or "")[:200]} for m in getattr(self.agent, 'messages', [])]
+                    logger.info("api_messages=%s", api_msgs)
+                except Exception:
+                    pass
                 self._log_to_file("info", "stream_start", text=text, model=getattr(self.agent, "model", "unknown"))
                 result = self.agent.chat(
                     multimodal_content,
                     on_stream=lambda c: _stream_chunk(c) if getattr(self, "_generating", False) else None,
+                    stop_callback=lambda: not getattr(self, "_generating", False),
                 )
                 logger.info("chat result type=%s preview=%s len=%d", type(result).__name__, str(result)[:200], len(str(result)))
-                if isinstance(result, dict):
-                    if not result.get("success"):
-                        self._append("PRISM", f"Error: {result.get('error', 'Unknown error')}")
-                    elif result.get("content"):
-                        self._append("PRISM", result["content"])
-                    elif stream_text:
-                        self._append("PRISM", stream_text)
+                if not getattr(self, "_generating", False):
+                    self._log_to_file("info", "stream_stopped", chunks=getattr(self, "_chunk_count", 0))
+                def _finalize():
+                    # 优先以流式累积文本为准，避免 provider 返回 content 被截断/异常
+                    text = stream_text
+                    if not text and isinstance(result, dict):
+                        text = result.get('content') or ''
+                    if not text and isinstance(result, str):
+                        text = result or ''
+                    if not text:
+                        text = ' '
+                    self._append("PRISM", text)
+                try:
+                    page = getattr(self, "page", None)
+                    if page is not None and hasattr(page, "run_task"):
+                        page.run_task(lambda: _finalize())
                     else:
-                        self._append("PRISM", " ")
-                elif isinstance(result, str):
-                    if result:
-                        self._append("PRISM", result)
-                    elif stream_text:
-                        self._append("PRISM", stream_text)
-                    else:
-                        self._append("PRISM", " ")
-                else:
-                    self._append("PRISM", f"Error: 未知返回类型 {type(result).__name__}")
+                        _finalize()
+                except Exception:
+                    _finalize()
             except Exception as exc:
                 logger.error("send exception: %s", exc, exc_info=True)
-                self._append("PRISM", f"Error: {exc}")
+                try:
+                    page = getattr(self, "page", None)
+                    if page is not None and hasattr(page, "run_task"):
+                        page.run_task(lambda: self._append("PRISM", f"Error: {exc}"))
+                    else:
+                        self._append("PRISM", f"Error: {exc}")
+                except Exception:
+                    self._append("PRISM", f"Error: {exc}")
                 self._log_to_file("error", "send_exception", error=str(exc))
             finally:
                 self._generating = False
@@ -441,3 +495,10 @@ class ChatMixin:
         except Exception as exc:
             self._append("PRISM", f"命令执行失败: {exc}")
             self._log_error("compact command", exc)
+
+    def _handle_rollback_command(self) -> None:
+        try:
+            self._append("PRISM", "rollback 尚未实现")
+        except Exception as exc:
+            self._append("PRISM", f"命令执行失败: {exc}")
+            self._log_error("rollback command", exc)
