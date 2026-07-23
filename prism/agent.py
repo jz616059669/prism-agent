@@ -322,13 +322,14 @@ class Agent:
                         for key in (persistent_memory.recall_by_query(user_message, limit=3) or []):
                             recall_keys.add(key)
                             mem = persistent_memory._index.get(key)
-                            if mem:
+                            if mem and getattr(mem, 'category', '') not in ('chat_history', 'chat_history:default'):
                                 query_matches.append(mem)
                     except (TypeError, AttributeError, Exception):
                         recall_keys = set()
 
                     if not query_matches:
                         query_matches = persistent_memory.search(user_message, category=None, limit=3)
+                        query_matches = [m for m in query_matches if getattr(m, 'category', '') not in ('chat_history', 'chat_history:default')]
 
                     seen = set()
                     query_block = ""
