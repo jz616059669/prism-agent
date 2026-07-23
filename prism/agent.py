@@ -343,7 +343,7 @@ class Agent:
                         query_block = "\n" + "\n".join(lines)
 
                     rest = sorted(
-                        [m for m in persistent_memory._index.values() if m.category != "user_profile" and m.key not in seen],
+                        [m for m in persistent_memory._index.values() if m.category not in ("user_profile", "chat_history") and m.key not in seen],
                         key=lambda m: persistent_memory._importance(m),
                         reverse=True,
                     )[: max(0, 5 - len(query_matches))]
