@@ -295,6 +295,21 @@ class ChatMixin:
                         text = result or ''
                     if not text:
                         text = ' '
+                    try:
+                        import json as _json2
+                        _finalize_debug = {
+                            'stream_text_len': len(stream_text or ''),
+                            'stream_text_preview': (stream_text or '')[:80],
+                            'result_type': type(result).__name__,
+                            'result_preview': str(result)[:120] if result is not None else None,
+                            'final_text_len': len(text),
+                            'final_text_preview': text[:80],
+                            'generating': getattr(self, '_generating', None),
+                        }
+                        with open(r'C:\Users\zd\.prism\debug_api_messages_finalize.json', 'w', encoding='utf-8') as _f2:
+                            _json2.dump(_finalize_debug, _f2, ensure_ascii=False, indent=2)
+                    except Exception:
+                        pass
                     self._append("PRISM", text)
                 try:
                     page = getattr(self, "page", None)
