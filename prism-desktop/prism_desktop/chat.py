@@ -267,8 +267,14 @@ class ChatMixin:
                            agent_model, agent_provider, len(getattr(self.agent, 'messages', []) or []),
                            len(getattr(self.agent, 'system_prompt', '') or ''))
                 try:
-                    api_msgs = [{"role": m.role, "content": (m.content or "")[:200]} for m in getattr(self.agent, 'messages', [])]
+                    api_msgs = [{"role": m.role, "content": (m.content or "")} for m in getattr(self.agent, 'messages', [])]
                     logger.info("api_messages=%s", api_msgs)
+                except Exception:
+                    pass
+                try:
+                    import json as _json
+                    with open(r'C:\Users\zd\.prism\debug_api_messages.json', 'w', encoding='utf-8') as _f:
+                        _json.dump([{"role": m.role, "content": m.content} for m in getattr(self.agent, 'messages', [])], _f, ensure_ascii=False, indent=2)
                 except Exception:
                     pass
                 self._log_to_file("info", "stream_start", text=text, model=getattr(self.agent, "model", "unknown"))
