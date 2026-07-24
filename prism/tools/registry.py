@@ -11,9 +11,10 @@ import shlex
 import subprocess
 import tempfile
 import traceback
-from typing import Dict, List, Any, Optional, Callable
 from abc import ABC, abstractmethod
-from pathlib import Path
+from typing import Dict, List, Any, Optional
+
+from prism.interfaces import Tool
 
 logger = logging.getLogger("prism.tools")
 

@@ -7,87 +7,12 @@ from __future__ import annotations
 
 import json
 import logging
-from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from prism.interfaces import MemoryProvider, MemoryRecord, MemoryProviderRegistry
+
 logger = logging.getLogger("prism.memory_providers")
-
-
-@dataclass
-class MemoryRecord:
-    key: str
-    value: str
-    category: str = "general"
-    confidence: float = 1.0
-    source: str = "user"
-    created_at: str = ""
-    updated_at: str = ""
-    embedding: Optional[List[float]] = None
-    embedding_model: str = ""
-    access_count: int = 0
-    last_accessed_at: str = ""
-    digest: str = ""
-
-
-class MemoryProvider(ABC):
-    """记忆后端基类"""
-
-    name: str = "base"
-
-    @abstractmethod
-    def init(self) -> None:
-        """初始化存储"""
-
-    @abstractmethod
-    def add(self, record: MemoryRecord) -> None:
-        """写入单条记忆"""
-
-    @abstractmethod
-    def get(self, key: str) -> Optional[MemoryRecord]:
-        """按 key 读取"""
-
-    @abstractmethod
-    def delete(self, key: str) -> None:
-        """删除记忆"""
-
-    @abstractmethod
-    def list_keys(self) -> List[str]:
-        """列出全部 key"""
-
-    @abstractmethod
-    def search(self, query: str, top_k: int = 5) -> List[Tuple[str, float]]:
-        """语义检索，返回 (key, score)"""
-
-    @abstractmethod
-    def clear(self) -> None:
-        """清空所有记忆"""
-
-
-class MemoryProviderRegistry:
-    """记忆提供者注册表，默认只装本地 JSON，其余按可选依赖注册。"""
-
-    def __init__(self) -> None:
-        self._providers: Dict[str, MemoryProvider] = {}
-        self._default: Optional[str] = None
-
-    def register(self, provider: MemoryProvider, default: bool = False) -> None:
-        self._providers[provider.name] = provider
-        if default or self._default is None:
-            self._default = provider.name
-
-    def get(self, name: Optional[str] = None) -> MemoryProvider:
-        if not name:
-            name = self._default
-        if name not in self._providers:
-            raise KeyError(f"memory provider not found: {name}")
-        return self._providers[name]
-
-    @property
-    def names(self) -> List[str]:
-        return list(self._providers.keys())
-
 
 memory_provider_registry = MemoryProviderRegistry()
 

@@ -9,15 +9,17 @@ import json
 import logging
 import traceback
 import threading
-from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from prism.paths import memory_dir
-from prism.memory_providers import memory_provider_registry, MemoryProviderRegistry, MemoryRecord
+from prism.interfaces import MemoryRecord
+from prism.memory_providers import memory_provider_registry, MemoryProviderRegistry
 
 logger = logging.getLogger("prism.memory")
+
+from dataclasses import dataclass, field
 
 
 def _now_iso() -> str:
