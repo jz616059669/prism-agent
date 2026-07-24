@@ -18,6 +18,7 @@ else:
     __version__ = "2.1.6"
 
 from prism.agent import Agent, Message, ToolCall, create_agent
+from prism.interfaces import Tool, MemoryProvider, PlatformAdapter, ToolRegistry, MemoryProviderRegistry, GatewayRegistry, MemoryRecord
 
 __all__ = [
     "__version__",
@@ -25,4 +26,12 @@ __all__ = [
     "Message",
     "ToolCall",
     "create_agent",
+    # SDK surface
+    "Tool",
+    "MemoryProvider",
+    "PlatformAdapter",
+    "ToolRegistry",
+    "MemoryProviderRegistry",
+    "GatewayRegistry",
+    "MemoryRecord",
 ]

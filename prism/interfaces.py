@@ -185,14 +185,22 @@ class MemoryProviderRegistry:
 
 class GatewayRegistry:
     def __init__(self) -> None:
-        self._adapters: Dict[str, PlatformAdapter] = {}
+        self._gateway: Optional[object] = None
+
+    @property
+    def gateway(self) -> object:
+        if self._gateway is None:
+            from prism.gateway import gateway as _gw
+            self._gateway = _gw
+        return self._gateway
 
     def register(self, name: str, adapter: PlatformAdapter) -> None:
-        self._adapters[name] = adapter
+        self.gateway.adapters[name] = adapter
+        self.gateway._platforms = list(self.gateway.adapters.keys())
 
     def get(self, name: str) -> Optional[PlatformAdapter]:
-        return self._adapters.get(name)
+        return self.gateway.adapters.get(name)
 
     @property
     def names(self) -> List[str]:
-        return list(self._adapters.keys())
+        return list(self.gateway.adapters.keys())
