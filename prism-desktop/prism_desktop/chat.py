@@ -143,9 +143,13 @@ class ChatMixin:
         self._set_status("已清屏")
 
     def _send(self, retry_text: str = ""):
+        thread_id = threading.get_native_id()
+        logger.info("send enter thread_id=%d text=%r", thread_id, retry_text or (self.input_field.value or "").strip())
         text = retry_text or (self.input_field.value or "").strip()
+        self._log_to_file("info", "send_enter", thread_id=thread_id, text=text)
         images = list(getattr(self, "_pending_images", []) or [])
         if not text and not images:
+            logger.info("send ignored empty thread_id=%d", thread_id)
             return
         if text.startswith("/"):
             cmd = text.lower()
@@ -158,7 +162,8 @@ class ChatMixin:
             return
         if not getattr(self, "agent", None):
             self._append("PRISM", "Error: agent 未初始化，请检查配置并保存后重试。")
-            self._log_to_file("warning", "send_blocked", reason="agent is None")
+            self._log_to_file("warning", "send_blocked", reason="agent is None", thread_id=thread_id)
+            logger.warning("send blocked agent is None thread_id=%d", thread_id)
             return
         self.input_field.value = ""
         try:
@@ -183,7 +188,6 @@ class ChatMixin:
         else:
             self._append("你", text)
             multimodal_content = text
-
 
         stream_widget = None
         stream_text = ""
@@ -278,12 +282,21 @@ class ChatMixin:
                 except Exception:
                     pass
                 self._log_to_file("info", "stream_start", text=text, model=getattr(self.agent, "model", "unknown"))
+                try:
+                    self._append_terminal(f"[CHAT] send: {text}")
+                    self._append_terminal(f"[CHAT] model={agent_model} provider={agent_provider} messages={len(getattr(self.agent, 'messages', []) or [])}")
+                except Exception:
+                    pass
                 result = self.agent.chat(
                     multimodal_content,
-                    on_stream=lambda c: _stream_chunk(c) if getattr(self, "_generating", False) else None,
+                    on_stream=None,
                     stop_callback=lambda: not getattr(self, "_generating", False),
                 )
                 logger.info("chat result type=%s preview=%s len=%d", type(result).__name__, str(result)[:200], len(str(result)))
+                try:
+                    self._append_terminal(f"[CHAT] result type={type(result).__name__} len={len(str(result))} preview={str(result)[:120]}")
+                except Exception:
+                    pass
                 if not getattr(self, "_generating", False):
                     self._log_to_file("info", "stream_stopped", chunks=getattr(self, "_chunk_count", 0))
                 def _finalize():

@@ -194,7 +194,7 @@ class MCPClient:
                     print(f"[MCP] stdio 服务器初始化成功: {server.name}")
                 else:
                     # 宽松处理：部分简易 server 不遵循完整握手
-                    self._stdio_initialized[server.name] = True
+                    self._stdio_initialized[server.name] = False
                     print(f"[MCP] stdio 服务器 {server.name} 未返回有效初始化响应，仍允许调用")
             except Exception as e:
                 self._stdio_initialized.pop(server.name, None)

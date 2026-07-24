@@ -24,8 +24,10 @@ class TerminalMixin:
 
         def _run():
             try:
-                result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=30)
-                output = result.stdout or result.stderr or "(no output)"
+                from prism.tools.registry import TerminalTool
+                tool = TerminalTool()
+                result = tool.execute(command, timeout=30)
+                output = result.get('output') or result.get('error') or '(no output)'
                 self._append_terminal(output)
                 self._append_mcp(f"[terminal] {command[:80]}")
             except Exception as e:

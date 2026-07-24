@@ -2272,9 +2272,17 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             _run()
 
     def _run_on_ui(self, fn, *args, **kwargs):
+        if not callable(fn):
+            return
+        wrapped = lambda: fn(*args, **kwargs)
         try:
-            if hasattr(self, "page") and self.page is not None and hasattr(self.page, "run_task"):
-                self.page.run_task(lambda f=fn, a=args, kw=kwargs: f(*a, **kw))
+            if hasattr(self, "page") and self.page is not None:
+                if hasattr(self.page, "run_task"):
+                    self.page.run_task(wrapped)
+                elif hasattr(self.page, "update"):
+                    wrapped()
+                else:
+                    fn(*args, **kwargs)
             else:
                 fn(*args, **kwargs)
         except Exception:
@@ -2674,7 +2682,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         if len(self._terminal_lines) > 300:
             self._terminal_lines = self._terminal_lines[-300:]
         def _apply():
-            if not hasattr(self, "terminal_list") or self.terminal_list is None or not hasattr(self.terminal_list, "page") or self.terminal_list.page is None:
+            if not hasattr(self, "terminal_list") or self.terminal_list is None:
                 return
             color = ft.Colors.ON_SURFACE_VARIANT
             if 'error' in text.lower() or '失败' in text or '错误' in text:
@@ -2702,7 +2710,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         if len(self._mcp_logs) > 200:
             self._mcp_logs = self._mcp_logs[-200:]
         def _apply():
-            if not hasattr(self, "mcp_list") or self.mcp_list is None or not hasattr(self.mcp_list, "page") or self.mcp_list.page is None:
+            if not hasattr(self, "mcp_list") or self.mcp_list is None:
                 return
             self.mcp_list.controls.clear()
             for line in self._mcp_logs[-80:]:
@@ -2720,21 +2728,33 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
 
     def _clear_terminal(self):
         self._terminal_lines = []
-        if hasattr(self, "terminal_list") and self.terminal_list is not None and hasattr(self.terminal_list, "page") and self.terminal_list.page is not None:
-            self.terminal_list.controls.clear()
+        if not hasattr(self, "terminal_list") or self.terminal_list is None:
+            return
+        def _apply():
             try:
+                self.terminal_list.controls.clear()
                 self.terminal_list.update()
             except Exception:
                 pass
+        try:
+            self._run_on_ui(_apply)
+        except Exception:
+            pass
 
     def _clear_mcp(self):
         self._mcp_logs = []
-        if hasattr(self, "mcp_list") and self.mcp_list is not None and hasattr(self.mcp_list, "page") and self.mcp_list.page is not None:
-            self.mcp_list.controls.clear()
+        if not hasattr(self, "mcp_list") or self.mcp_list is None:
+            return
+        def _apply():
             try:
+                self.mcp_list.controls.clear()
                 self.mcp_list.update()
             except Exception:
                 pass
+        try:
+            self._run_on_ui(_apply)
+        except Exception:
+            pass
 
 
     def _refresh_skills(self):

@@ -48,6 +48,7 @@ class Config:
         self._watch_stop = threading.Event()
         self._watch_thread: Optional[threading.Thread] = None
         self._on_change: Optional[Any] = None
+        self._loading = False
         self._load()
         self._start_watcher()
     
@@ -99,29 +100,35 @@ class Config:
     
     def _load(self) -> None:
         """加载配置文件"""
-        if self.config_file.exists():
-            with open(self.config_file, 'r', encoding='utf-8') as f:
-                self._config = yaml.safe_load(f) or {}
-        else:
-            self._config = self._defaults()
-            self._save()
-
-        # 合并桌面端快捷配置，避免同一 key 在 config.yaml 和桌面端各存一份
-        # 桌面端配置优先级更高，直接覆盖 config.yaml 中的对应值
-        self._merge_desktop_settings()
-
-        # Load hooks config
-        self._load_hooks()
-        # Load workspaces config
-        self._load_workspaces()
-
-        # 配置 schema 校验
+        if getattr(self, "_loading", False):
+            return
         try:
-            self._validate_schema()
-        except ConfigError as exc:
-            raise
-        except Exception:
-            logger.debug("schema validation skipped", exc_info=True)
+            self._loading = True
+            if self.config_file.exists():
+                with open(self.config_file, 'r', encoding='utf-8') as f:
+                    self._config = yaml.safe_load(f) or {}
+            else:
+                self._config = self._defaults()
+                self._save()
+
+            # 合并桌面端快捷配置，避免同一 key 在 config.yaml 和桌面端各存一份
+            # 桌面端配置优先级更高，直接覆盖 config.yaml 中的对应值
+            self._merge_desktop_settings()
+
+            # Load hooks config
+            self._load_hooks()
+            # Load workspaces config
+            self._load_workspaces()
+
+            # 配置 schema 校验
+            try:
+                self._validate_schema()
+            except ConfigError as exc:
+                raise
+            except Exception:
+                logger.debug("schema validation skipped", exc_info=True)
+        finally:
+            self._loading = False
     
     def _validate_schema(self) -> None:
         """轻量 schema 校验：类型 + 必填 + 枚举"""

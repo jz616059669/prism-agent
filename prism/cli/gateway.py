@@ -332,7 +332,7 @@ def start(
             from prism.gateway.wechat import WechatAdapter, WechatConfig
             adapter = WechatAdapter(WechatConfig(
                 corp_id=app_id or '',
-                agent_id=agent_id or '',
+                agent_id=app_secret or '',
                 secret=token or '',
                 token=token or '',
             ))
