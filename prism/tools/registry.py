@@ -11,7 +11,6 @@ import shlex
 import subprocess
 import tempfile
 import traceback
-from abc import ABC, abstractmethod
 from typing import Dict, List, Any, Optional
 
 from prism.interfaces import Tool
@@ -36,27 +35,6 @@ except Exception:
     CODE_EXECUTOR_AVAILABLE = False
     _code_executor = None
     logger.debug("code executor import failed: %s", traceback.format_exc())
-
-class Tool(ABC):
-    """工具基类"""
-    
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        pass
-    
-    @property
-    @abstractmethod
-    def description(self) -> str:
-        pass
-
-    @property
-    def input_schema(self) -> Optional[Dict[str, Any]]:
-        return None
-    
-    @abstractmethod
-    def execute(self, **kwargs) -> Dict[str, Any]:
-        pass
 
 
 class FileReadTool(Tool):
