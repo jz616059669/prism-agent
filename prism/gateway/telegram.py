@@ -60,14 +60,14 @@ class TelegramAdapter(PlatformAdapter):
             data = resp.json()
             
             if data.get("ok"):
-                print(f"[Telegram] 消息已发送 -> {chat_id}")
+    logger.debug("[Telegram] 消息已发送 -> {chat_id}")
                 return True
             else:
-                print(f"[Telegram] 发送失败: {data}")
+    logger.debug("[Telegram] 发送失败: {data}")
                 return False
                 
         except Exception as e:
-            print(f"[Telegram] 发送消息异常: {e}")
+    logger.debug("[Telegram] 发送消息异常: {e}")
             return False
     
     def start_polling(self, handler: Callable[[Message], None]):
@@ -75,7 +75,7 @@ class TelegramAdapter(PlatformAdapter):
         self.handler = handler
         self.running = True
         
-        print("[Telegram] 开始长轮询...")
+    logger.debug("[Telegram] 开始长轮询...")
         
         while self.running:
             try:
@@ -84,7 +84,7 @@ class TelegramAdapter(PlatformAdapter):
             except KeyboardInterrupt:
                 break
             except Exception as e:
-                print(f"[Telegram] 轮询异常: {e}")
+    logger.debug("[Telegram] 轮询异常: {e}")
                 time.sleep(5)
     
     def _poll_once(self):
@@ -110,7 +110,7 @@ class TelegramAdapter(PlatformAdapter):
                 self._handle_update(update)
                 
         except Exception as e:
-            print(f"[Telegram] 轮询失败: {e}")
+    logger.debug("[Telegram] 轮询失败: {e}")
     
     def _handle_update(self, update: Dict[str, Any]):
         """处理更新"""
@@ -140,13 +140,13 @@ class TelegramAdapter(PlatformAdapter):
                 self.handler(msg)
                 
         except Exception as e:
-            print(f"[Telegram] 处理更新失败: {e}")
+    logger.debug("[Telegram] 处理更新失败: {e}")
     
     def stop(self):
         """停止轮询"""
         self.running = False
         self.handler = None
-        print("[Telegram] 已停止")
+    logger.debug("[Telegram] 已停止")
     
     def set_webhook(self, url: str, allowed_updates: Optional[List[str]] = None) -> bool:
         """设置 Webhook"""
@@ -162,12 +162,12 @@ class TelegramAdapter(PlatformAdapter):
             resp.raise_for_status()
             data = resp.json()
             if data.get("ok"):
-                print(f"[Telegram] Webhook 已设置: {url}")
+    logger.debug("[Telegram] Webhook 已设置: {url}")
                 return True
-            print(f"[Telegram] Webhook 设置失败: {data}")
+    logger.debug("[Telegram] Webhook 设置失败: {data}")
             return False
         except Exception as e:
-            print(f"[Telegram] Webhook 设置异常: {e}")
+    logger.debug("[Telegram] Webhook 设置异常: {e}")
             return False
     
     def delete_webhook(self) -> bool:
@@ -178,7 +178,7 @@ class TelegramAdapter(PlatformAdapter):
             data = resp.json()
             return data.get("ok", False)
         except Exception as e:
-            print(f"[Telegram] Webhook 删除失败: {e}")
+    logger.debug("[Telegram] Webhook 删除失败: {e}")
             return False
     
     def get_me(self) -> Dict[str, Any]:
@@ -215,7 +215,7 @@ class TelegramAdapter(PlatformAdapter):
                     self.end_headers()
                     self.wfile.write(b'ok')
                 except Exception as e:
-                    print(f"[Telegram] webhook error: {e}")
+    logger.debug("[Telegram] webhook error: {e}")
                     try:
                         self.send_response(500)
                         self.end_headers()
@@ -224,12 +224,12 @@ class TelegramAdapter(PlatformAdapter):
                         logger.debug("telegram send error response failed: %s", traceback.format_exc())
 
             def log_message(self, format, *args):
-                print(f"[Telegram] {args[0]}")
+    logger.debug("[Telegram] {args[0]}")
 
         server = HTTPServer((host, port), TelegramWebhookHandler)
         t = threading.Thread(target=server.serve_forever, daemon=True)
         t.start()
-        print(f"[Telegram] webhook 服务已启动：http://{host}:{port}/webhook/telegram")
+    logger.debug("[Telegram] webhook 服务已启动：http://{host}:{port}/webhook/telegram")
 
 
 def create_telegram_adapter(bot_token: str) -> TelegramAdapter:

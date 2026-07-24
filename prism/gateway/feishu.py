@@ -134,7 +134,7 @@ class FeishuAdapter(PlatformAdapter):
                 raw=message,
             )
         except Exception as e:
-            print(f"[Feishu] parse_event failed: {e}")
+    logger.debug("[Feishu] parse_event failed: {e}")
             return None
 
     def get_user_info(self, user_id: str) -> Dict[str, Any]:
@@ -203,15 +203,15 @@ class FeishuAdapter(PlatformAdapter):
             )
             if response and response.success():
                 message_id = response.data.message_id if response.data and response.data.message_id else ""
-                print(f"[Feishu] 消息已发送 -> {chat_id}")
+    logger.debug("[Feishu] 消息已发送 -> {chat_id}")
                 return message_id != ""
             else:
                 code = getattr(response, "code", None)
                 msg = getattr(response, "msg", "")
-                print(f"[Feishu] 发送失败: code={code}, msg={msg}")
+    logger.debug("[Feishu] 发送失败: code={code}, msg={msg}")
                 return False
         except Exception as e:
-            print(f"[Feishu] 发送消息异常: {e}")
+    logger.debug("[Feishu] 发送消息异常: {e}")
             return False
 
     def send_thinking(self, chat_id: str, text: str = "正在修炼中……") -> Optional[str]:
@@ -232,7 +232,7 @@ class FeishuAdapter(PlatformAdapter):
                 return response.data.message_id
             return None
         except Exception as e:
-            print(f"[Feishu] 发送思考状态失败: {e}")
+    logger.debug("[Feishu] 发送思考状态失败: {e}")
             return None
 
     def update_message(self, message_id: str, text: str) -> bool:
@@ -252,10 +252,10 @@ class FeishuAdapter(PlatformAdapter):
             else:
                 code = getattr(response, "code", None)
                 msg = getattr(response, "msg", "")
-                print(f"[Feishu] 更新消息失败: code={code}, msg={msg}")
+    logger.debug("[Feishu] 更新消息失败: code={code}, msg={msg}")
                 return False
         except Exception as e:
-            print(f"[Feishu] 更新消息异常: {e}")
+    logger.debug("[Feishu] 更新消息异常: {e}")
             return False
 
     def download_media(self, message_id: str, media_url: str) -> Optional[Path]:
@@ -277,10 +277,10 @@ class FeishuAdapter(PlatformAdapter):
                 out = MEDIA_TMP_DIR / f"{key}{suffix}"
                 out.write_bytes(resp.content)
                 return out
-            print(f"[Feishu] 下载媒体失败: {resp.status_code} {resp.text[:120]}")
+    logger.debug("[Feishu] 下载媒体失败: {resp.status_code} {resp.text[:120]}")
             return None
         except Exception as e:
-            print(f"[Feishu] 下载媒体异常: {e}")
+    logger.debug("[Feishu] 下载媒体异常: {e}")
             return None
 
     def _get_access_token(self) -> str:
@@ -301,7 +301,7 @@ class FeishuAdapter(PlatformAdapter):
             self.token_expires_at = time.time() + expire - 60
             return token
         except Exception as e:
-            print(f"[Feishu] 获取 token 失败: {e}")
+    logger.debug("[Feishu] 获取 token 失败: {e}")
             return ""
 
     def start(self, handler: Callable[[Message], None]) -> bool:
@@ -335,7 +335,7 @@ class FeishuAdapter(PlatformAdapter):
         self._loop = None
         self._thread = None
         self.handler = None
-        print("[Feishu] 已停止")
+    logger.debug("[Feishu] 已停止")
 
     def _run_ws(self) -> None:
         backoff = 1
@@ -359,10 +359,10 @@ class FeishuAdapter(PlatformAdapter):
                     .build(),
                 )
                 self._ws_client = ws_client
-                print("[Feishu] WebSocket 已连接")
+    logger.debug("[Feishu] WebSocket 已连接")
                 self._loop.run_until_complete(ws_client.start())
             except Exception as e:
-                print(f"[Feishu] WebSocket 异常: {e}")
+    logger.debug("[Feishu] WebSocket 异常: {e}")
             finally:
                 self._ws_client = None
                 if self._loop and not self._loop.is_closed():
@@ -373,19 +373,19 @@ class FeishuAdapter(PlatformAdapter):
                 self._loop = None
             if not self.running:
                 break
-            print(f"[Feishu] WebSocket 将在 {backoff}s 后重连 ...")
+    logger.debug("[Feishu] WebSocket 将在 {backoff}s 后重连 ...")
             time.sleep(min(backoff, 30))
             backoff *= 2
 
     def _on_message_received(self, event: P2ImMessageReceiveV1) -> None:
         try:
-            print(f"[Feishu] raw event type={type(event).__name__}")
+    logger.debug("[Feishu] raw event type={type(event).__name__}")
             message = getattr(event, 'event', event).message
             sender = getattr(event, 'event', event).sender
             chat_id = message.chat_id
             user_id = sender.sender_id.open_id if sender and sender.sender_id else ""
             message_type = getattr(message, "message_type", "") or "text"
-            print(f"[Feishu] parsed message type={message_type} chat={chat_id} user={user_id}")
+    logger.debug("[Feishu] parsed message type={message_type} chat={chat_id} user={user_id}")
             text = ""
             media_url = None
             file_id = None
@@ -451,9 +451,9 @@ class FeishuAdapter(PlatformAdapter):
                     if media_path:
                         message_obj.raw["local_path"] = str(media_path)
                 except Exception as exc:
-                    print(f"[Feishu] 下载媒体失败: {exc}")
+    logger.debug("[Feishu] 下载媒体失败: {exc}")
 
             if self.handler:
                 self.handler(message_obj)
         except Exception as e:
-            print(f"[Feishu] 解析消息失败: {e}")
+    logger.debug("[Feishu] 解析消息失败: {e}")

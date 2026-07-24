@@ -1,6 +1,7 @@
 """PRISM Agent - Gateway Commands"""
 from __future__ import annotations
 
+import logging
 import os
 import time
 from pathlib import Path
@@ -82,10 +83,10 @@ def gateway_start(platform: str, **kwargs) -> dict:
                         from prism.agent import create_agent
                         sessions[chat_id] = create_agent()
                     if message_type == 'text':
-                        print(f"[feishu] text branch: text={text[:120]}")
+                        logger.debug("[feishu] text branch: %s", text[:120])
                         start = time.time()
                         thinking_msg_id = adapter.send_thinking(chat_id, "正在思考...")
-                        print(f"[feishu] thinking_msg_id={thinking_msg_id}")
+                        logger.debug("[feishu] thinking_msg_id=%s", thinking_msg_id)
 
                         accumulated = []
                         lock = threading.Lock()
@@ -108,41 +109,41 @@ def gateway_start(platform: str, **kwargs) -> dict:
                                 except Exception:
                                     pass
 
-                        ticker = threading.Thread(target=lambda: [time.sleep(1) and _tick_thinking() for _ in iter(int, 1) if adapter.running and not getattr(adapter, '_done', False)], daemon=True)
+                        ticker = threading.Thread(target=_tick_thinking, args=(adapter, thinking_msg_id), daemon=True)
                         adapter._done = False
                         ticker.start()
                         try:
                             reply = sessions[chat_id].chat(text, on_stream=_on_chunk)
                         except Exception as e:
                             import traceback
-                            traceback.print_exc()
+                            logger.debug("handler failed: %s", traceback.format_exc())
                             reply = f"抱歉，处理你的消息时出错了：{e}"
                         adapter._done = True
                         elapsed = time.time() - start
                         final = reply or "".join(accumulated)
-                        print(f"[feishu] reply={final[:120]} elapsed={elapsed:.2f}s")
+                        logger.debug("[feishu] reply preview=%s elapsed=%.2fs", final[:120], elapsed)
                         if final:
                             if thinking_msg_id:
                                 ok = adapter.update_message(thinking_msg_id, final)
-                                print(f"[feishu] update_message={ok}")
+                                logger.debug("[feishu] update_message=%s", ok)
                             else:
                                 ok = adapter.send(chat_id, final)
-                                print(f"[feishu] send={ok}")
+                                logger.debug("[feishu] send=%s", ok)
                     else:
                         reply = f"我收到了你的{message_type}消息，当前版本主要支持文字对话，这类消息暂不能深度处理。"
                         ok = adapter.send(chat_id, reply)
-                        print(f"[feishu] send other={ok}")
+                        logger.debug("[feishu] send other=%s", ok)
                 except Exception as e:
-                    print(f"[feishu] handler error: {e}")
+                    logger.debug("[feishu] handler error: %s", e)
 
             gw.start(_handler)
-            print("[gateway_start] start() returned")
+            logger.debug("[gateway_start] start() returned")
             return {"success": True, "output": "feishu WebSocket 已启动"}
         else:
             return {"success": False, "output": f"暂不支持平台: {platform}"}
     except Exception as e:
         import traceback
-        traceback.print_exc()
+        logger.debug("handler failed: %s", traceback.format_exc())
         return {"success": False, "output": str(e)}
 
 
@@ -250,14 +251,14 @@ def start(
                     if not chat_id:
                         return
                     display = text or f"[{message_type}]"
-                    click.echo(f"[feishu] {display}")
+                    logger.debug("[feishu] %s", display)
                     if chat_id not in sessions:
                         sessions[chat_id] = create_agent()
                     if message_type == 'text':
-                        print(f"[feishu] text branch: text={text[:120]}")
+                        logger.debug("[feishu] text branch: %s", text[:120])
                         start = time.time()
                         thinking_msg_id = adapter.send_thinking(chat_id, "正在思考...")
-                        print(f"[feishu] thinking_msg_id={thinking_msg_id}")
+                        logger.debug("[feishu] thinking_msg_id=%s", thinking_msg_id)
 
                         accumulated = []
                         lock = threading.Lock()
@@ -280,32 +281,32 @@ def start(
                                 except Exception:
                                     pass
 
-                        ticker = threading.Thread(target=lambda: [time.sleep(1) and _tick_thinking() for _ in iter(int, 1) if adapter.running and not getattr(adapter, '_done', False)], daemon=True)
+                        ticker = threading.Thread(target=_tick_thinking, args=(adapter, thinking_msg_id), daemon=True)
                         adapter._done = False
                         ticker.start()
                         try:
                             reply = sessions[chat_id].chat(text, on_stream=_on_chunk)
                         except Exception as e:
                             import traceback
-                            traceback.print_exc()
+                            logger.debug("handler failed: %s", traceback.format_exc())
                             reply = f"抱歉，处理你的消息时出错了：{e}"
                         adapter._done = True
                         elapsed = time.time() - start
                         final = reply or "".join(accumulated)
-                        print(f"[feishu] reply={final[:120]} elapsed={elapsed:.2f}s")
+                        logger.debug("[feishu] reply preview=%s elapsed=%.2fs", final[:120], elapsed)
                         if final:
                             if thinking_msg_id:
                                 ok = adapter.update_message(thinking_msg_id, final)
-                                print(f"[feishu] update_message={ok}")
+                                logger.debug("[feishu] update_message=%s", ok)
                             else:
                                 ok = adapter.send(chat_id, final)
-                                print(f"[feishu] send={ok}")
+                                logger.debug("[feishu] send=%s", ok)
                     else:
                         reply = f"我收到了你的{message_type}消息，当前版本主要支持文字对话，这类消息暂不能深度处理。"
                         ok = adapter.send(chat_id, reply)
-                        print(f"[feishu] send other={ok}")
+                        logger.debug("[feishu] send other=%s", ok)
                 except Exception as e:
-                    click.echo(f"[feishu] handler error: {e}")
+                    logger.debug("[feishu] handler error: %s", e)
 
             gw.start(_feishu_handler)
             started = True
