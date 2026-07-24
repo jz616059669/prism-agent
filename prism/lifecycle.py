@@ -72,7 +72,15 @@ class LifecycleManager:
     def start(self, name: str, cmd: str) -> ServiceStatus:
         svc = self._services.get(name) or ServiceStatus(name=name)
         try:
-            process = subprocess.Popen(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            import shlex
+            parts = shlex.split(cmd) if os.name != 'nt' else cmd.split()
+            if not parts:
+                raise ValueError("empty command")
+            process = subprocess.Popen(
+                parts,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
             time.sleep(0.5)
             if process.poll() is None:
                 svc.pid = process.pid

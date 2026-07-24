@@ -9,6 +9,7 @@ import ast
 import fnmatch
 import logging
 import operator
+import shlex
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
 
@@ -198,15 +199,16 @@ class HookManager:
         for hook in hooks:
             try:
                 if hook.action == "run":
-                    import subprocess
+                    parts = shlex.split(hook.command, posix=(os.name != 'nt'))
+                    if not parts:
+                        raise ValueError("empty hook command")
                     env = {
                         k: str(v)
                         for k, v in os.environ.items()
                         if k.isupper() and k not in {"SECRET_KEY", "API_KEY", "TOKEN", "PASSWORD"}
                     }
                     result = subprocess.run(
-                        hook.command,
-                        shell=True,
+                        parts,
                         capture_output=True,
                         text=True,
                         timeout=hook.timeout,

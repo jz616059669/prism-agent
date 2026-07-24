@@ -5,12 +5,13 @@ PRISM Agent - Plugin API 插件协议
 
 from __future__ import annotations
 
-import logging
+import ast
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-logger = logging.getLogger(__name__)
+from prism.logging import logger
+from prism.dependency_resolver import DependencyResolver
 
 
 @dataclass
@@ -66,9 +67,7 @@ class PluginLoader:
     @staticmethod
     def _parse_manifest(text: str, skill_name: str) -> Optional[PluginManifest]:
         try:
-            namespace: Dict[str, Any] = {}
-            exec(text, namespace)
-            manifest = namespace.get("PLUGIN_MANIFEST") or namespace.get("plugin_manifest")
+            manifest = DependencyResolver._extract_manifest(text)
             if isinstance(manifest, dict):
                 return PluginManifest(
                     name=manifest.get("name", skill_name),

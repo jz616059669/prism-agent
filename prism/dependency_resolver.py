@@ -65,19 +65,40 @@ class DependencyResolver:
         results: List[DependencyResult] = []
         try:
             text = Path(skill_path).read_text(encoding="utf-8")
-            if "PLUGIN_MANIFEST" in text or "plugin_manifest" in text:
-                namespace: Dict[str, Any] = {}
-                exec(text, namespace)
-                manifest = namespace.get("PLUGIN_MANIFEST") or namespace.get("plugin_manifest") or {}
-                deps = manifest.get("dependencies", [])
-                for dep in deps:
-                    if isinstance(dep, str):
-                        results.append(self._install(dep, ""))
-                    elif isinstance(dep, dict):
-                        results.append(self._install(dep.get("name", ""), dep.get("version", "")))
+            manifest = self._extract_manifest(text)
+            deps = manifest.get("dependencies", [])
+            for dep in deps:
+                if isinstance(dep, str):
+                    results.append(self._install(dep, ""))
+                elif isinstance(dep, dict):
+                    results.append(self._install(dep.get("name", ""), dep.get("version", "")))
         except Exception as exc:
             logger.debug("resolve skill deps failed: %s", exc)
         return results
+
+    @staticmethod
+    def _extract_manifest(text: str) -> Dict[str, Any]:
+        """安全提取 PLUGIN_MANIFEST / plugin_manifest，避免 exec。"""
+        import ast
+
+        for key in ("PLUGIN_MANIFEST", "plugin_manifest"):
+            idx = text.find(f"{key}=")
+            if idx == -1:
+                continue
+            expr = text[idx + len(key) + 1 :].strip()
+            if not expr:
+                continue
+            # 按第一个顶层 `{` 对齐到匹配 `}`，取整段字典字面量
+            if expr[0] not in ("{", "["):
+                brace = expr.find("{")
+                if brace == -1:
+                    continue
+                expr = expr[brace:]
+            try:
+                return ast.literal_eval(expr)
+            except Exception:
+                continue
+        return {}
 
 
 dependency_resolver = DependencyResolver()

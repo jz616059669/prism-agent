@@ -100,11 +100,92 @@ class ConditionEngine:
             pass
 
     def _eval_expr(self, expr: str, ctx: Dict[str, Any]) -> bool:
-        safe_ctx = {"__builtins__": {}, **ctx}
         try:
-            return bool(eval(expr, safe_ctx, {}))
+            return bool(self._safe_eval(expr, ctx))
         except Exception:
             return False
+
+    @staticmethod
+    def _safe_eval(expr: str, ctx: Dict[str, Any]) -> Any:
+        """受限 AST 求值：仅允许字面量、比较、布尔、算术、属性/下标访问。"""
+        import ast
+        import operator
+
+        _OPS: Dict[type, Callable[[Any, Any], Any]] = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.Mod: operator.mod,
+            ast.Eq: operator.eq,
+            ast.NotEq: operator.ne,
+            ast.Lt: operator.lt,
+            ast.LtE: operator.le,
+            ast.Gt: operator.gt,
+            ast.GtE: operator.ge,
+            ast.And: lambda a, b: a and b,
+            ast.Or: lambda a, b: a or b,
+            ast.Not: operator.not_,
+            ast.In: lambda a, b: a in b,
+            ast.NotIn: lambda a, b: a not in b,
+            ast.Is: operator.is_,
+            ast.IsNot: operator.is_not,
+        }
+
+        def _node(node: ast.AST) -> Any:
+            if isinstance(node, ast.Expression):
+                return _node(node.body)
+            if isinstance(node, ast.Constant):
+                return node.value
+            if isinstance(node, ast.Name):
+                return ctx.get(node.id)
+            if isinstance(node, ast.BoolOp):
+                values = [_node(v) for v in node.values]
+                op = _OPS[type(node.op)]
+                res = values[0]
+                for v in values[1:]:
+                    res = op(res, v)
+                return res
+            if isinstance(node, ast.UnaryOp):
+                return _OPS[type(node.op)](_node(node.operand))
+            if isinstance(node, ast.BinOp):
+                return _OPS[type(node.op)](_node(node.left), _node(node.right))
+            if isinstance(node, ast.Compare):
+                left = _node(node.left)
+                for op, comparator in zip(node.ops, node.comparators):
+                    if not _OPS[type(op)](left, _node(comparator)):
+                        return False
+                    left = _node(comparator)
+                return True
+            if isinstance(node, ast.Attribute):
+                obj = _node(node.value)
+                return getattr(obj, node.attr, None)
+            if isinstance(node, ast.Subscript):
+                obj = _node(node.value)
+                if isinstance(node.slice, ast.Constant):
+                    return obj[node.slice.value]
+                if isinstance(node.slice, ast.Index):  # py<3.9 compat
+                    idx = _node(node.slice.value)
+                    return obj[idx]
+                idx = _node(node.slice)
+                return obj[idx]
+            if isinstance(node, ast.List):
+                return [_node(e) for e in node.elts]
+            if isinstance(node, ast.Tuple):
+                return tuple(_node(e) for e in node.elts)
+            if isinstance(node, ast.Dict):
+                return {_node(k): _node(v) for k, v in zip(node.keys, node.values)}
+            if isinstance(node, ast.Call):
+                # 仅允许少量安全内置：len/str/int/float/bool
+                fn = _node(node.func)
+                allowed = {len, str, int, float, bool}
+                if fn not in allowed:
+                    raise ValueError(f"unsupported call: {fn}")
+                args = [_node(a) for a in node.args]
+                return fn(*args)
+            if isinstance(node, ast.IfExp):
+                return _node(node.body) if _node(node.test) else _node(node.orelse)
+            raise ValueError(f"unsupported expression: {type(node).__name__}")
 
 
 # 全局单例

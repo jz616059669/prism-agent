@@ -153,66 +153,57 @@ class TerminalTool(Tool):
     }
     
     def execute(self, command: str, timeout: int = 180, workdir: Optional[str] = None) -> Dict[str, Any]:
-            if not command or not command.strip():
-                return {'success': False, 'error': 'Empty command'}
-            if len(command) > 4096:
-                return {'success': False, 'error': 'Command too long (max 4096 chars)', 'exit_code': -1}
-        
-            # 安全检查：禁止明显危险的命令模式
-            dangerous_patterns = [
-                r'rm\s+-rf\s+/',
-                r'del\s+/[fs]',
-                r'format\s+[c-z]:',
-                r'shutdown',
-                r'reboot',
-                r':>',
-            ]
-            cmd_lower = command.lower()
-            for pattern in dangerous_patterns:
-                if re.search(pattern, cmd_lower):
-                    return {
-                        'success': False,
-                        'error': f'Dangerous command blocked: pattern matched {pattern}',
-                        'exit_code': -1,
-                    }
-        
-            cwd = workdir or os.getcwd()
-            env = {**os.environ, 'PYTHONIOENCODING': 'utf-8'}
-            try:
-                args = shlex.split(command, posix=(os.name != 'nt'))
-            except ValueError:
-                args = None
-        
-            try:
-                if args:
-                    result = subprocess.run(
-                        args,
-                        capture_output=True,
-                        text=True,
-                        timeout=timeout,
-                        cwd=cwd,
-                        env=env,
-                    )
-                else:
-                    result = subprocess.run(
-                        command,
-                        shell=True,
-                        capture_output=True,
-                        text=True,
-                        timeout=timeout,
-                        cwd=cwd,
-                        env=env,
-                    )
+        if not command or not command.strip():
+            return {'success': False, 'error': 'Empty command'}
+        if len(command) > 4096:
+            return {'success': False, 'error': 'Command too long (max 4096 chars)', 'exit_code': -1}
+
+        # 安全检查：禁止明显危险的命令模式
+        dangerous_patterns = [
+            r'rm\s+-rf\s+/',
+            r'del\s+/[fs]',
+            r'format\s+[c-z]:',
+            r'shutdown',
+            r'reboot',
+            r':>',
+        ]
+        cmd_lower = command.lower()
+        for pattern in dangerous_patterns:
+            if re.search(pattern, cmd_lower):
+                return {
+                    'success': False,
+                    'error': f'Dangerous command blocked: pattern matched {pattern}',
+                    'exit_code': -1,
+                }
+
+        cwd = workdir or os.getcwd()
+        env = {**os.environ, 'PYTHONIOENCODING': 'utf-8'}
+        try:
+            args = shlex.split(command, posix=(os.name != 'nt'))
+        except ValueError:
+            args = None
+
+        try:
+            if args:
+                result = subprocess.run(
+                    args,
+                    capture_output=True,
+                    text=True,
+                    timeout=timeout,
+                    cwd=cwd,
+                    env=env,
+                )
                 return {
                     'success': result.returncode == 0,
                     'output': result.stdout,
                     'error': result.stderr,
                     'exit_code': result.returncode,
                 }
-            except subprocess.TimeoutExpired:
-                return {'success': False, 'error': f'Command timed out after {timeout}s'}
-            except Exception as e:
-                return {'success': False, 'error': str(e)}
+            return {'success': False, 'error': f'Invalid command: {command}'}
+        except subprocess.TimeoutExpired:
+            return {'success': False, 'error': f'Command timed out after {timeout}s'}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
 
 
 class WebSearchTool(Tool):

@@ -88,7 +88,10 @@ class HealthMonitor:
         self._save()
         if cmd:
             try:
-                subprocess.Popen(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                import shlex
+                parts = shlex.split(cmd)
+                if parts:
+                    subprocess.Popen(parts, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             except Exception:
                 pass
         return hc
