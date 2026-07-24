@@ -4,10 +4,11 @@ PRISM Agent - 多模态工具
 """
 from __future__ import annotations
 
+import json
 import logging
 from typing import Any, Dict
 
-from prism.tools.registry import Tool
+from prism.interfaces import Tool
 from prism.multimodal import multimodal
 
 logger = logging.getLogger("prism.tools.multimodal")

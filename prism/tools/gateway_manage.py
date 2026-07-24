@@ -11,13 +11,8 @@ import subprocess
 import sys
 from typing import Any, Dict, Optional
 
+from prism.interfaces import Tool
 from prism.logging import logger
-
-try:
-    from prism.tools.registry import registry, Tool
-except Exception:
-    class Tool:  # type: ignore[no-redef]
-        pass
 
 
 class GatewaySetupTool(Tool):
