@@ -82,18 +82,18 @@ def load_mcp_config(config_path: Optional[str] = None) -> List[Any]:
             data = json.load(f)
     except Exception as e:
         logger.debug("load mcp config failed: %s", traceback.format_exc())
-        print(f"[MCP] 加载配置失败: {e}")
+        logger.debug("[MCP] 加载配置失败: {e}")
         return []
     
     validation = validate_mcp_config(data)
     for name, errors in validation.items():
         for error in errors:
-            print(f"[MCP] 配置错误: {error}")
+            logger.debug("[MCP] 配置错误: {error}")
     
     servers = []
     for name, cfg in data.items():
         if name in validation and cfg.get("enabled", True):
-            print(f"[MCP] 跳过无效服务器: {name}")
+            logger.debug("[MCP] 跳过无效服务器: {name}")
             continue
         server = MCPServer(
             name=name,
@@ -126,7 +126,7 @@ def setup_mcp_servers(config_path: Optional[str] = None):
     for server in servers:
         if server.enabled:
             mcp_client.add_server(server)
-            print(f"[MCP] 已添加服务器: {server.name} ({server.transport})")
+            logger.debug("[MCP] 已添加服务器: {server.name} ({server.transport})")
     
     return mcp_client
 
@@ -167,5 +167,5 @@ def create_default_mcp_config() -> str:
     with open(config_path, 'w', encoding='utf-8') as f:
         json.dump(default_config, f, indent=2, ensure_ascii=False)
     
-    print(f"[MCP] 默认配置已创建: {config_path}")
+    logger.debug("[MCP] 默认配置已创建: {config_path}")
     return str(config_path)

@@ -116,10 +116,10 @@ class MCPClient:
             self._stdio_queues.setdefault(server.name, queue.Queue())
             self._stdio_threads.setdefault(server.name, threading.Thread(target=self._stdio_reader, args=(server.name, process), daemon=True))
             self._stdio_threads[server.name].start()
-            print(f"[MCP] 已连接 stdio 服务器: {server.name}")
+            logger.debug("[MCP] 已连接 stdio 服务器: {server.name}")
             self._initialize_stdio(server, process)
         except Exception as e:
-            print(f"[MCP] 连接失败 {server.name}: {e}")
+            logger.debug("[MCP] 连接失败 {server.name}: {e}")
 
     def _stdio_reader(self, server_name: str, process: subprocess.Popen) -> None:
         """后台线程持续读取 stdout 行并放入队列"""
@@ -191,33 +191,33 @@ class MCPClient:
                     if process.poll() is None:
                         process.stdin.write(json.dumps(notify, ensure_ascii=False) + "\n")
                         process.stdin.flush()
-                    print(f"[MCP] stdio 服务器初始化成功: {server.name}")
+                    logger.debug("[MCP] stdio 服务器初始化成功: {server.name}")
                 else:
                     # 宽松处理：部分简易 server 不遵循完整握手
                     self._stdio_initialized[server.name] = False
-                    print(f"[MCP] stdio 服务器 {server.name} 未返回有效初始化响应，仍允许调用")
+                    logger.debug("[MCP] stdio 服务器 {server.name} 未返回有效初始化响应，仍允许调用")
             except Exception as e:
                 self._stdio_initialized.pop(server.name, None)
-                print(f"[MCP] stdio 初始化失败 {server.name}: {e}")
+                logger.debug("[MCP] stdio 初始化失败 {server.name}: {e}")
 
     def _connect_http(self, server: MCPServer):
         """通过 HTTP/SSE 连接"""
         if not _HTTP_CLIENT_AVAILABLE or not server.url:
-            print(f"[MCP] HTTP 服务器 {server.name} 不可用: {server.url}")
+            logger.debug("[MCP] HTTP 服务器 {server.name} 不可用: {server.url}")
             return
 
         client = MCPHTTPClient(server.url)
         init = client.initialize()
         if init.get('success'):
             self.http_clients[server.name] = client
-            print(f"[MCP] 已连接 HTTP 服务器: {server.name}")
+            logger.debug("[MCP] 已连接 HTTP 服务器: {server.name}")
         else:
-            print(f"[MCP] HTTP 服务器 {server.name} 初始化失败: {init.get('error')}")
+            logger.debug("[MCP] HTTP 服务器 {server.name} 初始化失败: {init.get('error')}")
 
     def _connect_sse(self, server: MCPServer):
         """通过 SSE 连接（流式）"""
         if not _HTTP_CLIENT_AVAILABLE or not server.url:
-            print(f"[MCP] SSE 服务器 {server.name} 不可用: {server.url}")
+            logger.debug("[MCP] SSE 服务器 {server.name} 不可用: {server.url}")
             return
         try:
             from prism.mcp.sse_client import MCPSSEClient
@@ -225,11 +225,11 @@ class MCPClient:
             init = client.initialize()
             if init.get('success'):
                 self.http_clients[server.name] = client
-                print(f"[MCP] 已连接 SSE 服务器: {server.name}")
+                logger.debug("[MCP] 已连接 SSE 服务器: {server.name}")
             else:
-                print(f"[MCP] SSE 服务器 {server.name} 初始化失败: {init.get('error')}")
+                logger.debug("[MCP] SSE 服务器 {server.name} 初始化失败: {init.get('error')}")
         except Exception as e:
-            print(f"[MCP] SSE 连接失败 {server.name}: {e}")
+            logger.debug("[MCP] SSE 连接失败 {server.name}: {e}")
 
     def list_tools(self, server_name: Optional[str] = None, refresh: bool = False) -> List[Dict[str, Any]]:
         """
@@ -579,10 +579,10 @@ class MCPClient:
                     self.add_server(server)
                     added.append(server.name)
             if added:
-                print(f"[MCP] 热重载新增服务器: {added}")
+                logger.debug("[MCP] 热重载新增服务器: {added}")
             self.invalidate_cache()
         except Exception as e:
-            print(f"[MCP] 热重载失败: {e}")
+            logger.debug("[MCP] 热重载失败: {e}")
 
     def _remove_server(self, name: str) -> None:
         process = self.processes.pop(name, None)

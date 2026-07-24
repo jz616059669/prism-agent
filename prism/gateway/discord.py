@@ -10,6 +10,7 @@ from dataclasses import dataclass
 
 from prism.gateway import PlatformAdapter, Message
 
+from prism.logging import logger
 
 @dataclass
 class DiscordConfig:
@@ -59,11 +60,11 @@ class DiscordAdapter(PlatformAdapter):
             resp.raise_for_status()
             data = resp.json()
             
-    logger.debug("[Discord] 消息已发送 -> {chat_id}")
+            logger.debug("[Discord] 消息已发送 -> {chat_id}")
             return True
                 
         except Exception as e:
-    logger.debug("[Discord] 发送消息异常: {e}")
+            logger.debug("[Discord] 发送消息异常: {e}")
             return False
     
     def start_polling(self, handler: Callable[[Message], None]):
@@ -120,16 +121,16 @@ class DiscordAdapter(PlatformAdapter):
 
             t = threading.Thread(target=_run, daemon=True)
             t.start()
-    logger.debug("[Discord] Gateway WebSocket 已启动")
+            logger.debug("[Discord] Gateway WebSocket 已启动")
         except Exception as e:
-    logger.debug("[Discord] 启动失败: {e}")
-    logger.debug("[Discord] 请安装 websockets：pip install websockets")
+            logger.debug("[Discord] 启动失败: {e}")
+            logger.debug("[Discord] 请安装 websockets：pip install websockets")
     
     def stop(self):
         """停止"""
         self.running = False
         self.handler = None
-    logger.debug("[Discord] 已停止")
+        logger.debug("[Discord] 已停止")
     
     def get_channel_messages(self, channel_id: str, limit: int = 10) -> Dict[str, Any]:
         """获取频道消息历史"""

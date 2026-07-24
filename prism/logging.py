@@ -37,9 +37,22 @@ def get_logger(name: str = "prism") -> logging.Logger:
         fh = logging.FileHandler(str(LOG_FILE), encoding="utf-8")
         fh.setLevel(logging.DEBUG)
         fh.setFormatter(fmt)
-        logger.addHandler(fh)
+
+        class _SafeFileHandler(logging.FileHandler):
+            def emit(self, record):
+                try:
+                    if self.stream and not self.stream.closed:
+                        super().emit(record)
+                except Exception:
+                    pass
+
+        safe_fh = _SafeFileHandler(str(LOG_FILE), encoding="utf-8")
+        safe_fh.setLevel(logging.DEBUG)
+        safe_fh.setFormatter(fmt)
+        logger.addHandler(safe_fh)
     except Exception:
         logger.debug("file handler init failed: %s", traceback.format_exc())
+    logger.propagate = False
     return logger
 
 

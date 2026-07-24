@@ -114,4 +114,4 @@ def chapter_delivery_handler(**kwargs) -> Dict[str, Any]:
 if __name__ == "__main__":
     from prism.skills import skills
     register(skills)
-    logger.debug("registered chapter_delivery")
+    print("registered chapter_delivery")

@@ -107,7 +107,7 @@ class WechatAdapter(PlatformAdapter):
                         self.end_headers()
                         self.wfile.write(b'ok')
                     except Exception as exc:
-    logger.debug("[Wechat] callback error: {exc}")
+                        logger.debug("[Wechat] callback error: {exc}")
                         try:
                             self.send_response(500)
                             self.end_headers()
@@ -116,15 +116,15 @@ class WechatAdapter(PlatformAdapter):
                             pass
 
                 def log_message(self, format, *args):
-    logger.debug("[Wechat] {args[0]}")
+                    logger.debug("[Wechat] {args[0]}")
 
             host = self.config.callback_host
             server = HTTPServer((host, self.config.callback_port), WechatWebhookHandler)
             t = threading.Thread(target=server.serve_forever, daemon=True)
             t.start()
-    logger.debug("[Wechat] callback service started on http://{server.server_address[0]}:{server.server_address[1]}")
+            logger.debug("[Wechat] callback service started on http://{server.server_address[0]}:{server.server_address[1]}")
         except Exception as exc:
-    logger.debug("[Wechat] failed to start callback service: {exc}")
+            logger.debug("[Wechat] failed to start callback service: {exc}")
             self.running = False
             raise RuntimeError(f"企业微信回调服务启动失败: {exc}")
 
@@ -145,7 +145,7 @@ class WechatAdapter(PlatformAdapter):
                 raw=data,
             )
         except Exception as exc:
-    logger.debug("[Wechat] parse callback failed: {exc}")
+            logger.debug("[Wechat] parse callback failed: {exc}")
             return None
 
     def stop(self) -> None:
