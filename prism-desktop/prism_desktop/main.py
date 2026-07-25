@@ -2280,13 +2280,16 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
     def _run_on_ui(self, fn, *args, **kwargs):
         if not callable(fn):
             return
-        wrapped = lambda: fn(*args, **kwargs)
+
+        async def _task():
+            return fn(*args, **kwargs)
+
         try:
             if hasattr(self, "page") and self.page is not None:
                 if hasattr(self.page, "run_task"):
-                    self.page.run_task(wrapped)
+                    self.page.run_task(_task)
                 elif hasattr(self.page, "update"):
-                    wrapped()
+                    fn(*args, **kwargs)
                 else:
                     fn(*args, **kwargs)
             else:
