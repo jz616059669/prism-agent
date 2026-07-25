@@ -64,7 +64,8 @@ class Config:
             self._watch_thread = threading.Thread(target=self._watch_loop, daemon=True)
             self._watch_thread.start()
         except Exception:
-            logger.debug("config watcher start failed", exc_info=True)
+            _local_logger = logging.getLogger("prism.config")
+            _local_logger.debug("config watcher start failed", exc_info=True)
     
     def _watch_loop(self) -> None:
         failure_backoff = 1.0
@@ -80,16 +81,19 @@ class Config:
                     try:
                         self._load()
                     except Exception:
-                        logger.debug("config reload failed", exc_info=True)
+                        _local_logger = logging.getLogger("prism.config")
+                        _local_logger.debug("config reload failed", exc_info=True)
                     self._config_mtime = mtime
                     if self._on_change:
                         try:
                             self._on_change(old, self._config.copy())
                         except Exception:
-                            logger.debug("config on_change callback failed", exc_info=True)
+                            _local_logger = logging.getLogger("prism.config")
+                            _local_logger.debug("config on_change callback failed", exc_info=True)
                 failure_backoff = 1.0
             except Exception:
-                logger.debug("config watcher error", exc_info=True)
+                _local_logger = logging.getLogger("prism.config")
+                _local_logger.debug("config watcher error", exc_info=True)
                 failure_backoff = min(failure_backoff * 2.0, max_backoff)
             self._watch_stop.wait(min(failure_backoff, 1.0))
     
@@ -126,7 +130,8 @@ class Config:
             except ConfigError as exc:
                 raise
             except Exception:
-                logger.debug("schema validation skipped", exc_info=True)
+                _local_logger = logging.getLogger("prism.config")
+                _local_logger.debug("schema validation skipped", exc_info=True)
         finally:
             self._loading = False
     
