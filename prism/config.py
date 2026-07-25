@@ -67,7 +67,7 @@ class Config:
         except Exception:
             _local_logger = logging.getLogger("prism.config")
             _local_logger.debug("config watcher start failed", exc_info=True)
-    
+        
     def _watch_loop(self) -> None:
         failure_backoff = 1.0
         max_backoff = 60.0
@@ -223,9 +223,8 @@ class Config:
                     env_value = os.getenv(env_map[config_key])
                     if env_value:
                         model_section[config_key] = env_value
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
-    
     def _save(self) -> None:
         """保存配置文件"""
         self.config_dir.mkdir(parents=True, exist_ok=True)
@@ -359,7 +358,7 @@ class Config:
                 stored = keyring.get_password("prism", key)
                 if stored:
                     return stored
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
         env_name = key.upper().replace(".", "_")
         env_value = os.getenv(env_name)
@@ -415,7 +414,7 @@ class Config:
         if key in _SENSITIVE_KEYS and keyring is not None:
             try:
                 keyring.set_password("prism", key, str(value))
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
         keys = key.split('.')
         config = self._config

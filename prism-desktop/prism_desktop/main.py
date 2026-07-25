@@ -104,7 +104,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
 
         try:
             self._settings = self._load_settings()
-        except Exception:
+        except Exception:  # noqa: BLE001
             self._settings = {}
 
         try:
@@ -115,7 +115,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             try:
                 INIT_ERROR_LOG.write_text(tb, encoding="utf-8")
             except Exception:
-                logger.debug('desktop exception: %s', traceback.format_exc())
+                logger.debug('desktop exception: %s', traceback.format_exc(), exc_info=True)
             logger.debug("[INIT ERROR] %s\n%s", exc, tb)
             self._append_terminal(f"init error: {exc}")
             self._append_terminal(tb)
@@ -132,7 +132,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             try:
                 INIT_ERROR_LOG.write_text(tb, encoding="utf-8")
             except Exception:
-                logger.debug('desktop exception: %s', traceback.format_exc())
+                logger.debug('desktop exception: %s', traceback.format_exc(), exc_info=True)
             logger.debug("[INIT ERROR] %s\n%s", exc, tb)
             self._append_terminal(f"init error: {exc}")
             self._append_terminal(tb)
@@ -174,22 +174,21 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         try:
             self._init_mcp_servers()
         except Exception:
-            logger.debug('desktop exception: %s', traceback.format_exc())
+            logger.debug('desktop exception: %s', traceback.format_exc(), exc_info=True)
         try:
             from prism.mcp import mcp_client
             mcp_client.watch_config()
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
         try:
             from prism.notification_system import notification_system
             notification_system.set_ui_callback(self._append_notification)
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
         try:
             self._restore_runtime_state()
         except Exception:
-            logger.debug('desktop exception: %s', traceback.format_exc())
-
+            logger.debug('desktop exception: %s', traceback.format_exc(), exc_info=True)
     def _append_notification(self, notification):
         try:
             if not hasattr(self, "notification_list") or self.notification_list is None:
@@ -205,11 +204,10 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self.notification_list.controls.append(row)
             try:
                 self.notification_list.update()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
         except Exception:
-            logger.debug("append notification failed: %s", traceback.format_exc())
-
+            logger.debug("append notification failed: %s", traceback.format_exc(), exc_info=True)
     def _test_notification(self):
         try:
             from prism.notification_system import notification_system
@@ -264,13 +262,12 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     self.memory_list.controls.append(row)
             try:
                 self.memory_list.update()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
         try:
             self._run_on_ui(_apply)
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
-
     def _edit_memory(self, key: str):
         try:
             from prism.memory import persistent_memory
@@ -284,7 +281,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             for fld in [self.memory_key_field, self.memory_value_field, self.memory_category_add_field]:
                 try:
                     fld.update()
-                except Exception:
+                except Exception:  # noqa: BLE001
                     pass
             self._set_status(f"编辑记忆：{key}", ft.Colors.GREEN_400)
         except Exception as exc:
@@ -307,7 +304,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             for fld in [self.memory_key_field, self.memory_value_field, self.memory_category_add_field]:
                 try:
                     fld.update()
-                except Exception:
+                except Exception:  # noqa: BLE001
                     pass
             self._memory_form_edit_key = None
             self._refresh_memory()
@@ -346,8 +343,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         try:
             self._append_terminal(f"[ERROR] {context}: {exc}")
         except Exception:
-            logger.debug('desktop exception: %s', traceback.format_exc())
-
+            logger.debug('desktop exception: %s', traceback.format_exc(), exc_info=True)
     def _show_init_fallback(self, exc: BaseException) -> None:
         """初始化失败时仅输出到终端与日志，不展示 fallback UI。"""
         try:
@@ -357,18 +353,17 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             try:
                 INIT_ERROR_LOG.write_text(tb_text, encoding="utf-8")
             except Exception:
-                logger.debug('desktop exception: %s', traceback.format_exc())
+                logger.debug('desktop exception: %s', traceback.format_exc(), exc_info=True)
             self._append_terminal(f"[ERROR] agent init: {exc}")
             self._append_terminal(tb_text)
         except Exception:
-            logger.debug('desktop exception: %s', traceback.format_exc())
-
+            logger.debug('desktop exception: %s', traceback.format_exc(), exc_info=True)
     def _retry_init(self) -> None:
         """点击重试时重新初始化 Agent。"""
         try:
             self.page.clean()
         except Exception:
-            logger.debug('desktop exception: %s', traceback.format_exc())
+            logger.debug('desktop exception: %s', traceback.format_exc(), exc_info=True)
         try:
             self._build_ui()
             self._bind_context_menu()
@@ -390,8 +385,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             line = {"ts": datetime.now().isoformat(timespec="seconds"), "level": level, "event": event, **fields}
             self._append_terminal(f"[{line['level']}] {line['event']} | {fields}")
         except Exception:
-            logger.debug('desktop exception: %s', traceback.format_exc())
-
+            logger.debug('desktop exception: %s', traceback.format_exc(), exc_info=True)
     def _log_to_file(self, level: str, event: str, **fields) -> None:
         try:
             safe_fields = {k: (str(v) if not isinstance(v, (str, int, float, bool, type(None))) else v) for k, v in fields.items()}
@@ -401,8 +395,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             with open(log_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(entry, ensure_ascii=False) + "\n")
         except Exception:
-            logger.debug('desktop exception: %s', traceback.format_exc())
-
+            logger.debug('desktop exception: %s', traceback.format_exc(), exc_info=True)
     def _on_keyboard_event(self, e: ft.KeyboardEvent):
         try:
             if e.ctrl and e.key == "Enter":
@@ -437,12 +430,12 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             latest = data.get("tag_name", "").lstrip("v")
             try:
                 current = __import__("prism", fromlist=["__version__"]).__version__
-            except Exception:
+            except Exception:  # noqa: BLE001
                 current = "0.0.0"
             if latest and latest != current:
                 self._set_status(f"发现新版本 {latest}", ft.Colors.AMBER_400)
                 self._append_terminal(f"update available: {latest} (current {current})")
-        except Exception:
+        except Exception:  # noqa: BLE001
             # 静默跳过，避免刷屏
             return
 
@@ -465,13 +458,12 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 try:
                     self._set_status(f"配置缺失：{', '.join(missing)}", ft.Colors.RED_400)
                 except Exception:
-                    logger.debug('desktop exception: %s', traceback.format_exc())
+                    logger.debug('desktop exception: %s', traceback.format_exc(), exc_info=True)
                 return False
             return True
         except Exception:
             logger.debug('desktop exception: %s', traceback.format_exc())
             return False
-
     def _validate_and_create_agent(self) -> bool:
         self.agent = None
         if not self._validate_config():
@@ -500,11 +492,11 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                             status_text.color = color
                             if hasattr(status_text, "update"):
                                 status_text.update()
-                        except Exception:
+                        except Exception:  # noqa: BLE001
                             pass
                     try:
                         self._run_on_ui(_ui)
-                    except Exception:
+                    except Exception:  # noqa: BLE001
                         pass
             _set_status("正在测试...", ft.Colors.ON_SURFACE_VARIANT)
             try:
@@ -517,7 +509,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
 
         try:
             threading.Thread(target=_run, daemon=True).start()
-        except Exception:
+        except Exception:  # noqa: BLE001
             _run()
 
     def _maybe_show_setup_wizard(self):
@@ -609,14 +601,14 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         if path.exists():
             try:
                 data = json.loads(path.read_text(encoding="utf-8"))
-            except Exception:
+            except Exception:  # noqa: BLE001
                 data = {}
         cfg: Dict[str, Any] = {"transport": transport, "enabled": bool(self.mcp_enabled_switch.value)}
         if transport == "stdio":
             cfg["command"] = (self.mcp_command_field.value or "").strip()
             try:
                 cfg["args"] = json.loads(self.mcp_args_field.value or "[]")
-            except Exception:
+            except Exception:  # noqa: BLE001
                 cfg["args"] = []
         elif transport in ("http", "sse"):
             cfg["url"] = (self.mcp_url_field.value or "").strip()
@@ -624,15 +616,15 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         if env_raw:
             try:
                 cfg["env"] = json.loads(env_raw)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 cfg["env"] = {}
         try:
             cfg["timeout"] = int(self.mcp_timeout_field.value or 30)
-        except Exception:
+        except Exception:  # noqa: BLE001
             cfg["timeout"] = 30
         try:
             cfg["retries"] = int(self.mcp_retries_field.value or 2)
-        except Exception:
+        except Exception:  # noqa: BLE001
             cfg["retries"] = 2
         data[name] = cfg
         path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -654,9 +646,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         for fld in [self.mcp_name_field, self.mcp_command_field, self.mcp_args_field, self.mcp_url_field, self.mcp_env_field, self.mcp_timeout_field, self.mcp_retries_field, self.mcp_enabled_switch]:
             try:
                 fld.update()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
-
     def _refresh_mcp(self) -> None:
         def _ui():
             if not hasattr(self, "mcp_server_list") or self.mcp_server_list is None:
@@ -684,7 +675,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                         try:
                             tool_names = [t.get("name") for t in tools_map.get(name, {}).get("tools", []) if isinstance(t, dict)]
                             self._mcp_tool_counts[name] = len(tool_names)
-                        except Exception:
+                        except Exception:  # noqa: BLE001
                             self._mcp_tool_counts[name] = 0
                         status_row = ft.Row([
                             ft.Text("工具数", size=11, color=ft.Colors.ON_SURFACE_VARIANT),
@@ -697,11 +688,11 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             try:
                 self._run_on_ui(self.mcp_server_list.update)
                 self._run_on_ui(self.mcp_status_list.update)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
         try:
             threading.Thread(target=_ui, daemon=True).start()
-        except Exception:
+        except Exception:  # noqa: BLE001
             _ui()
 
     def _save_settings_debounced(self) -> None:
@@ -717,18 +708,18 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             def _on_window_event(e):
                 try:
                     self._cancel_background_timers()
-                except Exception:
+                except Exception:  # noqa: BLE001
                     pass
                 try:
                     self._persist_runtime_state()
-                except Exception:
+                except Exception:  # noqa: BLE001
                     pass
                 try:
                     getattr(self.page, "window_close", lambda: None)()
-                except Exception:
+                except Exception:  # noqa: BLE001
                     pass
             self.page.on_window_event = _on_window_event
-        except Exception:
+        except Exception:  # noqa: BLE001
             try:
                 self._persist_runtime_state()
             except Exception:
@@ -740,9 +731,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             if t is not None:
                 try:
                     t.cancel()
-                except Exception:
+                except Exception:  # noqa: BLE001
                     pass
-
     def _bind_tray(self) -> None:
         try:
             if sys.platform == "darwin":
@@ -777,28 +767,26 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                                     if hasattr(self, "input_field") and self.input_field is not None:
                                         try:
                                             self._run_on_ui(self.input_field.focus)
-                                        except Exception:
+                                        except Exception:  # noqa: BLE001
                                             pass
                                 except Exception:
-                                    logger.debug('desktop exception: %s', traceback.format_exc())
+                                    logger.debug('desktop exception: %s', traceback.format_exc(), exc_info=True)
                             try:
                                 self._run_on_ui(_ui_show)
-                            except Exception:
+                            except Exception:  # noqa: BLE001
                                 pass
                     except Exception:
-                        logger.debug('desktop exception: %s', traceback.format_exc())
-
+                        logger.debug('desktop exception: %s', traceback.format_exc(), exc_info=True)
                 def _on_exit(icon, item):
                     icon.stop()
                     try:
                         if hasattr(self, "page") and self.page is not None:
                             try:
                                 self.page.window_close()
-                            except Exception:
+                            except Exception:  # noqa: BLE001
                                 pass
                     except Exception:
-                        logger.debug('desktop exception: %s', traceback.format_exc())
-
+                        logger.debug('desktop exception: %s', traceback.format_exc(), exc_info=True)
                 menu = pystray.Menu(
                     pystray.MenuItem(_("open_main"), _on_tray_click),
                     pystray.MenuItem(_("exit_app"), _on_exit),
@@ -831,12 +819,12 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 self.page.animate = ft.Animation(duration=300, curve=ft.AnimationCurve.EASE_IN_OUT)
                 try:
                     self.page.update()
-                except Exception:
+                except Exception:  # noqa: BLE001
                     pass
                 self._append_terminal(f"theme -> {name}")
                 self._save_settings()
             except Exception:
-                logger.debug("apply theme failed: %s", traceback.format_exc())
+                logger.debug("apply theme failed: %s", traceback.format_exc(), exc_info=True)
         try:
             self._run_on_ui(_ui)
         except Exception:
@@ -931,18 +919,18 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                         def _ui(c=card):
                             try:
                                 c.update()
-                            except Exception:
+                            except Exception:  # noqa: BLE001
                                 pass
                         try:
                             self._run_on_ui(_ui)
-                        except Exception:
+                        except Exception:  # noqa: BLE001
                             pass
                         time.sleep(0.08)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
         try:
             threading.Thread(target=_run, daemon=True).start()
-        except Exception:
+        except Exception:  # noqa: BLE001
             _run()
 
     def _cycle_theme(self):
@@ -966,15 +954,14 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 try:
                     body.update()
                     header.update()
-                except Exception:
+                except Exception:  # noqa: BLE001
                     pass
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
         try:
             self._run_on_ui(_ui)
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
-
     def _minimize_to_tray(self):
         try:
             if hasattr(self.page, "window_hide"):
@@ -983,8 +970,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 self.page.visible = False
             self._append_terminal("minimized to tray")
         except Exception:
-            logger.debug('desktop exception: %s', traceback.format_exc())
-
+            logger.debug('desktop exception: %s', traceback.format_exc(), exc_info=True)
     def _build_ui(self):
         self._clock_text = ft.Text(datetime.now().strftime("%H:%M:%S"), size=11, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_500, opacity=0.95)
         self.page.appbar = self._build_appbar()
@@ -1026,9 +1012,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         if hasattr(self.chat_list, "scroll_to") and hasattr(self.chat_list, "page"):
             try:
                 self.chat_list.page.run_task(self.chat_list.scroll_to, delta=99999, duration=150)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
-    
     def _open_preset_manager(self):
         presets = (self._settings.get("model_presets") or {})
         preset_names = list(presets.keys())
@@ -1159,7 +1144,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self.gateway_start_btn.disabled = True
             try:
                 self.gateway_start_btn.update()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
             threading.Thread(target=self._start_gateway_worker, daemon=True).start()
 
@@ -1182,14 +1167,12 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 from prism.cli.gateway import gateway_status
                 status = gateway_status("feishu")
                 self._refresh_gateway_ui(running=bool(status.get("running")), log=(status.get("detail") or {}).get("feishu", {}).get("pid") and "运行中" or "未启动")
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
-
         try:
             self.page.set_interval(5000, _poll_gateway_status)
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
-
         return [
             ft.Row([self.gateway_status_icon, self.gateway_status_text], spacing=8),
             ft.Row([self.gateway_start_btn, self.gateway_stop_btn], spacing=8),
@@ -1200,16 +1183,15 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         def _ui(running, log):
             try:
                 self._refresh_gateway_ui(running=running, log=log)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
             try:
                 if running:
                     self._set_status("飞书 gateway 已启动", ft.Colors.GREEN_400)
                 else:
                     self._set_status(f"gateway 启动失败: {log}", ft.Colors.RED_400)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
-
         log_lines = []
         try:
             from prism.cli.gateway import gateway_status, gateway_start
@@ -1246,11 +1228,10 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             for ctrl in [self.gateway_status_text, self.gateway_status_icon, self.gateway_start_btn, self.gateway_stop_btn, self.gateway_log_text]:
                 try:
                     ctrl.update()
-                except Exception:
+                except Exception:  # noqa: BLE001
                     pass
         except Exception:
-            logger.debug("refresh gateway ui failed: %s", traceback.format_exc())
-
+            logger.debug("refresh gateway ui failed: %s", traceback.format_exc(), exc_info=True)
     def _build_sidebar(self) -> ft.Container:
         self._sidebar_container = ft.Container(animate=ft.Animation(duration=300, curve=ft.AnimationCurve.EASE_IN_OUT),
             content=ft.Column(
@@ -1427,7 +1408,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 try:
                     body.update()
                     toggle.update()
-                except Exception:
+                except Exception:  # noqa: BLE001
                     pass
             toggle.on_click = _on_toggle
             header_row = ft.Row([header, ft.Container(expand=True), toggle], spacing=6, tight=True)
@@ -1552,7 +1533,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     self._input_timer.cancel()
                 self._input_timer = threading.Timer(0.05, self._apply_input_update)
             except Exception:
-                logger.debug('desktop exception: %s', traceback.format_exc())
+                logger.debug('desktop exception: %s', traceback.format_exc(), exc_info=True)
         self._on_input_change = _on_input_change
         clear_chat_btn = ft.TextButton("清屏", style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), bgcolor=ft.Colors.ERROR_CONTAINER, color=ft.Colors.ON_ERROR_CONTAINER), icon=ft.Icons.DELETE_OUTLINE_ROUNDED, animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         clear_chat_btn.on_click = lambda e: self._clear_chat()
@@ -1863,19 +1844,18 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             if index == 2 and hasattr(self, "_refresh_skills"):
                 try:
                     self._refresh_skills()
-                except Exception:
+                except Exception:  # noqa: BLE001
                     pass
             if index == 9 and hasattr(self, "_refresh_memory"):
                 try:
                     self._refresh_memory()
-                except Exception:
+                except Exception:  # noqa: BLE001
                     pass
             try:
                 self._right_tab_contents.update()
                 self._right_tab_buttons_row.update()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
-
         self._switch_right_tab = lambda i: _show_tab(i)
         _show_tab(0)
 
@@ -1899,7 +1879,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 if self._chat_placeholder in self.chat_list.controls:
                     self.chat_list.controls.remove(self._chat_placeholder)
             except Exception:
-                logger.debug("hide placeholder failed: %s", traceback.format_exc())
+                logger.debug("hide placeholder failed: %s", traceback.format_exc(), exc_info=True)
         is_user = role == "你"
         align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
         text_color = ft.Colors.ON_PRIMARY_CONTAINER if is_user else ft.Colors.ON_SURFACE
@@ -1934,22 +1914,21 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             try:
                 self.chat_list.update()
             except Exception:
-                logger.debug("chat_list update failed: %s", traceback.format_exc())
+                logger.debug("chat_list update failed: %s", traceback.format_exc(), exc_info=True)
             try:
                 if hasattr(self.chat_list, "scroll_to") and hasattr(self.chat_list, "page"):
                     async def _do_scroll():
                         await self.chat_list.scroll_to(delta=99999, duration=150)
                     self.chat_list.page.run_task(_do_scroll)
             except Exception:
-                logger.debug("chat scroll failed: %s", traceback.format_exc())
+                logger.debug("chat scroll failed: %s", traceback.format_exc(), exc_info=True)
         except Exception:
             logger.debug("append message failed: %s", traceback.format_exc())
             try:
                 self._append_terminal(f"[CHAT ERROR] {role}: {text[:200]}")
             except Exception as ex:
                 logger.debug("append message fallback failed: %s", ex)
-
-
+    
     def _new_session(self):
         self._current_session_name = None
         self._settings["current_session"] = None
@@ -1979,7 +1958,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 except Exception:
                     logger.debug("clear chat update failed", exc_info=True)
             except Exception:
-                logger.debug("clear chat failed: %s", traceback.format_exc())
+                logger.debug("clear chat failed: %s", traceback.format_exc(), exc_info=True)
         try:
             self._run_on_ui(_apply)
         except Exception:
@@ -2007,9 +1986,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 self.input_count.value = f"{len(text)} 字"
                 if hasattr(self.input_count, "page") and self.input_count.page is not None:
                     self.input_count.update()
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
-
     def _paste_attachment(self):
         try:
             if hasattr(self.page, "clipboard") and self.page.clipboard is not None:
@@ -2126,9 +2104,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                         self._attachment_preview_row.controls.append(item)
                 if getattr(self._attachment_preview_row, "page", None):
                     self._attachment_preview_row.update()
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
-
     def _remove_pending_attachment(self, path: str):
         self._pending_attachments = [p for p in self._pending_attachments if p != path]
         self._refresh_attachment_previews()
@@ -2203,7 +2180,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 self._set_status("会话保存失败", ft.Colors.RED_400)
         try:
             threading.Thread(target=_run, daemon=True).start()
-        except Exception:
+        except Exception:  # noqa: BLE001
             _run()
 
     def _filter_sessions(self, q: str):
@@ -2267,14 +2244,14 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     try:
                         w.update()
                     except Exception:
-                        logger.debug("session hover update failed: %s", traceback.format_exc())
+                        logger.debug("session hover update failed: %s", traceback.format_exc(), exc_info=True)
                 session_wrap.on_hover = _on_session_hover
                 if isinstance(self.session_list, ft.Column) and isinstance(session_wrap, ft.Control):
                     self.session_list.controls.append(session_wrap)
             self._run_on_ui(self.session_list.update)
         try:
             threading.Thread(target=_run, daemon=True).start()
-        except Exception:
+        except Exception:  # noqa: BLE001
             _run()
 
     def _run_on_ui(self, fn, *args, **kwargs):
@@ -2294,9 +2271,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     fn(*args, **kwargs)
             else:
                 fn(*args, **kwargs)
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
-
     def _refresh_sessions(self):
         def _build():
             def _run():
@@ -2357,14 +2333,14 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                             try:
                                 w.update()
                             except Exception:
-                                logger.debug("session hover update failed: %s", traceback.format_exc())
+                                logger.debug("session hover update failed: %s", traceback.format_exc(), exc_info=True)
                         session_wrap.on_hover = _on_session_hover
                         self._session_all_items.append(session_row)
                         self.session_list.controls.append(session_wrap)
                 self._run_on_ui(self.session_list.update)
             try:
                 threading.Thread(target=_run, daemon=True).start()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 _run()
 
     def _delete_session(self, name: str):
@@ -2381,7 +2357,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self._run_on_ui(self._refresh_sessions)
         try:
             threading.Thread(target=_run, daemon=True).start()
-        except Exception:
+        except Exception:  # noqa: BLE001
             _run()
 
     def _export_session(self, name: str):
@@ -2411,7 +2387,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 self._set_status("导出失败", ft.Colors.RED_400)
         try:
             threading.Thread(target=_run, daemon=True).start()
-        except Exception:
+        except Exception:  # noqa: BLE001
             _run()
 
     def _compact_session(self, name: str):
@@ -2430,7 +2406,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 self._set_status("压缩异常", ft.Colors.RED_400)
         try:
             threading.Thread(target=_run, daemon=True).start()
-        except Exception:
+        except Exception:  # noqa: BLE001
             _run()
 
     def _toggle_pin_session(self, name: str):
@@ -2503,7 +2479,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             try:
                 from prism.message_store import message_store
                 items = message_store.history(getattr(self, "_current_session_name", "") or "")
-            except Exception:
+            except Exception:  # noqa: BLE001
                 items = []
             if not items:
                 self.message_store_list.controls.append(ft.Text("无消息", color=ft.Colors.ON_SURFACE_VARIANT))
@@ -2514,7 +2490,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self._run_on_ui(self.message_store_list.update)
         try:
             threading.Thread(target=_run, daemon=True).start()
-        except Exception:
+        except Exception:  # noqa: BLE001
             _run()
 
     def _refresh_retry_queue(self):
@@ -2523,7 +2499,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             try:
                 from prism.retry_strategy import retry_strategy
                 tasks = retry_strategy.due()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 tasks = []
             if not tasks:
                 self.retry_list.controls.append(ft.Text("无待重试任务", color=ft.Colors.ON_SURFACE_VARIANT))
@@ -2533,11 +2509,11 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 self.retry_list.controls.append(row)
             try:
                 self._run_on_ui(self.retry_list.update)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
         try:
             threading.Thread(target=_run, daemon=True).start()
-        except Exception:
+        except Exception:  # noqa: BLE001
             _run()
 
     def _start_webhook_server(self):
@@ -2564,7 +2540,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     self.webhook_secret_field.value = data.get("secret") or ""
                     self.webhook_command_field.value = data.get("command") or ""
                     self.webhook_enabled_switch.value = bool(data.get("enabled", True))
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
         else:
             self.webhook_path_field.value = ""
@@ -2574,21 +2550,20 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         for fld in [self.webhook_path_field, self.webhook_secret_field, self.webhook_command_field, self.webhook_enabled_switch]:
             try:
                 fld.update()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
         form.visible = True
         try:
             form.update()
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
-
     def _hide_webhook_form(self):
         form = getattr(self, "_webhook_form_container", None)
         if form:
             form.visible = False
             try:
                 form.update()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
         self._webhook_form_edit_id = None
 
@@ -2618,7 +2593,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         try:
             from prism.webhook_trigger import webhook_trigger
             items = webhook_trigger.list_webhooks()
-        except Exception:
+        except Exception:  # noqa: BLE001
             items = []
         def _apply():
             self.webhook_list.controls.clear()
@@ -2638,13 +2613,12 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     self.webhook_list.controls.append(row)
             try:
                 self.webhook_list.update()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
         try:
             self._run_on_ui(_apply)
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
-
     def _delete_webhook(self, webhook_id: str):
         if not webhook_id:
             return
@@ -2666,7 +2640,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             try:
                 from prism.schedule_visualizer import schedule_visualizer
                 widgets = schedule_visualizer.to_timeline_widgets(days=7)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 widgets = []
             if not widgets:
                 self.schedule_list.controls.append(ft.Text("无定时任务", color=ft.Colors.ON_SURFACE_VARIANT))
@@ -2678,11 +2652,11 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 self.schedule_list.controls.append(row)
             try:
                 self._run_on_ui(self.schedule_list.update)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
         try:
             threading.Thread(target=_run, daemon=True).start()
-        except Exception:
+        except Exception:  # noqa: BLE001
             _run()
 
 
@@ -2707,13 +2681,12 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             line.opacity = 1
             try:
                 self.terminal_list.update()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
         try:
             self._run_on_ui(_apply)
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
-
     def _append_mcp(self, text: str):
         self._mcp_logs.append(text)
         if len(self._mcp_logs) > 200:
@@ -2728,13 +2701,12 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 self.mcp_list.controls.append(item)
             try:
                 self.mcp_list.update()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
         try:
             self._run_on_ui(_apply)
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
-
     def _clear_terminal(self):
         self._terminal_lines = []
         if not hasattr(self, "terminal_list") or self.terminal_list is None:
@@ -2743,13 +2715,12 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             try:
                 self.terminal_list.controls.clear()
                 self.terminal_list.update()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
         try:
             self._run_on_ui(_apply)
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
-
     def _clear_mcp(self):
         self._mcp_logs = []
         if not hasattr(self, "mcp_list") or self.mcp_list is None:
@@ -2758,14 +2729,12 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             try:
                 self.mcp_list.controls.clear()
                 self.mcp_list.update()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
         try:
             self._run_on_ui(_apply)
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
-
-
     def _refresh_skills(self):
         if not hasattr(self, "skill_list") or self.skill_list is None:
             return
@@ -2812,13 +2781,12 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     self.skill_list.controls.append(row)
             try:
                 self.skill_list.update()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
         try:
             self._run_on_ui(_apply)
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
-
     def _filter_skills(self, text: str):
         q = (text or "").strip().lower()
         if not q:
@@ -2979,7 +2947,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                             self._status_icon.bgcolor = color
                             if getattr(self._status_icon, "page", None) is not None:
                                 self._status_icon.update()
-                        except Exception:
+                        except Exception:  # noqa: BLE001
                             pass
                     try:
                         self.status_text.update()
@@ -2989,21 +2957,20 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                             self.status_text.color = color
                             page.update([self.status_text])
                         except Exception as exc:
-                            logger.debug("status fallback update failed: %s", exc)
+                            logger.debug("status fallback update failed: %s", exc, exc_info=True)
                 except Exception:
                     try:
                         self.status_text.value = text
                         self.status_text.color = color
                         page.update([self.status_text])
                     except Exception as exc:
-                        logger.debug("status fallback update failed: %s", exc)
+                        logger.debug("status fallback update failed: %s", exc, exc_info=True)
             except Exception:
-                logger.debug('desktop exception: %s', traceback.format_exc())
+                logger.debug('desktop exception: %s', traceback.format_exc(), exc_info=True)
         try:
             self._run_on_ui(_apply)
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
-
     def _save_config(self):
         prism_config.set("model.default", self.model_dropdown.value)
         prism_config.set("model.provider", self.provider_textfield.value)
@@ -3029,8 +2996,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self._log_to_file("info", "stream_stopped", chunks=getattr(self, "_chunk_count", 0))
         except Exception:
             logger.debug('desktop exception: %s', traceback.format_exc())
-
-
+    
     def _check_browser_dependencies(self) -> dict:
         status = {"playwright": False, "chromium": False, "error": ""}
         try:
@@ -3062,8 +3028,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             self._perf_proc = psutil.Process()
             self._perf_log_counter = 0
         except Exception:
-            logger.debug('desktop exception: %s', traceback.format_exc())
-
+            logger.debug('desktop exception: %s', traceback.format_exc(), exc_info=True)
     def _perf_tick(self) -> None:
         try:
             import time
@@ -3083,10 +3048,9 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     try:
                         self._log_to_file("debug", "perf_tick", fps=round(fps, 1), mem_mb=round(mem, 1))
                     except Exception:
-                        logger.debug('desktop exception: %s', traceback.format_exc())
+                        logger.debug('desktop exception: %s', traceback.format_exc(), exc_info=True)
         except Exception:
-            logger.debug('desktop exception: %s', traceback.format_exc())
-
+            logger.debug('desktop exception: %s', traceback.format_exc(), exc_info=True)
     def _set_browser_status(self, connected: bool, title: str = ""):
         self.browser_connected = connected
         if connected:
@@ -3117,7 +3081,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     self._terminal_history = self._terminal_history[-200:]
             self._terminal_history_index = len(self._terminal_history)
         except Exception:
-            logger.debug('desktop exception: %s', traceback.format_exc())
+            logger.debug('desktop exception: %s', traceback.format_exc(), exc_info=True)
         self._append_terminal(f"$ {command}")
         self.terminal_input.value = ""
         self.terminal_input.update()
@@ -3231,13 +3195,12 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                     self.workflow_list.controls.append(row)
             try:
                 self.workflow_list.update()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
         try:
             self._run_on_ui(_apply)
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
-
     def _run_workflow_from_ui(self, name: str):
         if not name:
             return

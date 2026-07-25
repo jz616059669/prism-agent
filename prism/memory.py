@@ -322,7 +322,7 @@ class PersistentMemory:
             # 压缩超长条目：优先用 LLM 压缩为 1-2 句摘要，失败则硬截断
             try:
                 self._llm_compress_long_entries()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 for m in self._index.values():
                     v = getattr(m, "value", "") or ""
                     if len(v) > 200:
@@ -336,7 +336,7 @@ class PersistentMemory:
                 last = getattr(m, "last_accessed_at", "") or getattr(m, "updated_at", "") or getattr(m, "created_at", "") or ""
                 try:
                     last_dt = datetime.fromisoformat(last)
-                except Exception:
+                except Exception:  # noqa: BLE001
                     last_dt = None
                 if last_dt is not None and last_dt < cutoff and conf < 0.3:
                     del self._index[key]
@@ -356,7 +356,7 @@ class PersistentMemory:
         """用 LLM 把超长记忆条目压缩为短摘要，保留核心语义。"""
         try:
             from prism.providers.manager import provider_pool
-        except Exception:
+        except Exception:  # noqa: BLE001
             return
         changed = False
         for m in list(self._index.values()):
@@ -378,7 +378,7 @@ class PersistentMemory:
                     m.value = content[:200]
                     m.updated_at = _now_iso()
                     changed = True
-            except Exception:
+            except Exception:  # noqa: BLE001
                 continue
         if changed:
             self._save()
@@ -540,7 +540,7 @@ class PersistentMemory:
             try:
                 last_dt = datetime.fromisoformat(last)
                 days = max((now - last_dt).total_seconds() / 86400.0, 0.0)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 continue
             if days <= 0:
                 continue
@@ -635,7 +635,7 @@ class PersistentMemory:
                     score += 0.3
                 elif hours < 168:
                     score += 0.15
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
         # 记忆质量追踪：被实际用过的记忆加权
         try:
@@ -649,7 +649,7 @@ class PersistentMemory:
                     score += 0.2
                 elif hours < 168:
                     score += 0.1
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
         return score
 

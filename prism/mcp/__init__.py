@@ -19,7 +19,7 @@ import traceback
 
 try:
     from prism import __version__ as _PRISM_VERSION
-except Exception:
+except Exception:  # noqa: BLE001
     _PRISM_VERSION = "2.1.6"
 
 try:
@@ -28,7 +28,6 @@ try:
 except Exception:
     _HTTP_CLIENT_AVAILABLE = False
     logger.debug("HTTP client import failed: %s", traceback.format_exc())
-
 
 @dataclass
 class MCPServer:
@@ -395,7 +394,7 @@ class MCPClient:
             if response and "result" in response:
                 return response["result"].get("tools", [])
         except Exception:
-            logger.debug("list stdio tools failed: %s", traceback.format_exc())
+            logger.debug("list stdio tools failed: %s", traceback.format_exc(), exc_info=True)
         return []
 
     def _list_http_tools(self, server_name: str) -> List[Dict[str, Any]]:
@@ -418,7 +417,6 @@ class MCPClient:
         except Exception:
             logger.debug("list sse tools failed: %s", traceback.format_exc())
             return []
-
     def _call_sse_tool(self, server_name: str, tool_name: str, arguments: Dict[str, Any], timeout: int = 30) -> Dict[str, Any]:
         client = self.http_clients.get(server_name)
         if not client:
@@ -444,7 +442,7 @@ class MCPClient:
                     except subprocess.TimeoutExpired:
                         pass
             except Exception:
-                logger.debug("mcp process cleanup failed: %s", traceback.format_exc())
+                logger.debug("mcp process cleanup failed: %s", traceback.format_exc(), exc_info=True)
         self.processes.clear()
         self._stdio_initialized.clear()
 
@@ -452,7 +450,7 @@ class MCPClient:
             try:
                 client.close()
             except Exception:
-                logger.debug("mcp http client cleanup failed: %s", traceback.format_exc())
+                logger.debug("mcp http client cleanup failed: %s", traceback.format_exc(), exc_info=True)
         self.http_clients.clear()
         self.tools.clear()
 
@@ -540,7 +538,7 @@ class MCPClient:
         self._config_path = config_path
         try:
             self._config_mtime = Path(config_path).stat().st_mtime
-        except Exception:
+        except Exception:  # noqa: BLE001
             self._config_mtime = 0.0
         self._watcher_stop.clear()
         self._watcher_thread = threading.Thread(target=self._config_watcher, daemon=True)

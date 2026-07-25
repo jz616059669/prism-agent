@@ -99,7 +99,7 @@ class FeishuAdapter(PlatformAdapter):
             return
         try:
             retry_after = getattr(last_response, "retry_after", None) or 0
-        except Exception:
+        except Exception:  # noqa: BLE001
             retry_after = 0
         now = time.time()
         elapsed = now - self._last_send_ts
@@ -183,7 +183,7 @@ class FeishuAdapter(PlatformAdapter):
                 last = do(req)
                 if last and last.success():
                     return last
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
         return last
 
@@ -323,12 +323,12 @@ class FeishuAdapter(PlatformAdapter):
                     else:
                         close()
             except Exception:
-                logger.debug("feishu ws client close failed: %s", traceback.format_exc())
+                logger.debug("feishu ws client close failed: %s", traceback.format_exc(), exc_info=True)
         if self._loop is not None and not self._loop.is_closed():
             try:
                 self._loop.call_soon_threadsafe(self._loop.stop)
             except Exception:
-                logger.debug("feishu loop stop failed: %s", traceback.format_exc())
+                logger.debug("feishu loop stop failed: %s", traceback.format_exc(), exc_info=True)
         if self._thread is not None:
             self._thread.join(timeout=5)
         self._ws_client = None
@@ -346,9 +346,8 @@ class FeishuAdapter(PlatformAdapter):
                 try:
                     import nest_asyncio
                     nest_asyncio.apply(self._loop)
-                except Exception:
+                except Exception:  # noqa: BLE001
                     pass
-
                 ws_client = FeishuWSClient(
                     self.config.app_id,
                     self.config.app_secret,
@@ -368,7 +367,7 @@ class FeishuAdapter(PlatformAdapter):
                 if self._loop and not self._loop.is_closed():
                     try:
                         self._loop.call_soon_threadsafe(self._loop.stop)
-                    except Exception:
+                    except Exception:  # noqa: BLE001
                         pass
                 self._loop = None
             if not self.running:
@@ -394,7 +393,7 @@ class FeishuAdapter(PlatformAdapter):
                 try:
                     content = json.loads(message.content or "{}")
                     text = content.get("text", "")
-                except Exception:
+                except Exception:  # noqa: BLE001
                     text = ""
             elif message_type == "image":
                 try:
@@ -403,7 +402,7 @@ class FeishuAdapter(PlatformAdapter):
                     if image_key:
                         media_url = f"image:{image_key}"
                         text = "[图片]"
-                except Exception:
+                except Exception:  # noqa: BLE001
                     text = "[图片]"
             elif message_type == "file":
                 try:
@@ -413,7 +412,7 @@ class FeishuAdapter(PlatformAdapter):
                         file_id = file_key
                         media_url = f"file:{file_key}"
                         text = "[文件]"
-                except Exception:
+                except Exception:  # noqa: BLE001
                     text = "[文件]"
             elif message_type == "audio":
                 try:
@@ -422,7 +421,7 @@ class FeishuAdapter(PlatformAdapter):
                     if file_key:
                         media_url = f"audio:{file_key}"
                         text = "[语音]"
-                except Exception:
+                except Exception:  # noqa: BLE001
                     text = "[语音]"
             else:
                 text = f"[{message_type}]"

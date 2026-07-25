@@ -22,13 +22,13 @@ from prism.memory import persistent_memory
 
 try:
     from prism.task_feedback import record_failure, apply_strategies
-except Exception:  # noqa: BLE001
+except (ImportError, ModuleNotFoundError):  # noqa: BLE001
     record_failure = None  # type: ignore[assignment,misc]
     apply_strategies = None  # type: ignore[assignment,misc]
 
 try:
     from prism.mcp import mcp_client
-except Exception:  # noqa: BLE001
+except (ImportError, ModuleNotFoundError):  # noqa: BLE001
     mcp_client = None  # type: ignore[assignment]
 
 
@@ -99,7 +99,7 @@ class Agent:
             from prism.memory_manager import memory_manager
             self._memory_manager = memory_manager
             self._memory_manager.memory = persistent_memory
-        except Exception:
+        except Exception:  # noqa: BLE001
             self._memory_manager = None
 
         # RAG 本地知识库
@@ -129,9 +129,8 @@ class Agent:
         try:
             from prism.retry_strategy import retry_strategy
             retry_strategy.start()
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
-
     def _trim_messages(self):
         """保留 system + 最新 max_messages 条；超出时对旧消息做摘要压缩。"""
         with self._messages_lock:
@@ -260,7 +259,7 @@ class Agent:
             result = planner.chat(user_message=prompt)
             try:
                 planner.close()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
             data = json.loads(result or "{}")
             plan = data.get("plan") or []
@@ -405,7 +404,7 @@ class Agent:
             result = validator.chat(user_message=prompt)
             try:
                 validator.close()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
             text = (result or "").strip()
             if text == "__PRISM_VALIDATION_PASS__":
@@ -468,10 +467,10 @@ class Agent:
                                 "error": f"刚刚执行过相同的 {tool_name}，为了避免重复，我先跳过。",
                                 "tool": tool_name,
                             }
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
             return None
-        except Exception:
+        except Exception:  # noqa: BLE001
             return None
 
     def chat(self, user_message: str, on_stream=None, **kwargs) -> str:
@@ -535,16 +534,15 @@ class Agent:
         try:
             from prism.message_store import message_store
             message_store.add(user_msg)
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
-
         # 在关键操作前自动保存快照（用于 /rollback）
         # 每 5 轮对话保存一次，避免频繁 IO
         if len(self.messages) % 5 == 0:
             try:
                 from prism.checkpoint import save_checkpoint
                 save_checkpoint(self, label="before_chat")
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
         def _serialize_content(content):
             if isinstance(content, str):
@@ -574,7 +572,7 @@ class Agent:
         try:
             from prism.observability import trace_agent_call
             chat_fn = trace_agent_call(chat_fn)
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
         result = chat_fn(api_messages, on_chunk=on_stream, **kwargs) if on_stream is not None else chat_fn(api_messages)
 
@@ -645,9 +643,8 @@ class Agent:
         try:
             from prism.message_store import message_store
             message_store.add(assistant_msg)
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
-
         # Run after_chat hooks
         hook_manager.run_hooks("after_chat", {
             "message": user_message,
@@ -672,9 +669,8 @@ class Agent:
             if mgr is not None:
                 scope = getattr(self, "memory_scope", "default") or "default"
                 mgr.on_chat_turn(scope=scope)
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
-
         # Background self-improvement review
         try:
             if getattr(self, "review_enabled", False):
@@ -720,9 +716,8 @@ class Agent:
             precheck = self._tool_precheck(tool_name, kwargs)
             if precheck is not None:
                 return precheck
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
-
         if not self.tools_enabled:
             return {'success': False, 'error': 'Tools disabled'}
         
@@ -731,9 +726,8 @@ class Agent:
             block = security_manager.check(tool_name, kwargs)
             if block:
                 return {'success': False, 'error': block}
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
-        
         logger.info("execute tool=%s args=%s", tool_name, kwargs)
         
         # MCP 外部工具路由
@@ -780,7 +774,7 @@ class Agent:
                 max_attempts=3,
                 backoff=2.0,
             )
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
         result = registry.execute(tool_name, **kwargs)
         self.tool_calls.append(ToolCall(
@@ -860,7 +854,7 @@ class Agent:
         """自动执行工具并继续对话，直到拿到最终文本回复。"""
         try:
             import json as _json
-        except Exception:
+        except Exception:  # noqa: BLE001
             _json = None
 
         content = assistant_content or ""
@@ -874,7 +868,7 @@ class Agent:
                 if isinstance(args, str):
                     try:
                         args = _json.loads(args) if _json else {}
-                    except Exception:
+                    except Exception:  # noqa: BLE001
                         args = {"text": args}
                 result = self.execute_tool(name, **args)
                 results.append((name, result))
@@ -894,7 +888,7 @@ class Agent:
 
             try:
                 follow = provider_pool.chat(current_messages)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 break
 
             if not follow.get('success'):
@@ -1072,10 +1066,9 @@ class Agent:
         except Exception:
             logger.debug("rename session failed: %s", traceback.format_exc())
             return False
-
-
-
-
+    
+    
+    
     # ========== 记忆系统 ==========
     def _extract_user_facts(self, user_message: str, assistant_content: str) -> None:
         """规则提取 + 可选 LLM 辅助提取：用户称呼、偏好、事实、任务、时间、地点等。"""
@@ -1117,7 +1110,7 @@ class Agent:
                     continue
                 try:
                     persistent_memory.remember(key, value, category=category, confidence=0.85)
-                except Exception:
+                except Exception:  # noqa: BLE001
                     pass
                 break
 
@@ -1127,16 +1120,14 @@ class Agent:
             for line in complaints:
                 if _is_negative(line):
                     continue
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
-
         # LLM 辅助提取：当规则未命中时，尝试让模型提炼用户事实
         try:
             if getattr(self, "llm_extract_enabled", False):
                 self._llm_extract_facts(text, assistant_content or "")
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
-
     def _llm_extract_facts(self, user_message: str, assistant_content: str) -> None:
         """用 LLM 从对话中提取用户事实并写入持久记忆。"""
         negative_hints = ["他妈的", "tm", "sb", "傻逼", "只回答", "回答一个字", "回答仅", "一个字", "说全", "别只", "别回复", "别回", "别再说", "别说了", "闭嘴", "简短", "简单"]
@@ -1145,7 +1136,7 @@ class Agent:
             return any(h in v for h in negative_hints)
         try:
             from prism.providers.manager import provider_pool
-        except Exception:
+        except Exception:  # noqa: BLE001
             return
         prompt = (
             "你是 PRISM 的记忆提取器。从以下对话中提取用户事实（偏好、身份、习惯、关系、任务、计划等），"
@@ -1158,7 +1149,7 @@ class Agent:
                 {"role": "system", "content": "只输出 JSON 数组，不要解释。"},
                 {"role": "user", "content": prompt},
             ])
-        except Exception:
+        except Exception:  # noqa: BLE001
             return
         content = (result or {}).get("content", "") or ""
         content = content.strip()
@@ -1167,7 +1158,7 @@ class Agent:
         try:
             import json as _json
             facts = _json.loads(content)
-        except Exception:
+        except Exception:  # noqa: BLE001
             return
         if not isinstance(facts, list):
             return
@@ -1184,7 +1175,7 @@ class Agent:
                 if _is_negative(key):
                     continue
                 persistent_memory.remember(key, value, category=category, confidence=0.8)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 continue
 
     def remember(self, key: str, value: str, category: str = "general") -> None:
