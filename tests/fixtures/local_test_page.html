@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>PRISM Local Test Page</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+  <h1>PRISM Local Test Page</h1>
+  <p>This is a local offline fallback page for browser tests.</p>
+  <p id="ts"></p>
+  <script>
+    document.getElementById('ts').textContent = 'ok=' + Date.now();
+  </script>
+</body>
+</html>

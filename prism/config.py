@@ -4,6 +4,7 @@ PRISM Agent - 统一配置系统
 """
 
 import json
+import logging
 import os
 import threading
 import time
