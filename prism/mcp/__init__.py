@@ -191,11 +191,9 @@ class MCPClient:
                     if process.poll() is None:
                         process.stdin.write(json.dumps(notify, ensure_ascii=False) + "\n")
                         process.stdin.flush()
-                    logger.debug("[MCP] stdio 服务器初始化成功: {server.name}")
+                    logger.debug("[MCP] stdio 服务器初始化成功: %s", server.name)
                 else:
-                    # 宽松处理：部分简易 server 不遵循完整握手
-                    self._stdio_initialized[server.name] = False
-                    logger.debug("[MCP] stdio 服务器 {server.name} 未返回有效初始化响应，仍允许调用")
+                    logger.debug("[MCP] stdio 服务器 %s 未返回有效初始化响应，将重试", server.name)
             except Exception as e:
                 self._stdio_initialized.pop(server.name, None)
                 logger.debug("[MCP] stdio 初始化失败 {server.name}: {e}")

@@ -76,7 +76,7 @@ class SystemMixin:
                 self._tray_icon = pystray.Icon("prism", image, "PRISM", menu)
                 self._tray_icon.run_detached()
         except Exception as e:
-            print(f"tray init skipped: {e}")
+            logger.debug("tray init skipped: %s", e)
 
     def _bind_context_menu(self) -> None:
         return

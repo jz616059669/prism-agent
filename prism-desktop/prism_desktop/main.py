@@ -80,7 +80,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._mcp_logs: List[str] = []
         self._init_error: Optional[BaseException] = None
         self.agent = None
-        print("[BOOT] main.py loaded from:", __file__, flush=True)
+        logger.debug("[BOOT] main.py loaded from: %s", __file__)
 
         self.model_dropdown = ft.Dropdown(
             label="默认模型",
@@ -112,7 +112,13 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         except Exception as exc:
             import traceback
             tb = traceback.format_exc()
-            print(f"[BUILD UI ERROR] {exc}\n{tb}", flush=True)
+            try:
+                INIT_ERROR_LOG.write_text(tb, encoding="utf-8")
+            except Exception:
+                logger.debug('desktop exception: %s', traceback.format_exc())
+            logger.debug("[INIT ERROR] %s\n%s", exc, tb)
+            self._append_terminal(f"init error: {exc}")
+            self._append_terminal(tb)
 
         try:
             self._bind_context_menu()
@@ -127,7 +133,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 INIT_ERROR_LOG.write_text(tb, encoding="utf-8")
             except Exception:
                 logger.debug('desktop exception: %s', traceback.format_exc())
-            print(f"[INIT ERROR] {exc}\n{tb}", flush=True)
+            logger.debug("[INIT ERROR] %s\n%s", exc, tb)
             self._append_terminal(f"init error: {exc}")
             self._append_terminal(tb)
 
@@ -1148,7 +1154,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.gateway_log_text = ft.Text("", size=11, color=ft.Colors.ON_SURFACE_VARIANT, max_lines=3, overflow=ft.TextOverflow.ELLIPSIS)
 
         def _do_start(_):
-            print("[gateway] start button clicked")
+            logger.debug("[gateway] start button clicked")
             self._set_status("正在启动飞书 gateway...", ft.Colors.AMBER_400)
             self.gateway_start_btn.disabled = True
             try:
