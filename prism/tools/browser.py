@@ -368,12 +368,26 @@ class SyncBrowserAPI:
         future = asyncio.run_coroutine_threadsafe(coro, loop)
         try:
             return future.result(timeout=timeout)
-        except Exception:
+        except TimeoutError:
             try:
                 self._run(browser_controller.disconnect())
             except Exception:
                 pass
             return {"success": False, "error": f"browser operation timed out after {timeout}s"}
+        except Exception as exc:
+            error_message = str(exc)
+            is_browser_failure = False
+            try:
+                import playwright
+                is_browser_failure = isinstance(exc, playwright._impl._errors.Error)
+            except Exception:
+                pass
+            if is_browser_failure or "browser" in error_message.lower() or "page" in error_message.lower():
+                try:
+                    self._run(browser_controller.disconnect())
+                except Exception:
+                    pass
+            return {"success": False, "error": error_message}
 
     def _ensure_connected(self, headless: bool = True) -> bool:
         if not self._check_connection():
