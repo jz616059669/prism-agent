@@ -1,17 +1,12 @@
 """PRISM Desktop - MCP 面板逻辑"""
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+import traceback
 
 import flet as ft
 
-from prism.logging import logger
-import traceback
-
 from prism.config import config as prism_config
-
-if TYPE_CHECKING:
-    from prism_desktop.main import PrismDesktop
+from prism.logging import logger
 
 
 class MCPMixin:
@@ -117,7 +112,6 @@ class MCPMixin:
                     self.mcp_list.controls.append(ft.Text("暂无工具", size=12, color=ft.Colors.ON_SURFACE))
                 else:
                     for tool in tools:
-                        schema = tool.get("inputSchema") or {}
                         self.mcp_list.controls.append(
                             ft.Text(f"- {tool.get('name')}: {tool.get('description', '')}", size=11)
                         )

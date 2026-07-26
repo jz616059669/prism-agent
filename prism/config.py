@@ -7,13 +7,13 @@ import json
 import logging
 import os
 import threading
-import time
-import yaml
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
-from prism.paths import PRISM_HOME, ensure_dirs
+import yaml
+
 from prism.logging import logger
+from prism.paths import PRISM_HOME, ensure_dirs
 
 try:
     import keyring
@@ -23,7 +23,6 @@ except ImportError:
 
 class ConfigError(Exception):
     """配置校验失败"""
-    pass
 
 
 _SENSITIVE_KEYS = {
@@ -47,8 +46,8 @@ class Config:
         self._config = {}
         self._config_mtime = 0.0
         self._watch_stop = threading.Event()
-        self._watch_thread: Optional[threading.Thread] = None
-        self._on_change: Optional[Any] = None
+        self._watch_thread: threading.Thread | None = None
+        self._on_change: Any | None = None
         self._loading = False
         self._load()
         self._start_watcher()
@@ -64,7 +63,7 @@ class Config:
             self._watch_stop.clear()
             self._watch_thread = threading.Thread(target=self._watch_loop, daemon=True)
             self._watch_thread.start()
-        except Exception:
+        except (OSError, Exception):
             _local_logger = logging.getLogger("prism.config")
             _local_logger.debug("config watcher start failed", exc_info=True)
         
@@ -81,18 +80,18 @@ class Config:
                     old = self._config.copy()
                     try:
                         self._load()
-                    except Exception:
+                    except (OSError, Exception):
                         _local_logger = logging.getLogger("prism.config")
                         _local_logger.debug("config reload failed", exc_info=True)
                     self._config_mtime = mtime
                     if self._on_change:
                         try:
                             self._on_change(old, self._config.copy())
-                        except Exception:
+                        except (OSError, Exception):
                             _local_logger = logging.getLogger("prism.config")
                             _local_logger.debug("config on_change callback failed", exc_info=True)
                 failure_backoff = 1.0
-            except Exception:
+            except (OSError, Exception):
                 _local_logger = logging.getLogger("prism.config")
                 _local_logger.debug("config watcher error", exc_info=True)
                 failure_backoff = min(failure_backoff * 2.0, max_backoff)
@@ -128,9 +127,9 @@ class Config:
             # 配置 schema 校验
             try:
                 self._validate_schema()
-            except ConfigError as exc:
+            except ConfigError:
                 raise
-            except Exception:
+            except (yaml.YAMLError, OSError, Exception):
                 _local_logger = logging.getLogger("prism.config")
                 _local_logger.debug("schema validation skipped", exc_info=True)
         finally:
@@ -223,7 +222,7 @@ class Config:
                     env_value = os.getenv(env_map[config_key])
                     if env_value:
                         model_section[config_key] = env_value
-        except Exception:  # noqa: BLE001
+        except (json.JSONDecodeError, OSError, Exception):  # noqa: BLE001
             pass
     def _save(self) -> None:
         """保存配置文件"""
@@ -358,7 +357,7 @@ class Config:
                 stored = keyring.get_password("prism", key)
                 if stored:
                     return stored
-            except Exception:  # noqa: BLE001
+            except (OSError, Exception):  # noqa: BLE001  # keyring may raise KeyringError
                 pass
         env_name = key.upper().replace(".", "_")
         env_value = os.getenv(env_name)
@@ -414,7 +413,7 @@ class Config:
         if key in _SENSITIVE_KEYS and keyring is not None:
             try:
                 keyring.set_password("prism", key, str(value))
-            except Exception:  # noqa: BLE001
+            except (OSError, Exception):  # noqa: BLE001  # keyring may raise KeyringError
                 pass
         keys = key.split('.')
         config = self._config

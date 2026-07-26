@@ -4,18 +4,17 @@ PRISM Agent - 浏览器控制模块
 """
 
 import asyncio
-import json
 import threading
 import time
-from typing import Optional, Dict, Any, List
+import traceback
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from prism.logging import logger
-import traceback
 
 try:
-    from playwright.async_api import async_playwright, Page, Browser, BrowserContext
+    from playwright.async_api import Browser, BrowserContext, Page, async_playwright
     PLAYWRIGHT_AVAILABLE = True
 except ImportError:
     PLAYWRIGHT_AVAILABLE = False
@@ -26,8 +25,8 @@ class BrowserState:
     """浏览器状态"""
     url: str = ""
     title: str = ""
-    screenshot_path: Optional[str] = None
-    console_logs: List[str] = None
+    screenshot_path: str | None = None
+    console_logs: list[str] = None
     
     def __post_init__(self):
         if self.console_logs is None:
@@ -45,13 +44,13 @@ class BrowserController:
     def __init__(self, mode: str = "playwright"):
         self.mode = mode
         self.playwright = None
-        self.browser: Optional[Browser] = None
-        self.context: Optional[BrowserContext] = None
-        self.page: Optional[Page] = None
+        self.browser: Browser | None = None
+        self.context: BrowserContext | None = None
+        self.page: Page | None = None
         self.state = BrowserState()
         self.connected = False
     
-    async def connect(self, headless: bool = True) -> Dict[str, Any]:
+    async def connect(self, headless: bool = True) -> dict[str, Any]:
         """
         连接浏览器
         headless: True=无头模式, False=显示界面
@@ -108,11 +107,11 @@ class BrowserController:
         except Exception as e:
             return {
                 'success': False,
-                'error': f'Failed to connect browser: {str(e)}',
+                'error': f'Failed to connect browser: {e!s}',
                 'hint': 'In CI/headless Linux, ensure Playwright Chromium deps are installed: python -m playwright install --with-deps chromium',
             }
     
-    async def navigate(self, url: str) -> Dict[str, Any]:
+    async def navigate(self, url: str) -> dict[str, Any]:
         """导航到指定URL"""
         if not self._check_connection():
             return {'success': False, 'error': 'Browser not connected'}
@@ -132,7 +131,7 @@ class BrowserController:
             logger.debug("navigate failed: %s", traceback.format_exc())
             return {'success': False, 'error': str(e)}
     
-    async def snapshot(self, full: bool = False) -> Dict[str, Any]:
+    async def snapshot(self, full: bool = False) -> dict[str, Any]:
         """获取页面快照（可访问性树）"""
         if not self._check_connection():
             return {'success': False, 'error': 'Browser not connected'}
@@ -172,7 +171,7 @@ class BrowserController:
             logger.debug("snapshot failed: %s", traceback.format_exc())
             return {'success': False, 'error': str(e)}
     
-    async def click(self, selector: str) -> Dict[str, Any]:
+    async def click(self, selector: str) -> dict[str, Any]:
         """点击元素"""
         if not self._check_connection():
             return {'success': False, 'error': 'Browser not connected'}
@@ -190,7 +189,7 @@ class BrowserController:
             logger.debug("click failed: %s", traceback.format_exc())
             return {'success': False, 'error': str(e)}
     
-    async def type_text(self, selector: str, text: str) -> Dict[str, Any]:
+    async def type_text(self, selector: str, text: str) -> dict[str, Any]:
         """输入文本"""
         if not self._check_connection():
             return {'success': False, 'error': 'Browser not connected'}
@@ -207,7 +206,7 @@ class BrowserController:
             logger.debug("type_text failed: %s", traceback.format_exc())
             return {'success': False, 'error': str(e)}
     
-    async def screenshot(self, path: Optional[str] = None, full_page: bool = False) -> Dict[str, Any]:
+    async def screenshot(self, path: str | None = None, full_page: bool = False) -> dict[str, Any]:
         """截图"""
         if not self._check_connection():
             return {'success': False, 'error': 'Browser not connected'}
@@ -230,7 +229,7 @@ class BrowserController:
             logger.debug("screenshot failed: %s", traceback.format_exc())
             return {'success': False, 'error': str(e)}
     
-    async def evaluate(self, script: str) -> Dict[str, Any]:
+    async def evaluate(self, script: str) -> dict[str, Any]:
         """执行JavaScript"""
         if not self._check_connection():
             return {'success': False, 'error': 'Browser not connected'}
@@ -245,7 +244,7 @@ class BrowserController:
             logger.debug("evaluate failed: %s", traceback.format_exc())
             return {'success': False, 'error': str(e)}
     
-    async def scroll(self, direction: str = "down") -> Dict[str, Any]:
+    async def scroll(self, direction: str = "down") -> dict[str, Any]:
         """滚动页面"""
         if not self._check_connection():
             return {'success': False, 'error': 'Browser not connected'}
@@ -263,7 +262,7 @@ class BrowserController:
             logger.debug("scroll failed: %s", traceback.format_exc())
             return {'success': False, 'error': str(e)}
     
-    async def disconnect(self) -> Dict[str, Any]:
+    async def disconnect(self) -> dict[str, Any]:
         """断开连接"""
         try:
             if self.page:
@@ -318,7 +317,7 @@ class BrowserController:
     
     def _handle_error(self, err):
         """处理页面错误"""
-        self.state.console_logs.append(f"[ERROR] {str(err)}")
+        self.state.console_logs.append(f"[ERROR] {err!s}")
 
 
 # 全局浏览器控制器
@@ -330,8 +329,8 @@ class SyncBrowserAPI:
     """同步浏览器API（供工具系统调用）"""
     
     def __init__(self):
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
-        self._loop_thread: Optional[threading.Thread] = None
+        self._loop: asyncio.AbstractEventLoop | None = None
+        self._loop_thread: threading.Thread | None = None
         self._ensure_loop()
     
     def _ensure_loop(self) -> None:
@@ -346,12 +345,12 @@ class SyncBrowserAPI:
             return
         try:
             self._loop.call_soon_threadsafe(self._loop.stop)
-        except Exception:
+        except (OSError, Exception):
             pass
         if self._loop_thread is not None:
             try:
                 self._loop_thread.join(timeout=3)
-            except Exception:
+            except (OSError, Exception):
                 pass
         self._loop = None
         self._loop_thread = None
@@ -359,7 +358,7 @@ class SyncBrowserAPI:
     def _check_connection(self) -> bool:
         try:
             return bool(getattr(browser_controller, 'connected', False)) and not getattr(browser_controller, 'page', None).is_closed()
-        except Exception:
+        except (OSError, Exception):
             return False
 
     def _run(self, coro, timeout: int = 120):
@@ -398,42 +397,42 @@ class SyncBrowserAPI:
                 return False
         return True
     
-    def navigate(self, url: str, headless: bool = True) -> Dict[str, Any]:
+    def navigate(self, url: str, headless: bool = True) -> dict[str, Any]:
         if not self._ensure_connected(headless):
             return {"success": False, "error": "Failed to connect browser"}
         return self._run(browser_controller.navigate(url), timeout=40)
     
-    def snapshot(self, full: bool = False) -> Dict[str, Any]:
+    def snapshot(self, full: bool = False) -> dict[str, Any]:
         if not browser_controller.connected:
             return {"success": False, "error": "Browser not connected"}
         return self._run(browser_controller.snapshot(full=full), timeout=40)
     
-    def click(self, selector: str) -> Dict[str, Any]:
+    def click(self, selector: str) -> dict[str, Any]:
         if not browser_controller.connected:
             return {"success": False, "error": "Browser not connected"}
         return self._run(browser_controller.click(selector), timeout=20)
     
-    def type(self, selector: str, text: str) -> Dict[str, Any]:
+    def type(self, selector: str, text: str) -> dict[str, Any]:
         if not browser_controller.connected:
             return {"success": False, "error": "Browser not connected"}
         return self._run(browser_controller.type_text(selector, text), timeout=20)
     
-    def screenshot(self, path: Optional[str] = None) -> Dict[str, Any]:
+    def screenshot(self, path: str | None = None) -> dict[str, Any]:
         if not browser_controller.connected:
             return {"success": False, "error": "Browser not connected"}
         return self._run(browser_controller.screenshot(path), timeout=20)
     
-    def evaluate(self, script: str) -> Dict[str, Any]:
+    def evaluate(self, script: str) -> dict[str, Any]:
         if not browser_controller.connected:
             return {"success": False, "error": "Browser not connected"}
         return self._run(browser_controller.evaluate(script), timeout=20)
     
-    def scroll(self, direction: str = "down") -> Dict[str, Any]:
+    def scroll(self, direction: str = "down") -> dict[str, Any]:
         if not browser_controller.connected:
             return {"success": False, "error": "Browser not connected"}
         return self._run(browser_controller.scroll(direction), timeout=20)
     
-    def disconnect(self) -> Dict[str, Any]:
+    def disconnect(self) -> dict[str, Any]:
         if not browser_controller.connected:
             return {"success": True, "message": "Browser already disconnected"}
         result = self._run(browser_controller.disconnect())

@@ -5,30 +5,30 @@ PRISM Agent - 核心Agent循环
 
 import json
 import os
-import logging
 import threading
-from pathlib import Path
-from typing import List, Dict, Any, Optional, Callable
+import time
+import traceback
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
+from pathlib import Path
+from typing import Any
 
+from prism.hooks import hook_manager
 from prism.logging import logger
-import traceback
-
+from prism.memory import persistent_memory
 from prism.providers.manager import provider_pool
 from prism.tools.registry import registry
-from prism.hooks import hook_manager
-from prism.memory import persistent_memory
 
 try:
-    from prism.task_feedback import record_failure, apply_strategies
-except (ImportError, ModuleNotFoundError):  # noqa: BLE001
+    from prism.task_feedback import apply_strategies, record_failure
+except (ImportError, ModuleNotFoundError):
     record_failure = None  # type: ignore[assignment,misc]
     apply_strategies = None  # type: ignore[assignment,misc]
 
 try:
     from prism.mcp import mcp_client
-except (ImportError, ModuleNotFoundError):  # noqa: BLE001
+except (ImportError, ModuleNotFoundError):
     mcp_client = None  # type: ignore[assignment]
 
 
@@ -36,9 +36,9 @@ except (ImportError, ModuleNotFoundError):  # noqa: BLE001
 class Message:
     """消息结构"""
     role: str  # system | user | assistant | tool
-    content: str | List[Dict[str, Any]]
+    content: str | list[dict[str, Any]]
     timestamp: datetime = field(default_factory=datetime.now)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -46,8 +46,8 @@ class ToolCall:
     """工具调用"""
     id: str
     name: str
-    arguments: Dict[str, Any]
-    result: Optional[Dict[str, Any]] = None
+    arguments: dict[str, Any]
+    result: dict[str, Any] | None = None
 
 
 class Agent:
@@ -60,9 +60,9 @@ class Agent:
     - 统一的模型调用接口
     """
     
-    def __init__(self, system_prompt: Optional[str] = None, enable_auto_memory: bool = False):
-        self.messages: List[Message] = []
-        self.tool_calls: List[ToolCall] = []
+    def __init__(self, system_prompt: str | None = None, enable_auto_memory: bool = False):
+        self.messages: list[Message] = []
+        self.tool_calls: list[ToolCall] = []
         self.system_prompt = system_prompt or self._default_system_prompt()
         self.max_turns = 150
         self.max_messages = 200  # 防止上下文无限增长
@@ -73,9 +73,9 @@ class Agent:
         self.review_enabled = bool(int(os.getenv("PRISM_REVIEW_ENABLED", "0") or 0))
         self.review_interval = int(os.getenv("PRISM_REVIEW_INTERVAL", "5") or 5)
         self._review_turn_count = 0
-        self.background_review_callback: Optional[Callable[[str], None]] = None
+        self.background_review_callback: Callable[[str], None] | None = None
         self.session_dir = Path.home() / ".prism" / "sessions"
-        self._last_executed: Dict[str, float] = {}
+        self._last_executed: dict[str, float] = {}
         self._tool_lock = threading.Lock()
         self._messages_lock = threading.RLock()
         self._memory_context = persistent_memory.get_context(max_items=8, scope=self.memory_scope)
@@ -151,12 +151,12 @@ class Agent:
             self.messages = system + tail
             logger.info("messages trimmed: total=%d, kept=%d", len(old) + len(system) + len(tail), len(system) + len(tail))
 
-    def _summarize_messages(self, messages: list) -> Optional[str]:
+    def _summarize_messages(self, messages: list) -> str | None:
         """对一批旧消息做简短摘要，返回可读文本；失败时返回 None。"""
         try:
             if not messages:
                 return None
-            lines: List[str] = []
+            lines: list[str] = []
             for m in messages:
                 role = getattr(m, "role", "")
                 c = (getattr(m, "content", "") or "").strip().replace("\n", " ")
@@ -173,7 +173,7 @@ class Agent:
         except (TypeError, AttributeError):
             return None
 
-    def _maybe_plan_and_execute(self, user_message: str) -> Optional[str]:
+    def _maybe_plan_and_execute(self, user_message: str) -> str | None:
         """
         复杂任务自动规划执行：
         1. 判断是否复杂
@@ -232,7 +232,7 @@ class Agent:
         finally:
             self._planning_in_progress = saved
 
-    def decompose_plan(self, user_message: str) -> Optional[str]:
+    def decompose_plan(self, user_message: str) -> str | None:
         """
         任务规划：将复杂请求拆成 2-5 个可执行步骤，返回 plan 文本。
         仅在任务明显复杂时启用，避免简单请求过度拆解。
@@ -362,7 +362,7 @@ class Agent:
         except (TypeError, AttributeError, Exception):
             logger.debug("inject memory context failed: %s", traceback.format_exc())
 
-    def _run_self_validation(self, user_message: str, assistant_content: str, tool_calls: list) -> Optional[str]:
+    def _run_self_validation(self, user_message: str, assistant_content: str, tool_calls: list) -> str | None:
         """
         自我校验：检查回复是否真正回答用户问题、是否有明显错误/矛盾。
         返回修正文本；若无需修正则返回 None。
@@ -414,7 +414,7 @@ class Agent:
             return None
 
     @staticmethod
-    def _run_clarification_check(user_message: str) -> Optional[str]:
+    def _run_clarification_check(user_message: str) -> str | None:
         """
         前置澄清：如果用户query过于模糊、缺少关键信息，先追问再执行。
         当前实现为保守策略：只拦截极短/无意义输入，避免误判。
@@ -424,7 +424,7 @@ class Agent:
             return "请再详细说明一下你的需求，我来帮你。"
         return None
 
-    def _tool_precheck(self, tool_name: str, kwargs: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def _tool_precheck(self, tool_name: str, kwargs: dict[str, Any]) -> dict[str, Any] | None:
         """
         工具调用前轻量校验：
         - 角色权限
@@ -433,7 +433,8 @@ class Agent:
         """
         try:
             # 角色权限检查
-            role_error = security_manager.check_role(tool_name)
+            from prism.security import security_manager as _security_manager
+            role_error = _security_manager.check_role(tool_name)
             if role_error:
                 return {
                     "success": False,
@@ -577,7 +578,7 @@ class Agent:
         result = chat_fn(api_messages, on_chunk=on_stream, **kwargs) if on_stream is not None else chat_fn(api_messages)
 
         logger.info("raw provider result success=%s content_len=%d content_preview=%s completion_tokens=%s finish_reason=%s model=%s", 
-                   result.get('success'), len((result.get('content') or '')), (result.get('content') or '')[:200],
+                   result.get('success'), len(result.get('content') or ''), (result.get('content') or '')[:200],
                    result.get('completion_tokens'), result.get('finish_reason'), result.get('model'))
         if not result.get('success'):
             logger.warning("chat failed: %s", result.get('error'))
@@ -607,7 +608,7 @@ class Agent:
         try:
             if tool_calls:
                 assistant_content = self._auto_tool_loop(api_messages, assistant_content, tool_calls)
-        except (TypeError, AttributeError, Exception) as exc:
+        except (TypeError, AttributeError, Exception):
             logger.debug("auto tool loop failed: %s", traceback.format_exc())
 
         try:
@@ -692,7 +693,7 @@ class Agent:
 
         return assistant_content
 
-    def execute_tool(self, tool_name: str, **kwargs) -> Dict[str, Any]:
+    def execute_tool(self, tool_name: str, **kwargs) -> dict[str, Any]:
         """
         执行工具
         整合了 Codex 的终端执行 + OpenClaw 的浏览器控制 + MCP 外部工具
@@ -787,7 +788,7 @@ class Agent:
         return result
     
     @staticmethod
-    def _fallback_tool_args(tool_name: str, kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    def _fallback_tool_args(tool_name: str, kwargs: dict[str, Any]) -> dict[str, Any]:
         """工具调用失败时的降级参数策略"""
         if tool_name == "terminal":
             # 增加超时
@@ -797,7 +798,7 @@ class Agent:
             return {**kwargs, "limit": max(int(kwargs.get("limit", 5)) + 5, 10)}
         return kwargs
     
-    def _try_execute_mcp_tool(self, tool_name: str, **kwargs) -> Optional[Dict[str, Any]]:
+    def _try_execute_mcp_tool(self, tool_name: str, **kwargs) -> dict[str, Any] | None:
         """尝试将工具调用路由到 MCP 外部服务器"""
         try:
             if mcp_client is None:
@@ -810,7 +811,7 @@ class Agent:
             logger.debug("mcp tool route failed: %s", traceback.format_exc())
         return None
     
-    def _append_tool_message(self, tool_name: str, result: Dict[str, Any]) -> None:
+    def _append_tool_message(self, tool_name: str, result: dict[str, Any]) -> None:
         """将工具调用结果写入消息流，保证会话保存/回溯有完整上下文。"""
         try:
             if tool_name.startswith("browser_"):
@@ -847,9 +848,9 @@ class Agent:
 
     def _auto_tool_loop(
         self,
-        api_messages: List[Dict[str, Any]],
+        api_messages: list[dict[str, Any]],
         assistant_content: str,
-        tool_calls: List[Dict[str, Any]],
+        tool_calls: list[dict[str, Any]],
     ) -> str:
         """自动执行工具并继续对话，直到拿到最终文本回复。"""
         try:
@@ -868,7 +869,7 @@ class Agent:
                 if isinstance(args, str):
                     try:
                         args = _json.loads(args) if _json else {}
-                    except Exception:  # noqa: BLE001
+                    except (json.JSONDecodeError, Exception):  # noqa: BLE001
                         args = {"text": args}
                 result = self.execute_tool(name, **args)
                 results.append((name, result))
@@ -908,10 +909,10 @@ class Agent:
 
         return content
 
-    def list_tools(self) -> List[Dict[str, Any]]:
+    def list_tools(self) -> list[dict[str, Any]]:
         """列出可用工具，合并本地 registry 与 MCP 外部工具"""
         local_tools = registry.list_tools()
-        mcp_tools: List[Dict[str, Any]] = []
+        mcp_tools: list[dict[str, Any]] = []
         try:
             if mcp_client is not None:
                 mcp_tools = mcp_client.list_tools()
@@ -931,7 +932,7 @@ class Agent:
             self.messages = [self.messages[0]]  # 保留系统消息
             self.tool_calls = []
 
-    def save_session(self, name: str, tags: Optional[List[str]] = None) -> str:
+    def save_session(self, name: str, tags: list[str] | None = None) -> str:
         """保存当前会话到本地"""
         session_dir = Path.home() / ".prism" / "sessions"
         session_dir.mkdir(parents=True, exist_ok=True)
@@ -978,7 +979,7 @@ class Agent:
             logger.debug("load session failed: %s", traceback.format_exc())
             return False
 
-    def search_sessions(self, query: str) -> List[Dict[str, Any]]:
+    def search_sessions(self, query: str) -> list[dict[str, Any]]:
         """搜索会话内容，返回匹配的会话列表"""
         session_dir = Path.home() / ".prism" / "sessions"
         if not session_dir.exists():
@@ -1019,7 +1020,7 @@ class Agent:
         return results[:50]  # 最多返回50条
 
     @staticmethod
-    def list_sessions() -> List[Dict[str, Any]]:
+    def list_sessions() -> list[dict[str, Any]]:
         """列出已保存的会话"""
         session_dir = Path.home() / ".prism" / "sessions"
         if not session_dir.exists():
@@ -1063,7 +1064,7 @@ class Agent:
             dst.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
             src.unlink()
             return True
-        except Exception:
+        except (json.JSONDecodeError, OSError, Exception):
             logger.debug("rename session failed: %s", traceback.format_exc())
             return False
     
@@ -1158,7 +1159,7 @@ class Agent:
         try:
             import json as _json
             facts = _json.loads(content)
-        except Exception:  # noqa: BLE001
+        except (json.JSONDecodeError, Exception):  # noqa: BLE001
             return
         if not isinstance(facts, list):
             return
@@ -1182,11 +1183,11 @@ class Agent:
         """存储到持久记忆"""
         persistent_memory.remember(key, value, category)
 
-    def recall(self, key: str) -> Optional[str]:
+    def recall(self, key: str) -> str | None:
         """从持久记忆回忆"""
         return persistent_memory.recall(key)
 
-    def search_memory(self, query: str, limit: int = 5) -> List[str]:
+    def search_memory(self, query: str, limit: int = 5) -> list[str]:
         """搜索持久记忆"""
         results = persistent_memory.search(query, limit=limit)
         return [m.value for m in results]
@@ -1196,9 +1197,9 @@ class SubagentManager:
 
     def __init__(self, parent_agent: Agent) -> None:
         self.parent = parent_agent
-        self._subagents: Dict[str, Agent] = {}
+        self._subagents: dict[str, Agent] = {}
 
-    def spawn(self, name: str, system_prompt: Optional[str] = None) -> Agent:
+    def spawn(self, name: str, system_prompt: str | None = None) -> Agent:
         """生成一个子 Agent，继承父级上下文摘要。"""
         if name in self._subagents:
             raise ValueError(f"Subagent '{name}' already exists")
@@ -1213,7 +1214,7 @@ class SubagentManager:
             raise ValueError(f"Subagent '{name}' not found")
         return self._subagents[name]
 
-    def list_subagents(self) -> List[str]:
+    def list_subagents(self) -> list[str]:
         """列出所有子 Agent。"""
         return list(self._subagents.keys())
 
@@ -1266,7 +1267,7 @@ class AgentWithSubagents:
 # 在 Agent 类中添加 subagent 支持
 Agent.subagent_manager = property(lambda self: SubagentManager(self))
 
-def create_agent(system_prompt: Optional[str] = None, enable_auto_memory: bool = False) -> Agent:
+def create_agent(system_prompt: str | None = None, enable_auto_memory: bool = False) -> Agent:
     """创建 Agent 实例，并同步更新提供商池默认模型"""
     agent = Agent(system_prompt=system_prompt, enable_auto_memory=enable_auto_memory)
     try:

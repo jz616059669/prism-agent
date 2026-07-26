@@ -1,16 +1,11 @@
 """PRISM Desktop - 终端与 MCP 面板逻辑"""
 from __future__ import annotations
 
-import subprocess
-from typing import TYPE_CHECKING
+import traceback
 
 import flet as ft
 
 from prism.logging import logger
-import traceback
-
-if TYPE_CHECKING:
-    from prism_desktop.main import PrismDesktop
 
 
 class TerminalMixin:

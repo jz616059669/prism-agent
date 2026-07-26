@@ -4,16 +4,12 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+import traceback
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import flet as ft
 
 from prism.logging import logger
-import traceback
-
-if TYPE_CHECKING:
-    from prism_desktop.main import PrismDesktop
 
 
 class SystemMixin:
@@ -39,12 +35,10 @@ class SystemMixin:
                 self.page.window_close()
             except Exception:
                 logger.debug("desktop exception: %s", traceback.format_exc())
-                pass
             try:
                 self.page.window_destroy()
             except Exception:
                 logger.debug("desktop exception: %s", traceback.format_exc())
-                pass
             try:
                 if sys.platform == "win32":
                     os._exit(0)
@@ -52,7 +46,6 @@ class SystemMixin:
                     raise SystemExit
             except Exception:
                 logger.debug("desktop exception: %s", traceback.format_exc())
-                pass
 
         try:
             import pystray
@@ -61,11 +54,11 @@ class SystemMixin:
                 try:
                     from PIL import Image
                     image = Image.open(icon_path)
-                except Exception:
+                except (OSError, Exception):
                     logger.debug("tray icon open failed: %s", traceback.format_exc())
                     try:
                         image = Image.new("RGB", (64, 64), color=(73, 109, 137))
-                    except Exception:
+                    except (OSError, Exception):
                         logger.debug("tray icon Image.new failed: %s", traceback.format_exc())
                         image = None
             if image is not None:
@@ -84,9 +77,8 @@ class SystemMixin:
     def _minimize_to_tray(self) -> None:
         try:
             self.page.set_window_state("minimized")
-        except Exception:
+        except (OSError, Exception):
             logger.debug("desktop exception: %s", traceback.format_exc())
-            pass
         self._append_terminal("minimize to tray")
 
     def _open_config_dir(self, e):

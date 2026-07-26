@@ -3,30 +3,25 @@ from __future__ import annotations
 
 import datetime
 import os
-from pathlib import Path
-import json
 import threading
-from typing import TYPE_CHECKING, List, Tuple
+import traceback
+from pathlib import Path
 
 import flet as ft
 
 from prism.logging import logger
-import traceback
-
-if TYPE_CHECKING:
-    from prism_desktop.main import PrismDesktop
 
 
 class ChatMixin:
     def _format_time(self) -> str:
         return datetime.now().strftime("%H:%M")
 
-    def _markdown_to_ft(self, text: str, text_color=ft.Colors.ON_SURFACE) -> List[ft.Control]:
+    def _markdown_to_ft(self, text: str, text_color=ft.Colors.ON_SURFACE) -> list[ft.Control]:
         if not text or not text.strip():
             return [ft.Text(" ", selectable=True, color=text_color)]
         try:
             return [ft.Markdown(text, selectable=True, extension_set=ft.MarkdownExtensionSet.GITHUB_WEB, on_tap_link=lambda e: None)]
-        except Exception:
+        except (ValueError, TypeError, Exception):
             return [ft.Text(text, selectable=True, color=text_color)]
 
     def _append(self, role: str, text: str, retry: bool = False, retry_text: str = "", placeholder: bool = False, images=None):
@@ -38,7 +33,7 @@ class ChatMixin:
                     self._chat_placeholder.visible = False
                     if hasattr(self._chat_placeholder, "parent") and self._chat_placeholder.parent:
                         self._chat_placeholder.update()
-                except Exception:
+                except (ValueError, TypeError, Exception):
                     logger.debug("hide placeholder failed: %s", traceback.format_exc())
             is_user = role == "你"
             align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
@@ -200,7 +195,7 @@ class ChatMixin:
             target = _stream_content_ref
             if target is None:
                 target = w.content.controls[2]
-            if now - _last_update[0] >= 0.1 or len(value) - len((target.value or "")) >= 24:
+            if now - _last_update[0] >= 0.1 or len(value) - len(target.value or "") >= 24:
                 try:
                     target.value = value
                     w.update()
@@ -279,13 +274,13 @@ class ChatMixin:
                     import json as _json
                     with open(r'C:\Users\zd\.prism\debug_api_messages.json', 'w', encoding='utf-8') as _f:
                         _json.dump([{"role": m.role, "content": m.content} for m in getattr(self.agent, 'messages', [])], _f, ensure_ascii=False, indent=2)
-                except Exception:
+                except (OSError, Exception):
                     pass
                 self._log_to_file("info", "stream_start", text=text, model=getattr(self.agent, "model", "unknown"))
                 try:
                     self._append_terminal(f"[CHAT] send: {text}")
                     self._append_terminal(f"[CHAT] model={agent_model} provider={agent_provider} messages={len(getattr(self.agent, 'messages', []) or [])}")
-                except Exception:
+                except (OSError, Exception):
                     pass
                 result = self.agent.chat(
                     multimodal_content,
@@ -295,7 +290,7 @@ class ChatMixin:
                 logger.info("chat result type=%s preview=%s len=%d", type(result).__name__, str(result)[:200], len(str(result)))
                 try:
                     self._append_terminal(f"[CHAT] result type={type(result).__name__} len={len(str(result))} preview={str(result)[:120]}")
-                except Exception:
+                except (OSError, Exception):
                     pass
                 if not getattr(self, "_generating", False):
                     self._log_to_file("info", "stream_stopped", chunks=getattr(self, "_chunk_count", 0))
@@ -321,7 +316,7 @@ class ChatMixin:
                         }
                         with open(r'C:\Users\zd\.prism\debug_api_messages_finalize.json', 'w', encoding='utf-8') as _f2:
                             _json2.dump(_finalize_debug, _f2, ensure_ascii=False, indent=2)
-                    except Exception:
+                    except (OSError, Exception):
                         pass
                     self._append("PRISM", text)
                 try:
@@ -330,18 +325,19 @@ class ChatMixin:
                         page.run_task(lambda: _finalize())
                     else:
                         _finalize()
-                except Exception:
+                except (OSError, Exception):
                     _finalize()
             except Exception as exc:
                 logger.error("send exception: %s", exc, exc_info=True)
                 try:
                     page = getattr(self, "page", None)
                     if page is not None and hasattr(page, "run_task"):
-                        page.run_task(lambda: self._append("PRISM", f"Error: {exc}"))
+                        error_str = str(exc) if exc is not None else "unknown"
+                        page.run_task(lambda: self._append("PRISM", f"Error: {error_str}"))
                     else:
-                        self._append("PRISM", f"Error: {exc}")
-                except Exception:
-                    self._append("PRISM", f"Error: {exc}")
+                        self._append("PRISM", error_str)
+                except (OSError, Exception):
+                    self._append("PRISM", error_str)
                 self._log_to_file("error", "send_exception", error=str(exc))
             finally:
                 self._generating = False
@@ -353,7 +349,7 @@ class ChatMixin:
 
         try:
             threading.Thread(target=_run_chat, daemon=True).start()
-        except Exception:
+        except (OSError, Exception):
             _run_chat()
 
     def _stop_send(self):
@@ -372,7 +368,7 @@ class ChatMixin:
                     for ctrl in item.content.content.controls:
                         if hasattr(ctrl, "value"):
                             text += str(ctrl.value)
-                except Exception:
+                except (OSError, Exception):
                     pass
             if query in text:
                 matches.append(idx)

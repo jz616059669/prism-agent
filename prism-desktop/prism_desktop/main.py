@@ -5,9 +5,8 @@ PRISM Agent - 桌面客户端
 """
 
 import sys
-import asyncio
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 # 让桌面端优先加载项目根 prism 包，避免被 venv site-packages 里的旧副本覆盖
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -16,33 +15,31 @@ for _p in (str(REPO_ROOT), str(DESKTOP_ROOT), str(Path.cwd())):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import os
 import json
-from datetime import datetime
-import flet as ft
-from typing import Optional
-import markdown
-import subprocess
+import os
+import time
 import threading
+import traceback
+from datetime import datetime
+
+import flet as ft
+
+from prism.agent import create_agent
+from prism.config import config as prism_config
+from prism.logging import logger
+from prism.session_registry import session_registry
 from prism_desktop.i18n import gettext as _
 
-from prism.logging import logger
-import traceback
-
-from prism.config import config as prism_config
-from prism.agent import create_agent
-from prism.tools.browser_bridge import open_page, page_snapshot, close_browser
-from prism.session_registry import session_registry
 INIT_ERROR_LOG = Path.home() / '.prism' / 'init-error.log'
 
 
-from prism_desktop.sidebar import SidebarMixin
-from prism_desktop.chat import ChatMixin
-from prism_desktop.terminal import TerminalMixin
-from prism_desktop.settings import SettingsMixin
-from prism_desktop.system import SystemMixin
-from prism_desktop.mcp import MCPMixin
 from prism_desktop.browser import DesktopBrowserMixin
+from prism_desktop.chat import ChatMixin
+from prism_desktop.mcp import MCPMixin
+from prism_desktop.settings import SettingsMixin
+from prism_desktop.sidebar import SidebarMixin
+from prism_desktop.system import SystemMixin
+from prism_desktop.terminal import TerminalMixin
 
 
 class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, SystemMixin, MCPMixin, DesktopBrowserMixin):
@@ -77,8 +74,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._perf_last_ts = None
         self._perf_mem_mb = 0.0
         self._terminal_lines = []
-        self._mcp_logs: List[str] = []
-        self._init_error: Optional[BaseException] = None
+        self._mcp_logs: list[str] = []
+        self._init_error: BaseException | None = None
         self.agent = None
         logger.debug("[BOOT] main.py loaded from: %s", __file__)
 
@@ -394,7 +391,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
             log_path.parent.mkdir(parents=True, exist_ok=True)
             with open(log_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-        except Exception:
+        except (OSError, Exception):
             logger.debug('desktop exception: %s', traceback.format_exc(), exc_info=True)
     def _on_keyboard_event(self, e: ft.KeyboardEvent):
         try:
@@ -420,7 +417,8 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
 
     def _check_for_updates(self):
         try:
-            import urllib.request, json
+            import json
+            import urllib.request
             req = urllib.request.Request(
                 "https://api.github.com/repos/jz616059669/prism-agent/releases/latest",
                 headers={"User-Agent": "PRISM-Desktop"},
@@ -603,7 +601,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 data = json.loads(path.read_text(encoding="utf-8"))
             except Exception:  # noqa: BLE001
                 data = {}
-        cfg: Dict[str, Any] = {"transport": transport, "enabled": bool(self.mcp_enabled_switch.value)}
+        cfg: dict[str, Any] = {"transport": transport, "enabled": bool(self.mcp_enabled_switch.value)}
         if transport == "stdio":
             cfg["command"] = (self.mcp_command_field.value or "").strip()
             try:
@@ -633,7 +631,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self._reload_mcp()
         self._refresh_mcp()
 
-    def _load_mcp_into_form(self, name: str, cfg: Dict[str, Any]):
+    def _load_mcp_into_form(self, name: str, cfg: dict[str, Any]):
         self.mcp_name_field.value = name
         self.mcp_transport_dd.value = (cfg.get("transport") or "stdio").strip().lower()
         self.mcp_command_field.value = cfg.get("command") or ""
@@ -741,6 +739,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 return
             try:
                 import threading
+
                 import pystray
                 from PIL import Image, ImageDraw
 
@@ -1076,7 +1075,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
 
             preset_buttons.append(
                 ft.Row([
-                    ft.Text(n, expand=True, color=ft.Colors.PRIMARY if is_active else ft.Colors.ON_SURFACE),
+                    ft.Text(name, expand=True, color=ft.Colors.PRIMARY if is_active else ft.Colors.ON_SURFACE),
                     ft.IconButton(ft.Icons.CHECK_CIRCLE_ROUNDED if is_active else ft.Icons.RADIO_BUTTON_UNCHECKED_ROUNDED, tooltip="应用", icon_color=ft.Colors.PRIMARY if is_active else ft.Colors.ON_SURFACE_VARIANT, on_click=apply_preset),
                     ft.IconButton(ft.Icons.DELETE_ROUNDED, tooltip="删除", icon_color=ft.Colors.ERROR, on_click=delete_preset),
                 ], spacing=6, tight=True)
@@ -1194,7 +1193,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 pass
         log_lines = []
         try:
-            from prism.cli.gateway import gateway_status, gateway_start
+            from prism.cli.gateway import gateway_start, gateway_status
             status = gateway_status("feishu")
             log_lines.append(f"status={status}")
             if status.get("running"):
@@ -1275,7 +1274,7 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
         self.mcp_refresh_btn.on_click = lambda e: self._refresh_mcp()
         self.mcp_server_list = ft.Column(spacing=4, tight=True)
         self.mcp_status_list = ft.Column(spacing=3, tight=True)
-        self._mcp_tool_counts: Dict[str, int] = {}
+        self._mcp_tool_counts: dict[str, int] = {}
         self.mcp_transport_dd = ft.Dropdown(label="transport", width=160, dense=True, border_radius=12, options=[ft.dropdown.Option("stdio"), ft.dropdown.Option("http"), ft.dropdown.Option("sse")], value="stdio")
         self.mcp_name_field = ft.TextField(label="name", hint_text="唯一名称，如 filesystem", width=360, border_radius=12, dense=True)
         self.mcp_command_field = ft.TextField(label="command", hint_text="stdio 模式命令，如 npx", width=360, border_radius=12, dense=True)
@@ -1312,19 +1311,19 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                      color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         self.skill_install_btn.on_click = lambda e: self._install_skill_from_ui()
         self.skill_list = ft.Column(spacing=4, tight=True)
-        self._skill_all_items: List[dict] = []
+        self._skill_all_items: list[dict] = []
         self.hub_search = ft.TextField(hint_text=_("skill_hub_search"), width=200, border_radius=16, dense=True, border=ft.Border.all(1, ft.Colors.OUTLINE_VARIANT), content_padding=ft.Padding(8, 6, 8, 6), bgcolor=ft.Colors.SURFACE_CONTAINER)
         self.hub_browse_btn = ft.Button(_("skill_hub_browse"), icon=ft.Icons.PUBLIC_ROUNDED, width=100, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=10), padding=ft.Padding(10, 8, 10, 8), bgcolor=ft.Colors.SURFACE_CONTAINER, color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         self.hub_browse_btn.on_click = lambda e: self._browse_hub_skills()
         self.hub_list = ft.Column(spacing=4, tight=True)
-        self._hub_all_items: List[dict] = []
+        self._hub_all_items: list[dict] = []
 
         # Workflow
         self.workflow_refresh_btn = ft.Button("刷新工作流", icon=ft.Icons.REFRESH_ROUNDED, width=260, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12), padding=ft.Padding(18, 14, 18, 14), bgcolor=ft.Colors.SURFACE_CONTAINER,
                      color=ft.Colors.ON_SURFACE), animate_scale=ft.Animation(duration=180, curve=ft.AnimationCurve.EASE_IN_OUT))
         self.workflow_refresh_btn.on_click = lambda e: self._refresh_workflows()
         self.workflow_list = ft.Column(spacing=4, tight=True)
-        self._workflow_items: List[dict] = []
+        self._workflow_items: list[dict] = []
         self.usage_calls_text = ft.Text("0", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE)
         self.usage_success_text = ft.Text("0%", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE)
         self.usage_latency_text = ft.Text("0ms", size=14, weight=ft.FontWeight.BOLD, color=ft.Colors.ON_SURFACE)
@@ -1882,7 +1881,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
                 logger.debug("hide placeholder failed: %s", traceback.format_exc(), exc_info=True)
         is_user = role == "你"
         align = ft.MainAxisAlignment.END if is_user else ft.MainAxisAlignment.START
-        text_color = ft.Colors.ON_PRIMARY_CONTAINER if is_user else ft.Colors.ON_SURFACE
         timestamp = datetime.now().strftime("%H:%M")
         try:
             role_text = ft.Text(role, size=11, color=ft.Colors.ON_SURFACE_VARIANT, weight=ft.FontWeight.W_500)
@@ -2519,14 +2517,14 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
     def _start_webhook_server(self):
         try:
             from prism.webhook_trigger import webhook_trigger
-            thread = webhook_trigger.start_server(port=9900)
+            webhook_trigger.start_server(port=9900)
             self._append_terminal("webhook server started on 127.0.0.1:9900")
             self._set_status("Webhook 已启动", ft.Colors.GREEN_400)
         except Exception as exc:
             self._log_error("webhook start", exc)
             self._set_status("Webhook 启动失败", ft.Colors.RED_400)
 
-    def _show_webhook_form(self, edit_id: Optional[str] = None):
+    def _show_webhook_form(self, edit_id: str | None = None):
         self._webhook_form_edit_id = edit_id
         form = getattr(self, "_webhook_form_container", None)
         if not form:
@@ -3000,7 +2998,6 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
     def _check_browser_dependencies(self) -> dict:
         status = {"playwright": False, "chromium": False, "error": ""}
         try:
-            import playwright
             status["playwright"] = True
         except Exception as e:
             status["error"] = f"playwright 未安装: {e}"
@@ -3020,8 +3017,10 @@ class PrismDesktop(SidebarMixin, ChatMixin, TerminalMixin, SettingsMixin, System
 
     def _start_perf_monitor(self) -> None:
         try:
-            import time, psutil
+            import time
             from collections import deque
+
+            import psutil
             self._perf_samples = deque(maxlen=30)
             self._perf_last_ts = time.perf_counter()
             self._perf_frames = 0
