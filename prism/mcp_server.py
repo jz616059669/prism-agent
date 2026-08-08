@@ -20,7 +20,7 @@ from prism.mcp.protocol import (
 try:
     from prism import __version__ as _PRISM_VERSION
 except Exception:
-    _PRISM_VERSION = "2.1.6"
+    _PRISM_VERSION = "2.1.7"
 
 logger = logging.getLogger("prism.mcp_server")
 

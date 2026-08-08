@@ -58,7 +58,7 @@ class WebConsole:
 
         @app.get("/api/health")
         def health():
-            return jsonify({"status": "ok", "version": "2.1.5"})
+            return jsonify({"status": "ok", "version": "2.1.7"})
 
         @app.get("/api/sessions")
         def list_sessions():

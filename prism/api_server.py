@@ -77,7 +77,7 @@ async def _event_generator(agent: Any, text: str):
 try:
     from prism import __version__ as _prism_version
 except Exception:
-    _prism_version = "2.1.6"
+    _prism_version = "2.1.7"
 
 
 class PRISMApiServer:

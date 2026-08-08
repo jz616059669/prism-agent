@@ -20,7 +20,7 @@ import traceback
 try:
     from prism import __version__ as _PRISM_VERSION
 except Exception:  # noqa: BLE001
-    _PRISM_VERSION = "2.1.6"
+    _PRISM_VERSION = "2.1.7"
 
 try:
     from prism.mcp.http_client import MCPHTTPClient
